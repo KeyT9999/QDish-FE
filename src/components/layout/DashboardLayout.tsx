@@ -20,7 +20,9 @@ import {
   Building2, 
   Store, 
   ExternalLink,
-  Plus
+  Plus,
+  CreditCard,
+  ShieldCheck
 } from 'lucide-react';
 import { Role } from '@/types';
 import { restaurantService } from '@/services/restaurantService';
@@ -92,6 +94,7 @@ export const DashboardLayout: React.FC = () => {
         { id: 'stats', label: 'Thống kê SaaS', icon: LayoutDashboard },
         { id: 'owners', label: 'Chủ nhà hàng', icon: Users },
         { id: 'restaurants', label: 'Chi nhánh', icon: Store },
+        { id: 'plans', label: 'Gói dịch vụ', icon: ShieldCheck },
       ];
     } else if (user?.role === Role.STAFF) {
       return [
@@ -101,6 +104,7 @@ export const DashboardLayout: React.FC = () => {
       if (selectedRestId) {
         return [
           { id: 'owner-home', label: 'Trang chủ', icon: LayoutDashboard },
+          { id: 'billing', label: 'Gói sử dụng', icon: CreditCard },
           { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
           { id: 'orders', label: 'Đơn hàng', icon: ClipboardList },
           { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
@@ -112,6 +116,7 @@ export const DashboardLayout: React.FC = () => {
       }
       return [
         { id: 'owner-home', label: 'Trang chủ', icon: LayoutDashboard },
+        { id: 'billing', label: 'Gói sử dụng', icon: CreditCard },
       ];
     }
     return [];

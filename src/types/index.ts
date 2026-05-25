@@ -281,6 +281,10 @@ export interface Owner {
   isEmailVerified?: boolean;
   restaurantsCount?: number;
   restaurants?: string[];
+  planName?: string;
+  planCode?: string;
+  subscriptionStatus?: string;
+  subscriptionExpiresAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -301,4 +305,89 @@ export interface CreateOwnerPayload {
   username: string;
   password?: string;
   isActive?: boolean;
+}
+
+// ============================================
+// SaaS Subscription & Payment Additions
+// ============================================
+
+export interface Plan {
+  id: string;
+  _id?: string;
+  name: string;
+  code: string;
+  description: string;
+  priceMonthly: number;
+  priceYearly: number;
+  restaurantLimit: number; // -1 for unlimited
+  tableLimit: number;      // -1 for unlimited
+  menuItemLimit: number;   // -1 for unlimited
+  staffLimit: number;      // -1 for unlimited
+  features: string[];
+  unavailableFeatures: string[];
+  isPopular: boolean;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export enum SubscriptionStatus {
+  ACTIVE = 'ACTIVE',
+  PENDING_PAYMENT = 'PENDING_PAYMENT',
+  EXPIRED = 'EXPIRED',
+  CANCELLED = 'CANCELLED'
+}
+
+export enum BillingCycle {
+  MONTHLY = 'MONTHLY',
+  YEARLY = 'YEARLY'
+}
+
+export interface Subscription {
+  id: string;
+  _id?: string;
+  ownerId: string | Owner;
+  planId: string | Plan;
+  planCode: string;
+  status: SubscriptionStatus;
+  billingCycle: BillingCycle;
+  amount: number;
+  startedAt?: string;
+  expiresAt?: string;
+  paymentOrderCode?: number;
+  payosPaymentLinkId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  CANCELLED = 'CANCELLED',
+  FAILED = 'FAILED'
+}
+
+export interface PaymentTransaction {
+  id: string;
+  _id?: string;
+  ownerId: string;
+  planId: string;
+  subscriptionId: string;
+  orderCode: number;
+  amount: number;
+  status: PaymentStatus;
+  paymentLinkId?: string;
+  checkoutUrl?: string;
+  qrCode?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PlanLimitError {
+  message: string;
+  code: 'PLAN_LIMIT_REACHED';
+  limitType: 'RESTAURANT_LIMIT' | 'TABLE_LIMIT' | 'MENU_ITEM_LIMIT' | 'STAFF_LIMIT';
+  currentPlan: string;
+  upgradeRequired: boolean;
 }

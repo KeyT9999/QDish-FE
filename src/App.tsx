@@ -18,6 +18,9 @@ const StaffDashboard = lazy(() => import('@/pages/StaffDashboard').then((module)
 const SuperAdmin = lazy(() => import('@/pages/SuperAdmin').then((module) => ({ default: module.SuperAdmin })));
 const RegisterOwner = lazy(() => import('@/pages/RegisterOwner').then((module) => ({ default: module.RegisterOwner })));
 const OwnerDashboard = lazy(() => import('@/pages/OwnerDashboard').then((module) => ({ default: module.OwnerDashboard })));
+const Pricing = lazy(() => import('@/pages/Pricing').then((module) => ({ default: module.Pricing })));
+const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess').then((module) => ({ default: module.PaymentSuccess })));
+const PaymentCancel = lazy(() => import('@/pages/PaymentCancel').then((module) => ({ default: module.PaymentCancel })));
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles: Role[] }) => {
@@ -51,6 +54,11 @@ function App() {
             <Route element={<CustomerLayout />}>
               <Route path="/order" element={<CustomerMenu />} />
             </Route>
+
+            {/* Public Pricing and Payment Success Routes */}
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-cancel" element={<PaymentCancel />} />
 
             {/* Dashboard Routes (Auth required) */}
             <Route element={<DashboardLayout />}>

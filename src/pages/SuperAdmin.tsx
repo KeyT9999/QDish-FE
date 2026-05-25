@@ -12,19 +12,43 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { LayoutDashboard, Store, Plus, Edit2, Key, Loader2, CheckCircle, ShieldAlert, Users, UserCheck } from 'lucide-react';
+import { LayoutDashboard, Store, Plus, Edit2, Key, Loader2, CheckCircle, ShieldAlert, Users, UserCheck, X, CreditCard, ReceiptText } from 'lucide-react';
 import { toast } from 'sonner';
+
+const getDefaultPlanForm = () => ({
+  name: '',
+  code: '',
+  description: '',
+  priceMonthly: 0,
+  priceYearly: 0,
+  restaurantLimit: -1,
+  tableLimit: -1,
+  menuItemLimit: -1,
+  staffLimit: -1,
+  featuresText: '',
+  unavailableFeaturesText: '',
+  isPopular: false,
+  isActive: true,
+  sortOrder: 0
+});
+
+const parseFeatureList = (value: string) =>
+  value
+    .split(',')
+    .map((feature) => feature.trim())
+    .filter(Boolean);
 
 export const SuperAdmin: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryTab = searchParams.get('tab') as 'stats' | 'restaurants' | 'owners' || 'restaurants';
-  const activeTab = ['stats', 'restaurants', 'owners'].includes(queryTab) ? queryTab : 'restaurants';
-  const setActiveTab = (tab: 'stats' | 'restaurants' | 'owners') => setSearchParams({ tab });
+  const queryTab = searchParams.get('tab') as 'stats' | 'restaurants' | 'owners' | 'plans' || 'restaurants';
+  const activeTab = ['stats', 'restaurants', 'owners', 'plans'].includes(queryTab) ? queryTab : 'restaurants';
+  const setActiveTab = (tab: 'stats' | 'restaurants' | 'owners' | 'plans') => setSearchParams({ tab });
 
   // Data States
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [overviewStats, setOverviewStats] = useState<OverviewStats | null>(null);
+  const [subscriptionRevenue, setSubscriptionRevenue] = useState<any | null>(null);
   const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
   const [isLoadingOwners, setIsLoadingOwners] = useState(false);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
@@ -68,6 +92,22 @@ export const SuperAdmin: React.FC = () => {
   const [selectedOwnerForPwReset, setSelectedOwnerForPwReset] = useState<Owner | null>(null);
   const [newOwnerPassword, setNewOwnerPassword] = useState('');
 
+  // SaaS Plans States
+  const [plans, setPlans] = useState<any[]>([]);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<any | null>(null);
+  const [planForm, setPlanForm] = useState(getDefaultPlanForm());
+
+  // Owner Plan Override Modal States
+  const [isOwnerPlanOverrideModalOpen, setIsOwnerPlanOverrideModalOpen] = useState(false);
+  const [selectedOwnerForPlanOverride, setSelectedOwnerForPlanOverride] = useState<Owner | null>(null);
+  const [overrideForm, setOverrideForm] = useState({
+    planId: '',
+    status: 'ACTIVE',
+    expiresAt: ''
+  });
+
   // Fetch Data
   const loadRestaurants = useCallback(async () => {
     setIsLoadingRestaurants(true);
@@ -103,12 +143,30 @@ export const SuperAdmin: React.FC = () => {
   const loadStats = useCallback(async () => {
     setIsLoadingStats(true);
     try {
-      const data = await restaurantService.getOverviewStats();
+      const { subscriptionService } = await import('@/services/subscriptionService');
+      const [data, revenueData] = await Promise.all([
+        restaurantService.getOverviewStats(),
+        subscriptionService.adminGetSubscriptionRevenue()
+      ]);
       setOverviewStats(data);
+      setSubscriptionRevenue(revenueData);
     } catch (err) {
       toast.error('Không thể tải thống kê SaaS');
     } finally {
       setIsLoadingStats(false);
+    }
+  }, []);
+
+  const loadPlans = useCallback(async () => {
+    setIsLoadingPlans(true);
+    try {
+      const { planService } = await import('@/services/planService');
+      const data = await planService.adminGetPlans();
+      setPlans(data);
+    } catch (err) {
+      toast.error('Không thể tải danh sách gói dịch vụ');
+    } finally {
+      setIsLoadingPlans(false);
     }
   }, []);
 
@@ -123,8 +181,12 @@ export const SuperAdmin: React.FC = () => {
   useEffect(() => {
     if (activeTab === 'stats') loadStats();
     if (activeTab === 'restaurants') loadRestaurants();
-    if (activeTab === 'owners') loadOwners();
-  }, [activeTab, loadRestaurants, loadStats, loadOwners]);
+    if (activeTab === 'owners') {
+      loadOwners();
+      loadPlans();
+    }
+    if (activeTab === 'plans') loadPlans();
+  }, [activeTab, loadRestaurants, loadStats, loadOwners, loadPlans]);
 
   // CRUD Handlers
   const handleOpenRestModal = (item?: Restaurant) => {
@@ -358,6 +420,149 @@ export const SuperAdmin: React.FC = () => {
     }
   };
 
+  // ============================================
+  // SaaS Plans CRUD Handlers
+  // ============================================
+  const handleOpenPlanModal = (item?: any) => {
+    if (item) {
+      setEditingPlan(item);
+      setPlanForm({
+        name: item.name,
+        code: item.code,
+        description: item.description || '',
+        priceMonthly: item.priceMonthly,
+        priceYearly: item.priceYearly,
+        restaurantLimit: item.restaurantLimit,
+        tableLimit: item.tableLimit,
+        menuItemLimit: item.menuItemLimit,
+        staffLimit: item.staffLimit,
+        featuresText: item.features ? item.features.join(', ') : '',
+        unavailableFeaturesText: item.unavailableFeatures ? item.unavailableFeatures.join(', ') : '',
+        isPopular: item.isPopular || false,
+        isActive: item.isActive !== undefined ? item.isActive : true,
+        sortOrder: item.sortOrder || 0
+      });
+    } else {
+      setEditingPlan(null);
+      setPlanForm(getDefaultPlanForm());
+    }
+    setIsPlanModalOpen(true);
+  };
+
+  const handleSavePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!planForm.name.trim() || !planForm.code.trim()) {
+      toast.error('Vui lòng nhập đầy đủ các thông tin bắt buộc');
+      return;
+    }
+    const numericFields = [
+      ['Giá theo tháng', planForm.priceMonthly, 0],
+      ['Giá theo năm', planForm.priceYearly, 0],
+      ['Hạn mức chi nhánh', planForm.restaurantLimit, -1],
+      ['Hạn mức bàn ăn', planForm.tableLimit, -1],
+      ['Hạn mức món ăn', planForm.menuItemLimit, -1],
+      ['Hạn mức nhân viên', planForm.staffLimit, -1],
+      ['Thứ tự sắp xếp', planForm.sortOrder, 0]
+    ] as const;
+    const invalidNumberField = numericFields.find(([, value, min]) => !Number.isFinite(value) || value < min);
+    if (invalidNumberField) {
+      toast.error(`${invalidNumberField[0]} không hợp lệ`);
+      return;
+    }
+    try {
+      const { planService } = await import('@/services/planService');
+      const features = parseFeatureList(planForm.featuresText);
+      const unavailableFeatures = parseFeatureList(planForm.unavailableFeaturesText);
+      const payload = {
+        name: planForm.name.trim(),
+        code: planForm.code.trim().toUpperCase(),
+        description: planForm.description.trim(),
+        priceMonthly: planForm.priceMonthly,
+        priceYearly: planForm.priceYearly,
+        restaurantLimit: planForm.restaurantLimit,
+        tableLimit: planForm.tableLimit,
+        menuItemLimit: planForm.menuItemLimit,
+        staffLimit: planForm.staffLimit,
+        features,
+        unavailableFeatures,
+        isPopular: planForm.isPopular,
+        isActive: planForm.isActive,
+        sortOrder: planForm.sortOrder
+      };
+
+      if (editingPlan) {
+        await planService.adminUpdatePlan(editingPlan.id || editingPlan._id, payload);
+        toast.success('Đã cập nhật gói dịch vụ thành công');
+      } else {
+        await planService.adminCreatePlan(payload);
+        toast.success('Đã tạo gói dịch vụ mới thành công!');
+      }
+      setIsPlanModalOpen(false);
+      setEditingPlan(null);
+      setPlanForm(getDefaultPlanForm());
+      loadPlans();
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi khi lưu gói dịch vụ');
+    }
+  };
+
+  const handleTogglePlanActive = async (plan: any) => {
+    try {
+      const { planService } = await import('@/services/planService');
+      await planService.adminTogglePlanActive(plan.id || plan._id);
+      toast.success('Đã cập nhật trạng thái hoạt động gói dịch vụ');
+      loadPlans();
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi khi đổi trạng thái');
+    }
+  };
+
+  const handleDeletePlan = async (id: string) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa gói dịch vụ này?')) return;
+    try {
+      const { planService } = await import('@/services/planService');
+      await planService.adminDeletePlan(id);
+      toast.success('Đã xóa gói dịch vụ thành công');
+      loadPlans();
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi khi xóa gói dịch vụ');
+    }
+  };
+
+  // Manual Subscription Override Handlers
+  const handleOpenOverrideModal = (owner: Owner) => {
+    setSelectedOwnerForPlanOverride(owner);
+    setOverrideForm({
+      planId: plans.find(p => p.code === owner.planCode)?.id || plans.find(p => p.code === owner.planCode)?._id || '',
+      status: owner.subscriptionStatus && owner.subscriptionStatus !== 'N/A' ? owner.subscriptionStatus : 'ACTIVE',
+      expiresAt: owner.subscriptionExpiresAt ? new Date(owner.subscriptionExpiresAt).toISOString().split('T')[0] : ''
+    });
+    setIsOwnerPlanOverrideModalOpen(true);
+  };
+
+  const handleOverrideOwnerPlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOwnerForPlanOverride || !overrideForm.planId) {
+      toast.error('Vui lòng chọn gói dịch vụ');
+      return;
+    }
+    try {
+      const { subscriptionService } = await import('@/services/subscriptionService');
+      await subscriptionService.adminChangeOwnerPlan(
+        selectedOwnerForPlanOverride.id || (selectedOwnerForPlanOverride as any)._id,
+        overrideForm.planId,
+        overrideForm.status,
+        overrideForm.expiresAt || undefined
+      );
+      toast.success(`Đã thay đổi gói dịch vụ thành công cho ${selectedOwnerForPlanOverride.fullName}`);
+      setIsOwnerPlanOverrideModalOpen(false);
+      setSelectedOwnerForPlanOverride(null);
+      loadOwners();
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi khi thay đổi gói');
+    }
+  };
+
   const topRevenueData = useMemo(() => overviewStats?.top5Restaurants || [], [overviewStats?.top5Restaurants]);
 
   return (
@@ -394,6 +599,14 @@ export const SuperAdmin: React.FC = () => {
         >
           <LayoutDashboard className="w-4 h-4 mr-1.5" />
           Thống kê SaaS
+        </Button>
+        <Button 
+          variant={activeTab === 'plans' ? 'default' : 'ghost'} 
+          onClick={() => setActiveTab('plans')}
+          className={`rounded-lg px-4 font-semibold text-sm ${activeTab === 'plans' ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm' : 'text-gray-600'}`}
+        >
+          <Key className="w-4 h-4 mr-1.5" />
+          Gói dịch vụ
         </Button>
       </div>
 
@@ -502,6 +715,38 @@ export const SuperAdmin: React.FC = () => {
                 </Card>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <Card className="shadow-sm border-gray-100">
+                  <CardHeader className="pb-2">
+                    <CardDescription className="text-xs">Doanh thu subscription</CardDescription>
+                    <CardTitle className="text-2xl font-bold text-emerald-600 flex items-center gap-1.5">
+                      <CreditCard className="w-6 h-6 text-emerald-500" />
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(subscriptionRevenue?.totalRevenue || 0)}
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+                <Card className="shadow-sm border-gray-100">
+                  <CardHeader className="pb-2">
+                    <CardDescription className="text-xs">Doanh thu tháng này</CardDescription>
+                    <CardTitle className="text-2xl font-bold text-blue-600">
+                      {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(subscriptionRevenue?.monthRevenue || 0)}
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+                <Card className="shadow-sm border-gray-100">
+                  <CardHeader className="pb-2">
+                    <CardDescription className="text-xs">Giao dịch subscription</CardDescription>
+                    <CardTitle className="text-2xl font-bold text-slate-800 flex items-center gap-1.5">
+                      <ReceiptText className="w-6 h-6 text-slate-500" />
+                      {subscriptionRevenue?.paidCount || 0} paid
+                    </CardTitle>
+                    <CardDescription className="text-[11px]">
+                      Pending: {subscriptionRevenue?.pendingCount || 0} | Cancelled: {subscriptionRevenue?.cancelledCount || 0}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </div>
+
               {/* Chart */}
               <Card className="shadow-sm border-gray-100">
                 <CardHeader>
@@ -511,7 +756,7 @@ export const SuperAdmin: React.FC = () => {
                   {topRevenueData.length === 0 ? (
                     <div className="flex h-full items-center justify-center text-gray-400 text-xs">Chưa có dữ liệu giao dịch</div>
                   ) : (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={320}>
                       <BarChart data={topRevenueData}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                         <XAxis dataKey="name" stroke="#9ca3af" fontSize={11} />
@@ -521,6 +766,58 @@ export const SuperAdmin: React.FC = () => {
                       </BarChart>
                     </ResponsiveContainer>
                   )}
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-sm border-gray-100">
+                <CardHeader>
+                  <CardTitle className="text-sm font-semibold">Giao dịch thanh toán gói gần đây</CardTitle>
+                  <CardDescription className="text-xs">Nguồn doanh thu chỉ tính PaymentTransaction có trạng thái PAID.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">OrderCode</TableHead>
+                        <TableHead className="text-xs">Owner</TableHead>
+                        <TableHead className="text-xs">Gói</TableHead>
+                        <TableHead className="text-xs">Số tiền</TableHead>
+                        <TableHead className="text-xs">Trạng thái</TableHead>
+                        <TableHead className="text-xs">Thời gian</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(subscriptionRevenue?.transactions || []).slice(0, 8).map((transaction: any) => (
+                        <TableRow key={transaction.id || transaction.orderCode}>
+                          <TableCell className="text-xs font-mono">{transaction.orderCode}</TableCell>
+                          <TableCell className="text-xs">{transaction.owner?.fullName || transaction.owner?.username || '---'}</TableCell>
+                          <TableCell className="text-xs font-bold">{transaction.plan?.code || '---'}</TableCell>
+                          <TableCell className="text-xs font-semibold">
+                            {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.amount || 0)}
+                          </TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              transaction.status === 'PAID'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : transaction.status === 'PENDING'
+                                  ? 'bg-amber-50 text-amber-700'
+                                  : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {transaction.status}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-xs text-gray-500">
+                            {transaction.createdAt ? new Date(transaction.createdAt).toLocaleString('vi-VN') : '---'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {(!subscriptionRevenue?.transactions || subscriptionRevenue.transactions.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-gray-400 py-8 text-sm">Chưa có giao dịch subscription</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </>
@@ -567,6 +864,7 @@ export const SuperAdmin: React.FC = () => {
                       <TableHead className="text-xs">Email / Điện thoại</TableHead>
                       <TableHead className="text-xs">Xác thực email</TableHead>
                       <TableHead className="text-xs">Nhà hàng quản lý</TableHead>
+                      <TableHead className="text-xs">Gói dịch vụ</TableHead>
                       <TableHead className="text-xs">Ngày đăng ký</TableHead>
                       <TableHead className="text-xs">Trạng thái</TableHead>
                       <TableHead className="text-right text-xs">Thao tác</TableHead>
@@ -606,6 +904,22 @@ export const SuperAdmin: React.FC = () => {
                             )}
                           </div>
                         </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              owner.planCode === 'PRO'
+                                ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-sm'
+                                : owner.planCode === 'PLUS'
+                                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-sm'
+                                  : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}>
+                              {owner.planName || 'Starter / FREE'}
+                            </span>
+                            <span className="block text-[9px] font-mono text-slate-400 uppercase">
+                              {owner.subscriptionStatus === 'ACTIVE' ? 'Đang kích hoạt' : 'Chờ thanh toán'}
+                            </span>
+                          </div>
+                        </TableCell>
                         <TableCell className="text-xs text-gray-500">
                           {owner.createdAt ? new Date(owner.createdAt).toLocaleDateString('vi-VN') : '---'}
                         </TableCell>
@@ -616,6 +930,7 @@ export const SuperAdmin: React.FC = () => {
                           />
                         </TableCell>
                         <TableCell className="text-right space-x-1.5">
+                          <Button size="sm" variant="outline" onClick={() => handleOpenOverrideModal(owner)} className="text-emerald-700 border-emerald-200/50 hover:bg-emerald-50 h-8 text-[11px] font-bold rounded-xl"><UserCheck className="w-3.5 h-3.5 mr-1" /> Đổi gói</Button>
                           <Button size="icon" variant="ghost" onClick={() => handleOpenOwnerModal(owner)} className="text-gray-600 hover:text-green-600 h-8 w-8"><Edit2 className="w-4 h-4" /></Button>
                           <Button size="icon" variant="ghost" onClick={() => handleOpenResetOwnerPwModal(owner)} className="text-gray-600 hover:text-blue-600 h-8 w-8"><Key className="w-4 h-4" /></Button>
                         </TableCell>
@@ -624,6 +939,81 @@ export const SuperAdmin: React.FC = () => {
                     {owners.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center text-gray-400 py-8 text-sm">Không tìm thấy chủ nhà hàng nào</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'plans' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-heading font-bold text-gray-800">Quản lý Gói dịch vụ SaaS</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Thêm, sửa, xóa, và điều chỉnh hạn mức tài nguyên cho các gói SaaS.</p>
+            </div>
+            <Button onClick={() => handleOpenPlanModal()} className="bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-md shadow-green-600/10">
+              <Plus className="w-4 h-4 mr-1.5" /> Tạo gói mới
+            </Button>
+          </div>
+
+          <Card className="shadow-sm border-gray-100 bg-white">
+            <CardContent className="p-0">
+              {isLoadingPlans ? (
+                <div className="flex py-16 justify-center"><Loader2 className="w-8 h-8 animate-spin text-green-600" /></div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Tên gói / Mã</TableHead>
+                      <TableHead className="text-xs">Giá tháng / năm</TableHead>
+                      <TableHead className="text-xs">Hạn mức chi nhánh</TableHead>
+                      <TableHead className="text-xs">Hạn mức bàn</TableHead>
+                      <TableHead className="text-xs">Hạn mức món</TableHead>
+                      <TableHead className="text-xs">Hạn mức nhân viên</TableHead>
+                      <TableHead className="text-xs">Trạng thái</TableHead>
+                      <TableHead className="text-right text-xs">Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {plans.map((plan) => (
+                      <TableRow key={plan.id || plan._id}>
+                        <TableCell>
+                          <div>
+                            <span className="font-bold text-xs text-gray-900 block">{plan.name}</span>
+                            <span className="text-[10px] font-mono text-slate-400 uppercase">{plan.code}</span>
+                            {plan.isPopular && <span className="inline-block bg-amber-100 text-amber-800 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ml-1">HOT</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-gray-800 font-semibold space-y-0.5">
+                          <span className="block">{plan.priceMonthly === 0 ? 'FREE' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(plan.priceMonthly)} / tháng</span>
+                          {plan.priceYearly > 0 && <span className="block text-[10px] text-slate-500">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(plan.priceYearly)} / năm</span>}
+                        </TableCell>
+                        <TableCell className="text-xs text-gray-700">{plan.restaurantLimit === -1 ? 'Không giới hạn' : `${plan.restaurantLimit} chi nhánh`}</TableCell>
+                        <TableCell className="text-xs text-gray-700">{plan.tableLimit === -1 ? 'Không giới hạn' : `${plan.tableLimit} bàn`}</TableCell>
+                        <TableCell className="text-xs text-gray-700">{plan.menuItemLimit === -1 ? 'Không giới hạn' : `${plan.menuItemLimit} món`}</TableCell>
+                        <TableCell className="text-xs text-gray-700">{plan.staffLimit === -1 ? 'Không giới hạn' : `${plan.staffLimit} nhân viên`}</TableCell>
+                        <TableCell>
+                          <Switch 
+                            checked={plan.isActive} 
+                            onCheckedChange={() => handleTogglePlanActive(plan)} 
+                          />
+                        </TableCell>
+                        <TableCell className="text-right space-x-1.5">
+                          <Button size="icon" variant="ghost" onClick={() => handleOpenPlanModal(plan)} className="text-gray-600 hover:text-green-600 h-8 w-8"><Edit2 className="w-4 h-4" /></Button>
+                          {plan.code !== 'FREE' && (
+                            <Button size="icon" variant="ghost" onClick={() => handleDeletePlan(plan.id || plan._id)} className="text-gray-600 hover:text-red-600 h-8 w-8"><X className="w-4 h-4" /></Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {plans.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-gray-400 py-8 text-sm">Không tìm thấy gói dịch vụ nào</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -801,6 +1191,159 @@ export const SuperAdmin: React.FC = () => {
             <Button variant="outline" onClick={() => setIsResetOwnerPwModalOpen(false)} className="rounded-xl">Hủy</Button>
             <Button onClick={handleResetOwnerPassword} className="bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold">Đặt lại mật khẩu</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog 5: Add/Edit SaaS Plan Modal */}
+      <Dialog open={isPlanModalOpen} onOpenChange={setIsPlanModalOpen}>
+        <DialogContent className="sm:max-w-lg bg-white rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{editingPlan ? 'Sửa gói dịch vụ' : 'Tạo gói dịch vụ mới'}</DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">Thiết lập cấu hình giá, hạn mức tài nguyên và tính năng cho gói SaaS.</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSavePlan} className="space-y-4 py-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="planName" className="text-xs text-gray-600 font-semibold">Tên gói *</Label>
+                <Input id="planName" placeholder="Gói Gold" value={planForm.name} onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })} className="rounded-xl" required />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="planCode" className="text-xs text-gray-600 font-semibold">Mã gói *</Label>
+                <Input id="planCode" placeholder="GOLD" disabled={editingPlan?.code === 'FREE'} value={planForm.code} onChange={(e) => setPlanForm({ ...planForm, code: e.target.value.replace(/\s+/g, '').toUpperCase() })} className="rounded-xl" required />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="planDesc" className="text-xs text-gray-600 font-semibold">Mô tả gói</Label>
+              <Input id="planDesc" placeholder="Gói tối ưu cho chuỗi nhà hàng lớn" value={planForm.description} onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })} className="rounded-xl" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="planPriceM" className="text-xs text-gray-600 font-semibold">Giá theo tháng (VNĐ) *</Label>
+                <Input id="planPriceM" type="number" min="0" value={planForm.priceMonthly} onChange={(e) => setPlanForm({ ...planForm, priceMonthly: Number(e.target.value) })} className="rounded-xl" required />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="planPriceY" className="text-xs text-gray-600 font-semibold">Giá theo năm (VNĐ) *</Label>
+                <Input id="planPriceY" type="number" min="0" value={planForm.priceYearly} onChange={(e) => setPlanForm({ ...planForm, priceYearly: Number(e.target.value) })} className="rounded-xl" required />
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 my-4 pt-3 space-y-3">
+              <span className="text-xs font-bold text-slate-800 block">Giới hạn tài nguyên (-1 = Không giới hạn)</span>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="planResL" className="text-xs text-gray-600 font-semibold">Hạn mức chi nhánh</Label>
+                  <Input id="planResL" type="number" min="-1" value={planForm.restaurantLimit} onChange={(e) => setPlanForm({ ...planForm, restaurantLimit: Number(e.target.value) })} className="rounded-xl" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="planTableL" className="text-xs text-gray-600 font-semibold">Hạn mức bàn ăn</Label>
+                  <Input id="planTableL" type="number" min="-1" value={planForm.tableLimit} onChange={(e) => setPlanForm({ ...planForm, tableLimit: Number(e.target.value) })} className="rounded-xl" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="planMenuL" className="text-xs text-gray-600 font-semibold">Hạn mức món ăn</Label>
+                  <Input id="planMenuL" type="number" min="-1" value={planForm.menuItemLimit} onChange={(e) => setPlanForm({ ...planForm, menuItemLimit: Number(e.target.value) })} className="rounded-xl" />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="planStaffL" className="text-xs text-gray-600 font-semibold">Hạn mức nhân viên</Label>
+                  <Input id="planStaffL" type="number" min="-1" value={planForm.staffLimit} onChange={(e) => setPlanForm({ ...planForm, staffLimit: Number(e.target.value) })} className="rounded-xl" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="planFeats" className="text-xs text-gray-600 font-semibold">Tính năng (phân tách bằng dấu phẩy) *</Label>
+              <Input id="planFeats" placeholder="QR menu, Analytics nâng cao, Báo cáo Excel" value={planForm.featuresText} onChange={(e) => setPlanForm({ ...planForm, featuresText: e.target.value })} className="rounded-xl" required />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="planUnavailableFeats" className="text-xs text-gray-600 font-semibold">Tính năng không bao gồm</Label>
+              <Input id="planUnavailableFeats" placeholder="Hỗ trợ riêng, API nâng cao" value={planForm.unavailableFeaturesText} onChange={(e) => setPlanForm({ ...planForm, unavailableFeaturesText: e.target.value })} className="rounded-xl" />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="planSortOrder" className="text-xs text-gray-600 font-semibold">Thứ tự hiển thị</Label>
+              <Input id="planSortOrder" type="number" min="0" value={planForm.sortOrder} onChange={(e) => setPlanForm({ ...planForm, sortOrder: Number(e.target.value) })} className="rounded-xl" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="flex items-center space-x-2">
+                <Switch checked={planForm.isPopular} onCheckedChange={(val) => setPlanForm({ ...planForm, isPopular: val })} id="planPop" />
+                <Label htmlFor="planPop" className="text-xs text-gray-600 font-semibold">Phổ biến nhất</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch checked={planForm.isActive} onCheckedChange={(val) => setPlanForm({ ...planForm, isActive: val })} id="planAct" />
+                <Label htmlFor="planAct" className="text-xs text-gray-600 font-semibold">Kích hoạt bán gói</Label>
+              </div>
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button type="button" variant="outline" onClick={() => setIsPlanModalOpen(false)} className="rounded-xl">Hủy</Button>
+              <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-md">Lưu gói dịch vụ</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog 6: Manual Owner Plan Override Modal */}
+      <Dialog open={isOwnerPlanOverrideModalOpen} onOpenChange={setIsOwnerPlanOverrideModalOpen}>
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl p-6">
+          <DialogHeader>
+            <DialogTitle>Đổi gói dịch vụ của Chủ nhà hàng</DialogTitle>
+            <DialogDescription className="text-xs text-gray-500">
+              Thay đổi gói dịch vụ, trạng thái và ngày hết hạn thủ công cho <strong>{selectedOwnerForPlanOverride?.fullName}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleOverrideOwnerPlan} className="space-y-4 py-3">
+            <div className="space-y-1">
+              <Label className="text-xs text-gray-600 font-semibold">Chọn gói dịch vụ mới *</Label>
+              <Select value={overrideForm.planId} onValueChange={(val) => setOverrideForm({ ...overrideForm, planId: val || '' })}>
+                <SelectTrigger className="rounded-xl bg-white">
+                  <SelectValue placeholder="Chọn gói" />
+                </SelectTrigger>
+                <SelectContent className="bg-white">
+                  {plans.map(p => (
+                    <SelectItem key={p.id || p._id} value={(p.id || p._id) as string}>
+                      {p.name} ({p.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-gray-600 font-semibold">Trạng thái đăng ký *</Label>
+                <Select value={overrideForm.status} onValueChange={(val) => setOverrideForm({ ...overrideForm, status: val || 'ACTIVE' })}>
+                  <SelectTrigger className="rounded-xl bg-white">
+                    <SelectValue placeholder="Trạng thái" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="ACTIVE">Kích hoạt (ACTIVE)</SelectItem>
+                    <SelectItem value="PENDING_PAYMENT">Chờ thanh toán (PENDING)</SelectItem>
+                    <SelectItem value="EXPIRED">Hết hạn (EXPIRED)</SelectItem>
+                    <SelectItem value="CANCELLED">Hủy bỏ (CANCELLED)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="overrideDate" className="text-xs text-gray-600 font-semibold">Hạn sử dụng</Label>
+                <Input id="overrideDate" type="date" value={overrideForm.expiresAt} onChange={(e) => setOverrideForm({ ...overrideForm, expiresAt: e.target.value })} className="rounded-xl" />
+              </div>
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button type="button" variant="outline" onClick={() => setIsOwnerPlanOverrideModalOpen(false)} className="rounded-xl">Hủy</Button>
+              <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-md">Đồng ý thay đổi</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

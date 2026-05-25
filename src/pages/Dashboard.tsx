@@ -1051,7 +1051,7 @@ export const Dashboard: React.FC = () => {
                     <span className="text-[10px] text-neutral-400 font-bold bg-neutral-50 px-2 py-1 rounded-md">Đồ thị vùng</span>
                   </div>
                   <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={288}>
                       <AreaChart data={revenueChartData}>
                         <defs>
                           <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -1079,7 +1079,7 @@ export const Dashboard: React.FC = () => {
                     <span className="text-[10px] text-neutral-400 font-bold bg-neutral-50 px-2 py-1 rounded-md">Biểu đồ cột</span>
                   </div>
                   <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={288}>
                       <BarChart data={hourlyChartData}>
                         <CartesianGrid strokeDasharray="4" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="hour" tickFormatter={(hour: number) => `${hour}h`} stroke="#94a3b8" fontSize={10} tickLine={false} />
@@ -1104,7 +1104,7 @@ export const Dashboard: React.FC = () => {
                     {categoryChartData.length === 0 ? (
                       <span className="text-neutral-400 text-xs font-semibold">Chưa có dữ liệu</span>
                     ) : (
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height={288}>
                         <PieChart>
                           <Pie
                             data={categoryChartData}
