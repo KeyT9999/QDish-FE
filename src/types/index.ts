@@ -3,7 +3,8 @@ export enum Role {
   RESTAURANT_ADMIN = 'RESTAURANT_ADMIN',
   STAFF = 'STAFF',
   CUSTOMER = 'CUSTOMER',
-  GUEST = 'GUEST'
+  GUEST = 'GUEST',
+  RESTAURANT_OWNER = 'RESTAURANT_OWNER'
 }
 
 export enum RestaurantStatus {
@@ -266,4 +267,38 @@ export interface Staff {
   isActive: boolean;
   name: string;
   password?: string;
+}
+
+export interface Owner {
+  id: string;
+  _id?: string;
+  username: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  role: Role.RESTAURANT_OWNER;
+  isActive: boolean;
+  isEmailVerified?: boolean;
+  restaurantsCount?: number;
+  restaurants?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface RegisterOwnerPayload {
+  fullName: string;
+  email: string;
+  phone: string;
+  username: string;
+  password?: string;
+  confirmPassword?: string;
+}
+
+export interface CreateOwnerPayload {
+  fullName: string;
+  email: string;
+  phone: string;
+  username: string;
+  password?: string;
+  isActive?: boolean;
 }

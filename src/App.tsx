@@ -16,6 +16,8 @@ const CustomerMenu = lazy(() => import('@/pages/CustomerMenu').then((module) => 
 const Dashboard = lazy(() => import('@/pages/Dashboard').then((module) => ({ default: module.Dashboard })));
 const StaffDashboard = lazy(() => import('@/pages/StaffDashboard').then((module) => ({ default: module.StaffDashboard })));
 const SuperAdmin = lazy(() => import('@/pages/SuperAdmin').then((module) => ({ default: module.SuperAdmin })));
+const RegisterOwner = lazy(() => import('@/pages/RegisterOwner').then((module) => ({ default: module.RegisterOwner })));
+const OwnerDashboard = lazy(() => import('@/pages/OwnerDashboard').then((module) => ({ default: module.OwnerDashboard })));
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles: Role[] }) => {
@@ -38,10 +40,11 @@ function App() {
       <BrowserRouter>
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm font-semibold text-neutral-500">Đang tải...</div>}>
           <Routes>
-            {/* Auth Routes */}
+             {/* Auth Routes */}
             <Route element={<AuthLayout />}>
               <Route path="/login" element={<Login />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/register-owner" element={<RegisterOwner />} />
             </Route>
 
             {/* Customer Route (No auth required) */}
@@ -77,6 +80,16 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={[Role.SUPER_ADMIN]}>
                     <SuperAdmin />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Restaurant Owner */}
+              <Route
+                path="/owner"
+                element={
+                  <ProtectedRoute allowedRoles={[Role.RESTAURANT_OWNER]}>
+                    <OwnerDashboard />
                   </ProtectedRoute>
                 }
               />

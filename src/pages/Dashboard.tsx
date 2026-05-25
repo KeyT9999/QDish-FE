@@ -81,7 +81,10 @@ const getOrderId = (order: Order) => String(order.id || (order as any)._id || ''
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const restaurantId = user?.restaurantId || '';
+  
+  // Resolve restaurantId dynamically for RESTAURANT_OWNER
+  const selectedRestId = localStorage.getItem('selected_restaurant_id') || '';
+  const restaurantId = user?.role === 'RESTAURANT_OWNER' ? selectedRestId : (user?.restaurantId || '');
 
   // Tab State synced with URL query parameter
   const [searchParams, setSearchParams] = useSearchParams();

@@ -34,6 +34,8 @@ export const Login: React.FC = () => {
         navigate('/dashboard');
       } else if (role === Role.STAFF) {
         navigate('/staff');
+      } else if (role === Role.RESTAURANT_OWNER) {
+        navigate('/owner');
       } else {
         setError('Tài khoản không có quyền truy cập hệ thống');
       }
@@ -171,6 +173,14 @@ export const Login: React.FC = () => {
         </div>
 
       </form>
+
+      {/* Link to register-owner */}
+      <div className="text-center mt-5 text-[13px] text-slate-500 font-medium">
+        Bạn là chủ nhà hàng mới?{' '}
+        <Link to="/register-owner" className="text-emerald-600 hover:text-emerald-500 font-bold underline">
+          Đăng ký đối tác tại đây
+        </Link>
+      </div>
       
       {/* Notice info */}
       <div className="text-center mt-6 text-[11px] text-slate-400">

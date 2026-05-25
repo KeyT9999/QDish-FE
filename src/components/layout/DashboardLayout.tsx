@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Role } from '@/types';
 import { restaurantService } from '@/services/restaurantService';
+import { ownerRestaurantService } from '@/services/ownerRestaurantService';
 import { toast } from 'sonner';
 
 export const DashboardLayout: React.FC = () => {
@@ -34,6 +35,9 @@ export const DashboardLayout: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [restaurantName, setRestaurantName] = useState('Nhà hàng QDish');
   const [showBranches, setShowBranches] = useState(false);
+  const [ownerRestaurants, setOwnerRestaurants] = useState<any[]>([]);
+
+  const selectedRestId = localStorage.getItem('selected_restaurant_id') || '';
 
   useEffect(() => {
     if (user?.role === Role.RESTAURANT_ADMIN && user.restaurantId) {
@@ -46,8 +50,22 @@ export const DashboardLayout: React.FC = () => {
         .catch(() => {
           // Fallback to default
         });
+    } else if (user?.role === Role.RESTAURANT_OWNER) {
+      ownerRestaurantService.getMyRestaurants()
+        .then(data => {
+          setOwnerRestaurants(data);
+          const current = data.find((r: any) => (r.id || r._id) === selectedRestId);
+          if (current) {
+            setRestaurantName(current.name);
+          } else if (data.length > 0) {
+            // Backup selection if storage is out of sync
+            localStorage.setItem('selected_restaurant_id', data[0].id || data[0]._id);
+            setRestaurantName(data[0].name);
+          }
+        })
+        .catch(() => {});
     }
-  }, [user]);
+  }, [user, selectedRestId]);
 
   const handleLogout = () => {
     logout();
@@ -72,11 +90,28 @@ export const DashboardLayout: React.FC = () => {
     } else if (user?.role === Role.SUPER_ADMIN) {
       return [
         { id: 'stats', label: 'Thống kê SaaS', icon: LayoutDashboard },
+        { id: 'owners', label: 'Chủ nhà hàng', icon: Users },
         { id: 'restaurants', label: 'Chi nhánh', icon: Store },
       ];
     } else if (user?.role === Role.STAFF) {
       return [
         { id: 'orders', label: 'Đơn chế biến', icon: ClipboardList },
+      ];
+    } else if (user?.role === Role.RESTAURANT_OWNER) {
+      if (selectedRestId) {
+        return [
+          { id: 'owner-home', label: 'Trang chủ', icon: LayoutDashboard },
+          { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
+          { id: 'orders', label: 'Đơn hàng', icon: ClipboardList },
+          { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
+          { id: 'categories', label: 'Danh mục', icon: FileText },
+          { id: 'tables', label: 'Bàn & QR', icon: QrCode },
+          { id: 'staff', label: 'Nhân viên', icon: Users },
+          { id: 'settings', label: 'Thiết lập', icon: Settings },
+        ];
+      }
+      return [
+        { id: 'owner-home', label: 'Trang chủ', icon: LayoutDashboard },
       ];
     }
     return [];
@@ -97,10 +132,12 @@ export const DashboardLayout: React.FC = () => {
     // Default fallback based on path
     if (location.pathname === '/staff') return 'Đơn chế biến';
     if (location.pathname === '/super-admin') return 'Quản lý SaaS';
+    if (location.pathname === '/owner') return 'Trang chủ Chủ nhà hàng';
     return 'Tổng quan';
   };
 
   const roleName = user?.role === Role.SUPER_ADMIN ? 'Super Admin' 
+                 : user?.role === Role.RESTAURANT_OWNER ? 'Chủ nhà hàng (Owner)'
                  : user?.role === Role.RESTAURANT_ADMIN ? 'Chủ nhà hàng'
                  : user?.role === Role.STAFF ? 'Nhân viên Bếp'
                  : 'Người dùng';
@@ -151,12 +188,61 @@ export const DashboardLayout: React.FC = () => {
         </div>
       )}
 
+      {/* Restaurant Switcher for RESTAURANT_OWNER (Phase 2 Multi-branch) */}
+      {user?.role === Role.RESTAURANT_OWNER && selectedRestId && (
+        <div className="px-4 py-3 border-b border-neutral-100 relative">
+          <button 
+            onClick={() => setShowBranches(!showBranches)}
+            className="w-full flex items-center justify-between p-2 rounded-xl border border-neutral-100 hover:bg-neutral-50 hover:border-neutral-200 transition-colors duration-200 text-left"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="block text-xs font-bold text-gray-900 truncate leading-snug">{restaurantName || 'Chọn chi nhánh...'}</span>
+                <span className="block text-[10px] text-emerald-600 font-medium">Đang quản trị</span>
+              </div>
+            </div>
+            {ownerRestaurants.length > 1 && (
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 shrink-0 ml-1" />
+            )}
+          </button>
+
+          {showBranches && ownerRestaurants.length > 1 && (
+            <div className="absolute left-4 right-4 mt-1 bg-white border border-neutral-150 rounded-xl shadow-lg z-50 p-1.5 space-y-1 max-h-60 overflow-y-auto">
+              <div className="p-1 px-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Chuyển chi nhánh</div>
+              {ownerRestaurants.map(rest => {
+                const restId = rest.id || rest._id;
+                const isCurrent = restId === selectedRestId;
+                if (isCurrent) return null;
+                return (
+                  <button 
+                    key={restId}
+                    onClick={() => {
+                      setShowBranches(false);
+                      localStorage.setItem('selected_restaurant_id', restId);
+                      toast.success(`Đã chuyển sang chi nhánh ${rest.name}`);
+                      window.location.reload();
+                    }}
+                    className="w-full text-left p-2 rounded-lg text-xs font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center justify-between"
+                  >
+                    <span className="truncate mr-2">{rest.name}</span>
+                    <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium shrink-0">Chọn</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Navigation Links */}
       <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
         <div className="px-3 mb-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Chức năng</div>
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = currentTab === item.id || (!currentTab && item.id === (user?.role === Role.SUPER_ADMIN ? 'restaurants' : 'overview'));
+          const isActive = currentTab === item.id || (!currentTab && item.id === (user?.role === Role.SUPER_ADMIN ? 'restaurants' : user?.role === Role.RESTAURANT_OWNER ? 'owner-home' : 'overview'));
           return (
             <button
               key={item.id}

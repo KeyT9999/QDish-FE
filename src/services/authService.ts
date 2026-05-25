@@ -7,6 +7,24 @@ export const authService = {
     requireAuth: false
   }),
   
+  requestOwnerOTP: (data: any) => apiFetch<any>('/api/auth/register-owner/request-otp', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    requireAuth: false
+  }),
+
+  verifyOwnerOTP: (data: { email: string; otp: string }) => apiFetch<any>('/api/auth/register-owner/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    requireAuth: false
+  }),
+
+  resendOwnerOTP: (data: { email: string }) => apiFetch<any>('/api/auth/register-owner/resend-otp', {
+    method: 'POST',
+    body: JSON.stringify(data),
+    requireAuth: false
+  }),
+  
   resetPassword: (data: any) => apiFetch<void>('/api/auth/reset-password', {
     method: 'POST',
     body: JSON.stringify(data),

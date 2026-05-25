@@ -8,6 +8,7 @@ interface User {
   restaurantId?: string;
   id?: string;
   username?: string;
+  email?: string;
 }
 
 const decodeUserFromToken = (token: string): User | null => {
@@ -17,7 +18,8 @@ const decodeUserFromToken = (token: string): User | null => {
       role: payload.role,
       restaurantId: payload.restaurantId,
       id: payload.id || payload.sub,
-      username: payload.username
+      username: payload.username,
+      email: payload.email
     };
   } catch {
     return null;

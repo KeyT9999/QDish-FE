@@ -28,6 +28,11 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
     }
   }
 
+  const selectedRestaurantId = localStorage.getItem('selected_restaurant_id');
+  if (selectedRestaurantId) {
+    headers.set('x-restaurant-id', selectedRestaurantId);
+  }
+
   const method = rest.method?.toUpperCase() || 'GET';
   const url = `${API_BASE_URL}${endpoint}`;
   const requestKey = method === 'GET'
