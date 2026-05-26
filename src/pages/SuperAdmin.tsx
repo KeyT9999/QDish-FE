@@ -12,8 +12,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { LayoutDashboard, Store, Plus, Edit2, Key, Loader2, CheckCircle, ShieldAlert, Users, UserCheck, X, CreditCard, ReceiptText } from 'lucide-react';
+import { LayoutDashboard, Store, Plus, Edit2, Key, Loader2, CheckCircle, ShieldAlert, Users, UserCheck, X, CreditCard, ReceiptText, Bell } from 'lucide-react';
 import { toast } from 'sonner';
+import { AdminNotificationForm } from '@/components/notification/AdminNotificationForm';
+import { NotificationCenter } from '@/components/notification/NotificationCenter';
 
 const getDefaultPlanForm = () => ({
   name: '',
@@ -40,9 +42,9 @@ const parseFeatureList = (value: string) =>
 
 export const SuperAdmin: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryTab = searchParams.get('tab') as 'stats' | 'restaurants' | 'owners' | 'plans' || 'restaurants';
-  const activeTab = ['stats', 'restaurants', 'owners', 'plans'].includes(queryTab) ? queryTab : 'restaurants';
-  const setActiveTab = (tab: 'stats' | 'restaurants' | 'owners' | 'plans') => setSearchParams({ tab });
+  const queryTab = searchParams.get('tab') as 'stats' | 'restaurants' | 'owners' | 'plans' | 'notifications' || 'restaurants';
+  const activeTab = ['stats', 'restaurants', 'owners', 'plans', 'notifications'].includes(queryTab) ? queryTab : 'restaurants';
+  const setActiveTab = (tab: 'stats' | 'restaurants' | 'owners' | 'plans' | 'notifications') => setSearchParams({ tab });
 
   // Data States
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -575,7 +577,7 @@ export const SuperAdmin: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200 pb-3">
+      <div className="flex gap-2 border-b border-gray-200 pb-3 flex-wrap">
         <Button 
           variant={activeTab === 'restaurants' ? 'default' : 'ghost'} 
           onClick={() => setActiveTab('restaurants')}
@@ -607,6 +609,14 @@ export const SuperAdmin: React.FC = () => {
         >
           <Key className="w-4 h-4 mr-1.5" />
           Gói dịch vụ
+        </Button>
+        <Button 
+          variant={activeTab === 'notifications' ? 'default' : 'ghost'} 
+          onClick={() => setActiveTab('notifications')}
+          className={`rounded-lg px-4 font-semibold text-sm ${activeTab === 'notifications' ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm' : 'text-gray-600'}`}
+        >
+          <Bell className="w-4 h-4 mr-1.5" />
+          Thông báo
         </Button>
       </div>
 
@@ -1021,6 +1031,23 @@ export const SuperAdmin: React.FC = () => {
               )}
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {activeTab === 'notifications' && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-xl font-heading font-bold text-gray-800">Thông báo hệ thống</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Tạo thông báo thủ công gửi đến chủ nhà hàng, chi nhánh hoặc nhân viên toàn hệ thống.</p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1">
+              <AdminNotificationForm />
+            </div>
+            <div className="lg:col-span-2">
+              <NotificationCenter />
+            </div>
+          </div>
         </div>
       )}
 
