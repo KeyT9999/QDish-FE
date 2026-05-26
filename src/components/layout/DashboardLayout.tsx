@@ -28,6 +28,7 @@ import { Role } from '@/types';
 import { restaurantService } from '@/services/restaurantService';
 import { ownerRestaurantService } from '@/services/ownerRestaurantService';
 import { toast } from 'sonner';
+import { NotificationBell } from '../notification/NotificationBell';
 
 export const DashboardLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -75,7 +76,14 @@ export const DashboardLayout: React.FC = () => {
     navigate('/login');
   };
 
-  const currentTab = searchParams.get('tab') || '';
+  const getDefaultTabForRole = () => {
+    if (user?.role === Role.SUPER_ADMIN) return 'restaurants';
+    if (user?.role === Role.RESTAURANT_OWNER) return 'owner-home';
+    if (user?.role === Role.STAFF) return 'orders';
+    return 'overview';
+  };
+
+  const currentTab = searchParams.get('tab') || getDefaultTabForRole();
 
   // Configure Sidebar Menu Items based on role
   const getMenuItems = () => {
@@ -88,6 +96,7 @@ export const DashboardLayout: React.FC = () => {
         { id: 'tables', label: 'Bàn & QR', icon: QrCode },
         { id: 'staff', label: 'Nhân viên', icon: Users },
         { id: 'settings', label: 'Thiết lập', icon: Settings },
+        { id: 'notifications', label: 'Thông báo', icon: Bell },
       ];
     } else if (user?.role === Role.SUPER_ADMIN) {
       return [
@@ -95,16 +104,19 @@ export const DashboardLayout: React.FC = () => {
         { id: 'owners', label: 'Chủ nhà hàng', icon: Users },
         { id: 'restaurants', label: 'Chi nhánh', icon: Store },
         { id: 'plans', label: 'Gói dịch vụ', icon: ShieldCheck },
+        { id: 'notifications', label: 'Thông báo', icon: Bell },
       ];
     } else if (user?.role === Role.STAFF) {
       return [
         { id: 'orders', label: 'Đơn chế biến', icon: ClipboardList },
+        { id: 'notifications', label: 'Thông báo', icon: Bell },
       ];
     } else if (user?.role === Role.RESTAURANT_OWNER) {
       if (selectedRestId) {
         return [
           { id: 'owner-home', label: 'Trang chủ', icon: LayoutDashboard },
           { id: 'billing', label: 'Gói sử dụng', icon: CreditCard },
+          { id: 'notifications', label: 'Thông báo', icon: Bell },
           { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
           { id: 'orders', label: 'Đơn hàng', icon: ClipboardList },
           { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
@@ -117,6 +129,7 @@ export const DashboardLayout: React.FC = () => {
       return [
         { id: 'owner-home', label: 'Trang chủ', icon: LayoutDashboard },
         { id: 'billing', label: 'Gói sử dụng', icon: CreditCard },
+        { id: 'notifications', label: 'Thông báo', icon: Bell },
       ];
     }
     return [];
@@ -125,7 +138,11 @@ export const DashboardLayout: React.FC = () => {
   const menuItems = getMenuItems();
 
   const handleTabClick = (tabId: string) => {
-    setSearchParams({ tab: tabId });
+    if (currentTab !== tabId) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('tab', tabId);
+      setSearchParams(nextParams);
+    }
     setIsMobileOpen(false);
   };
 
@@ -247,7 +264,7 @@ export const DashboardLayout: React.FC = () => {
         <div className="px-3 mb-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Chức năng</div>
         {menuItems.map((item) => {
           const Icon = item.icon;
-          const isActive = currentTab === item.id || (!currentTab && item.id === (user?.role === Role.SUPER_ADMIN ? 'restaurants' : user?.role === Role.RESTAURANT_OWNER ? 'owner-home' : 'overview'));
+          const isActive = currentTab === item.id;
           return (
             <button
               key={item.id}
@@ -356,12 +373,7 @@ export const DashboardLayout: React.FC = () => {
             )}
 
             {/* Notification bell */}
-            <div className="relative">
-              <button className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300 text-neutral-500 relative transition-colors duration-200 shadow-sm/5">
-                <Bell className="w-4 h-4" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 animate-pulse ring-2 ring-white" />
-              </button>
-            </div>
+            <NotificationBell />
 
             {/* User Initials Badge (Top right) */}
             <div className="w-8 h-8 rounded-xl bg-neutral-100 border border-neutral-200/50 flex items-center justify-center font-bold text-xs text-neutral-700">

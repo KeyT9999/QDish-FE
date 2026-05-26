@@ -391,3 +391,106 @@ export interface PlanLimitError {
   currentPlan: string;
   upgradeRequired: boolean;
 }
+
+// ============================================
+// Notification System
+// ============================================
+
+export enum NotificationType {
+  INFO = 'INFO',
+  SUCCESS = 'SUCCESS',
+  WARNING = 'WARNING',
+  ERROR = 'ERROR',
+  ORDER = 'ORDER',
+  SUBSCRIPTION = 'SUBSCRIPTION',
+  PAYMENT = 'PAYMENT',
+  SYSTEM = 'SYSTEM'
+}
+
+export enum NotificationPriority {
+  LOW = 'LOW',
+  NORMAL = 'NORMAL',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT'
+}
+
+export enum NotificationTargetType {
+  ALL_OWNERS = 'ALL_OWNERS',
+  OWNER = 'OWNER',
+  ALL_RESTAURANTS = 'ALL_RESTAURANTS',
+  RESTAURANT = 'RESTAURANT',
+  OWNER_RESTAURANTS = 'OWNER_RESTAURANTS',
+  OWNER_STAFF = 'OWNER_STAFF',
+  RESTAURANT_STAFF = 'RESTAURANT_STAFF',
+  USER = 'USER',
+  ROLE = 'ROLE'
+}
+
+export interface NotificationItem {
+  id: string;
+  notificationId: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  source: 'MANUAL' | 'AUTO';
+  actionUrl?: string;
+  orderId?: string;
+  subscriptionId?: string;
+  paymentTransactionId?: string;
+  senderRole?: string;
+  senderId?: string;
+  sender?: {
+    id: string;
+    name: string;
+  };
+  restaurant?: {
+    name: string;
+  };
+  metadata?: Record<string, any>;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface NotificationListResponse {
+  notifications: NotificationItem[];
+  unreadCount: number;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface NotificationTarget {
+  id: string;
+  name?: string;
+  username?: string;
+  fullName?: string;
+  email?: string;
+  ownerId?: string;
+}
+
+export interface AdminNotificationTargets {
+  owners: NotificationTarget[];
+  restaurants: NotificationTarget[];
+}
+
+export interface OwnerNotificationTargets {
+  restaurants: NotificationTarget[];
+}
+
+export interface CreateNotificationPayload {
+  title: string;
+  message: string;
+  type: NotificationType;
+  priority?: NotificationPriority;
+  targetType: NotificationTargetType;
+  targetIds?: string[];
+  restaurantId?: string;
+  ownerId?: string;
+  actionUrl?: string;
+  metadata?: Record<string, unknown>;
+}

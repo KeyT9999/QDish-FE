@@ -27,6 +27,7 @@ const recentlyHandledNewOrderIds = new Map<string, number>();
 const recentlyAlertedOrderIds = new Map<string, number>();
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
+const getOrderItems = (order: Order) => Array.isArray(order.items) ? order.items : [];
 
 const pruneRecentIds = (store: Map<string, number>, now: number) => {
   store.forEach((timestamp, orderId) => {
@@ -166,7 +167,7 @@ export const startRealtimeOrderAlert = (order: Order) => {
 
 const showNewOrderToast = (order: Order) => {
   const orderId = getOrderId(order).slice(-6).toUpperCase();
-  const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemCount = getOrderItems(order).reduce((sum, item) => sum + item.quantity, 0);
 
   toast.success(`Đơn mới bàn ${order.tableNumber}`, {
     description: `#${orderId} • ${itemCount} món • ${formatCurrency(order.totalAmount)}`,

@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Order, OrderStatus, Role } from '@/types';
 import { orderService } from '@/services/orderService';
 import { useAuth } from '@/hooks/useAuth';
+import { NotificationCenter } from '@/components/notification/NotificationCenter';
+import { StaffTabErrorBoundary } from '@/components/shared/StaffTabErrorBoundary';
 import {
   enableRealtimeOrderAudio,
   REALTIME_ORDER_ALERT_DURATION_MS,
@@ -20,6 +23,7 @@ import { toast } from 'sonner';
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
 const getOrderVersion = (order: Order) => String((order as any).updatedAt || (order as any).createdAt || order.timestamp || '');
+const getOrderItems = (order: Order) => Array.isArray(order.items) ? order.items : [];
 
 const areOrdersEquivalent = (current: Order[], next: Order[]) => {
   if (current.length !== next.length) return false;
@@ -33,13 +37,25 @@ const areOrdersEquivalent = (current: Order[], next: Order[]) => {
       getOrderVersion(order) === getOrderVersion(nextOrder) &&
       order.status === nextOrder.status &&
       order.totalAmount === nextOrder.totalAmount &&
-      order.items.length === nextOrder.items.length
+      getOrderItems(order).length === getOrderItems(nextOrder).length
     );
   });
 };
 
-export const StaffDashboard: React.FC = () => {
-  const { user } = useAuth();
+const STAFF_TABS = ['orders', 'notifications'] as const;
+type StaffTabId = typeof STAFF_TABS[number];
+const DEFAULT_STAFF_TAB: StaffTabId = 'orders';
+
+const resolveStaffTab = (tab: string | null): StaffTabId => {
+  return STAFF_TABS.includes(tab as StaffTabId) ? (tab as StaffTabId) : DEFAULT_STAFF_TAB;
+};
+
+interface StaffOrdersTabProps {
+  restaurantId?: string;
+  userRole?: Role;
+}
+
+const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -70,7 +86,7 @@ export const StaffDashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
-  const canCompleteOrders = user?.role === Role.RESTAURANT_ADMIN;
+  const canCompleteOrders = userRole === Role.RESTAURANT_ADMIN;
 
   const handleRealtimeNewOrder = useCallback((order: Order) => {
     setOrders((current) => upsertRealtimeOrder(current, order));
@@ -84,7 +100,7 @@ export const StaffDashboard: React.FC = () => {
   }, []);
 
   useRealtimeOrders({
-    enabled: Boolean(user?.restaurantId),
+    enabled: Boolean(restaurantId),
     onNewOrder: handleRealtimeNewOrder,
     onOrderUpdated: handleRealtimeOrderUpdated,
   });
@@ -196,7 +212,7 @@ export const StaffDashboard: React.FC = () => {
         </CardHeader>
         <CardContent className="p-3 space-y-2">
           <ul className="text-xs text-gray-600 space-y-1">
-            {order.items.map((item, idx) => (
+            {getOrderItems(order).map((item, idx) => (
               <li key={idx} className="flex justify-between">
                 <span>{item.name}</span>
                 <span className="font-bold text-gray-900">x{item.quantity}</span>
@@ -298,7 +314,7 @@ export const StaffDashboard: React.FC = () => {
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm">
           <div className="font-bold">Đơn mới vừa vào bếp</div>
           <div className="mt-1 text-xs font-medium">
-            Bàn {lastRealtimeOrder.tableNumber} • {lastRealtimeOrder.items.length} dòng món • {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(lastRealtimeOrder.totalAmount)}
+            Bàn {lastRealtimeOrder.tableNumber} • {getOrderItems(lastRealtimeOrder).length} dòng món • {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(lastRealtimeOrder.totalAmount)}
           </div>
         </div>
       )}
@@ -370,5 +386,47 @@ export const StaffDashboard: React.FC = () => {
         </div>
       )}
     </div>
+  );
+};
+
+const StaffNotificationsTab: React.FC = () => (
+  <div className="space-y-6 px-4">
+    <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/50 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden shadow-emerald-950/5">
+      <div className="absolute right-0 bottom-0 translate-y-1/4 translate-x-1/4 opacity-10">
+        <BellRing className="w-80 h-80 text-emerald-500" />
+      </div>
+      <div className="relative z-10">
+        <h1 className="text-2xl md:text-3xl font-heading font-bold mb-2">Trung tâm thông báo</h1>
+        <p className="text-slate-300 text-xs md:text-sm leading-relaxed">
+          Nhận thông báo tức thì thông minh và chính xác hơn từ hệ thống và Chủ nhà hàng của bạn.
+        </p>
+      </div>
+    </div>
+    <NotificationCenter />
+  </div>
+);
+
+export const StaffDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab');
+  const activeTab = resolveStaffTab(rawTab);
+
+  useEffect(() => {
+    if (rawTab === activeTab) return;
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', activeTab);
+    setSearchParams(nextParams, { replace: true });
+  }, [activeTab, rawTab, searchParams, setSearchParams]);
+
+  return (
+    <StaffTabErrorBoundary resetKey={activeTab}>
+      {activeTab === 'notifications' ? (
+        <StaffNotificationsTab />
+      ) : (
+        <StaffOrdersTab restaurantId={user?.restaurantId} userRole={user?.role} />
+      )}
+    </StaffTabErrorBoundary>
   );
 };

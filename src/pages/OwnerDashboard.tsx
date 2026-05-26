@@ -30,10 +30,13 @@ import {
   Clock,
   QrCode,
   UtensilsCrossed,
-  Users
+  Users,
+  Bell
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dashboard } from './Dashboard';
+import { OwnerNotificationForm } from '@/components/notification/OwnerNotificationForm';
+import { NotificationCenter } from '@/components/notification/NotificationCenter';
 
 export const OwnerDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -94,7 +97,7 @@ export const OwnerDashboard: React.FC = () => {
         if (response.orderCode) {
           localStorage.setItem(PENDING_PAYMENT_ORDER_KEY, String(response.orderCode));
         }
-        toast.loading('Äang chuyá»ƒn sang cá»•ng thanh toÃ¡n PayOS...');
+        toast.loading('Đang chuyển sang cổng thanh toán PayOS...');
         window.location.assign(response.checkoutUrl);
         return;
       }
@@ -238,10 +241,34 @@ export const OwnerDashboard: React.FC = () => {
     window.location.reload();
   };
 
-  // If the active tab is one of the administrator tabs (from Dashboard layout),
-  // we reuse the main <Dashboard /> component directly
-  if (activeTab !== 'owner-home' && activeTab !== 'billing' && selectedRestId) {
+  if (activeTab !== 'owner-home' && activeTab !== 'billing' && activeTab !== 'notifications' && selectedRestId) {
     return <Dashboard />;
+  }
+
+  if (activeTab === 'notifications') {
+    return (
+      <div className="space-y-8 px-4">
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700/50 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden shadow-emerald-950/5 animate-fade-in">
+          <div className="absolute right-0 bottom-0 translate-y-1/4 translate-x-1/4 opacity-10">
+            <Bell className="w-80 h-80 text-emerald-500" />
+          </div>
+          <div className="relative z-10 max-w-2xl">
+            <h1 className="text-3xl md:text-4xl font-heading font-bold mb-2">Trung tâm thông báo</h1>
+            <p className="text-slate-300 text-sm md:text-base leading-relaxed">
+              Theo dõi tin tức hệ thống, biến động tài khoản thanh toán và các cập nhật tự động từ QDish SaaS.
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <OwnerNotificationForm />
+          </div>
+          <div className="lg:col-span-2">
+            <NotificationCenter />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (activeTab === 'billing') {

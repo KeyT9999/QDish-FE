@@ -8,6 +8,12 @@ const normalizeOrder = (order: BackendOrder): Order => ({
   id: order.id || order._id || ''
 });
 
+const getOrderArray = (data: BackendOrder[] | { orders?: BackendOrder[] } | null | undefined) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.orders)) return data.orders;
+  return [];
+};
+
 const filterOrders = (orders: Order[], status?: string, startDate?: string, endDate?: string) => {
   const start = startDate ? new Date(startDate) : null;
   const end = endDate ? new Date(endDate) : null;
@@ -54,8 +60,8 @@ export const orderService = {
 
   // Admin / Staff routes
   getAll: async (status?: string, startDate?: string, endDate?: string) => {
-    const data = await apiFetch<BackendOrder[]>('/api/staff/orders');
-    return filterOrders(data.map(normalizeOrder), status, startDate, endDate);
+    const data = await apiFetch<BackendOrder[] | { orders?: BackendOrder[] }>('/api/staff/orders');
+    return filterOrders(getOrderArray(data).map(normalizeOrder), status, startDate, endDate);
   },
   
   updateStatus: (id: string, status: OrderStatus, paymentMethod?: string) => {
@@ -70,8 +76,8 @@ export const orderService = {
   
   // Only staff
   getStaffOrders: async () => {
-    const data = await apiFetch<BackendOrder[]>('/api/staff/orders');
-    return data.map(normalizeOrder);
+    const data = await apiFetch<BackendOrder[] | { orders?: BackendOrder[] }>('/api/staff/orders');
+    return getOrderArray(data).map(normalizeOrder);
   },
   updateStaffOrderStatus: async (id: string, status: OrderStatus, paymentMethod?: string) => {
     const body: { status: OrderStatus; paymentMethod?: string } = { status };

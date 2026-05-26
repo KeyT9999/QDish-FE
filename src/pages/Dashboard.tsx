@@ -10,7 +10,7 @@ import {
   upsertRealtimeOrder
 } from '@/hooks/useRealtimeOrders';
 import { NewOrderAlertOverlay } from '@/components/shared/NewOrderAlertOverlay';
-import { MenuItem, Restaurant, Order, OrderStatus, PaymentMethod, RestaurantStats, Staff, Allergen, HealthLabel, RestaurantStatus } from '@/types';
+import { MenuItem, Restaurant, Order, OrderStatus, PaymentMethod, RestaurantStats, Staff, Allergen, HealthLabel, RestaurantStatus, Role } from '@/types';
 import { menuService } from '@/services/menuService';
 import { categoryService, CategoryItem } from '@/services/categoryService';
 import { restaurantService } from '@/services/restaurantService';
@@ -72,6 +72,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
+import { NotificationCenter } from '@/components/notification/NotificationCenter';
+import { OwnerNotificationForm } from '@/components/notification/OwnerNotificationForm';
 
 const QRCode = React.lazy(() =>
   import('qrcode.react').then((module) => ({ default: module.QRCodeSVG }))
@@ -1872,6 +1874,30 @@ export const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab 8: NOTIFICATIONS */}
+        <TabsContent value="notifications" className="space-y-6">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-neutral-900">Trung tâm thông báo</h2>
+            <p className="text-neutral-500 text-xs mt-0.5">Theo dõi tin tức hệ thống và các cập nhật mới nhất cho nhà hàng của bạn.</p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {user?.role === Role.RESTAURANT_OWNER ? (
+              <>
+                <div className="lg:col-span-1 animate-fade-in">
+                  <OwnerNotificationForm />
+                </div>
+                <div className="lg:col-span-2">
+                  <NotificationCenter />
+                </div>
+              </>
+            ) : (
+              <div className="lg:col-span-3">
+                <NotificationCenter />
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
