@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MenuItem, Restaurant, Allergen } from '@/types';
+import { tableSessionService } from '@/services/tableSessionService';
+import { MenuItem, Restaurant, Allergen, TableSession } from '@/types';
 import { useCart } from '@/hooks/useCart';
 import { useApi } from '@/hooks/useApi';
 import { useHealthProfile } from '@/hooks/useHealthProfile';
@@ -30,6 +31,7 @@ export const CustomerMenu: React.FC = () => {
   const tableNumber = searchParams.get('t') || '';
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [session, setSession] = useState<TableSession | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [dbCategories, setDbCategories] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +45,8 @@ export const CustomerMenu: React.FC = () => {
   const [isHealthOpen, setIsHealthOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  const cart = useCart(restaurantId);
+  const sessionId = session?.id || session?._id || '';
+  const cart = useCart(restaurantId, tableNumber, sessionId || undefined);
   const { addToCart } = cart;
   const { profile, saveProfile } = useHealthProfile();
   const { execute: submitOrder, isLoading: isSubmitting } = useApi(orderService.createOrder);
@@ -61,16 +64,22 @@ export const CustomerMenu: React.FC = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [rest, items, cats] = await Promise.all([
+        const promises: [Promise<any>, Promise<any>, Promise<any>, Promise<any> | null] = [
           restaurantService.getPublicById(restaurantId),
           menuService.getPublicMenu(restaurantId),
-          categoryService.getAll(restaurantId)
-        ]);
+          categoryService.getAll(restaurantId),
+          tableNumber ? tableSessionService.resolveSession(restaurantId, tableNumber) : null
+        ];
+
+        const [rest, items, cats, sessionRes] = await Promise.all(promises);
 
         if (!isMounted) return;
         setRestaurant(rest);
         setMenuItems(items);
         setDbCategories(cats);
+        if (sessionRes && sessionRes.session) {
+          setSession(sessionRes.session);
+        }
       } catch (error) {
         if (isMounted) {
           toast.error('Không thể tải menu từ máy chủ. Vui lòng kiểm tra kết nối.');
@@ -86,7 +95,18 @@ export const CustomerMenu: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [restaurantId]);
+  }, [restaurantId, tableNumber]);
+
+  useEffect(() => {
+    if (!restaurantId || !tableNumber || !sessionId) return;
+
+    try {
+      localStorage.removeItem(`qdish_cart_${restaurantId}`);
+      localStorage.removeItem(`qdish_cart_${restaurantId}_${tableNumber}_pending-session`);
+    } catch (error) {
+      // Ignore legacy cart cleanup errors.
+    }
+  }, [restaurantId, sessionId, tableNumber]);
 
   // Derived state: categories mapped from DB or derived from menuItems as fallback
   const categoriesList = useMemo(() => {
@@ -212,6 +232,22 @@ export const CustomerMenu: React.FC = () => {
     });
   }, [addToCart, userAllergies]);
 
+  const handleSessionClosed = useCallback(async () => {
+    if (!restaurantId || !tableNumber) return;
+
+    cart.clearCart();
+    setIsHistoryOpen(false);
+
+    try {
+      const sessionRes = await tableSessionService.resolveSession(restaurantId, tableNumber);
+      setSession(sessionRes.session);
+    } catch (error) {
+      // The next page load will resolve a new session if this refresh fails.
+    }
+
+    toast.success('Thanh toan thanh cong. Ban da duoc giai phong.');
+  }, [cart, restaurantId, tableNumber]);
+
   const handleSubmitOrder = useCallback(async (details: any) => {
     if (!tableNumber) {
       toast.error('Không xác định được bàn. Vui lòng quét lại mã QR.');
@@ -219,8 +255,17 @@ export const CustomerMenu: React.FC = () => {
     }
 
     try {
+      let activeSession = session;
+      if (!activeSession) {
+        const sessionRes = await tableSessionService.resolveSession(restaurantId, tableNumber);
+        activeSession = sessionRes.session;
+        setSession(activeSession);
+      }
+
       const orderPayload = {
         tableNumber,
+        tableSessionId: activeSession?.id || activeSession?._id,
+        sessionCode: activeSession?.sessionCode,
         items: cart.cart.map(i => ({
           menuItemId: i.menuItemId,
           name: i.name,
@@ -228,7 +273,8 @@ export const CustomerMenu: React.FC = () => {
           quantity: i.quantity
         })),
         totalAmount: cart.cartTotal,
-        ...details
+        customerName: details?.customerName?.trim() || undefined,
+        note: details?.note?.trim() || undefined
       };
       
       await submitOrder(restaurantId, orderPayload);
@@ -244,7 +290,7 @@ export const CustomerMenu: React.FC = () => {
       toast.error(error.message || 'Có lỗi xảy ra khi đặt món. Vui lòng thử lại.');
       throw error;
     }
-  }, [cart, restaurantId, submitOrder, tableNumber]);
+  }, [cart, restaurantId, submitOrder, tableNumber, session]);
 
   if (isLoading) {
     return (
@@ -447,6 +493,8 @@ export const CustomerMenu: React.FC = () => {
         onClose={() => setIsHistoryOpen(false)}
         restaurantId={restaurantId}
         tableNumber={tableNumber}
+        sessionId={sessionId}
+        onSessionClosed={handleSessionClosed}
       />
     </div>
   );

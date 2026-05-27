@@ -1,7 +1,8 @@
-﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Order, OrderStatus, Role } from '@/types';
+import { ActiveBill, Order, OrderStatus } from '@/types';
 import { orderService } from '@/services/orderService';
+import { billService } from '@/services/billService';
 import { useAuth } from '@/hooks/useAuth';
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
 import { StaffTabErrorBoundary } from '@/components/shared/StaffTabErrorBoundary';
@@ -18,8 +19,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, RefreshCw, ChefHat, Play, CheckCircle2, Clock, BellRing } from 'lucide-react';
+import { Loader2, RefreshCw, ChefHat, Play, CheckCircle2, Clock, BellRing, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
+import { BillPaymentModal } from '@/components/dashboard/restaurant/modals/BillPaymentModal';
+import { formatCurrency } from '@/lib/utils';
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
 const getOrderVersion = (order: Order) => String((order as any).updatedAt || (order as any).createdAt || order.timestamp || '');
@@ -52,13 +55,15 @@ const resolveStaffTab = (tab: string | null): StaffTabId => {
 
 interface StaffOrdersTabProps {
   restaurantId?: string;
-  userRole?: Role;
 }
 
-const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole }) => {
+const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId }) => {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [activeBills, setActiveBills] = useState<ActiveBill[]>([]);
+  const [selectedPaymentBill, setSelectedPaymentBill] = useState<ActiveBill | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingBills, setIsLoadingBills] = useState(false);
   const [lastRealtimeOrder, setLastRealtimeOrder] = useState<Order | null>(null);
   const [activeRealtimeOrder, setActiveRealtimeOrder] = useState<Order | null>(null);
   const [realtimeAlertStartedAt, setRealtimeAlertStartedAt] = useState<number | null>(null);
@@ -78,26 +83,45 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole 
     }
   }, []);
 
+  const fetchActiveBills = useCallback(async (silent = false) => {
+    if (!restaurantId) {
+      setActiveBills([]);
+      return;
+    }
+
+    if (!silent) setIsLoadingBills(true);
+    try {
+      const result = await billService.getActiveBills(restaurantId);
+      setActiveBills(result.bills.filter((bill) => bill.orderCount > 0));
+    } catch (err) {
+      if (!silent) toast.error('Không thể tải bill đang mở');
+    } finally {
+      if (!silent) setIsLoadingBills(false);
+    }
+  }, [restaurantId]);
+
   useEffect(() => {
     fetchOrders();
+    fetchActiveBills();
     const interval = setInterval(() => {
       fetchOrders(true);
+      fetchActiveBills(true);
     }, 30000); // Realtime is primary; polling is only a safety fallback.
     return () => clearInterval(interval);
-  }, [fetchOrders]);
-
-  const canCompleteOrders = userRole === Role.RESTAURANT_ADMIN;
+  }, [fetchActiveBills, fetchOrders]);
 
   const handleRealtimeNewOrder = useCallback((order: Order) => {
     setOrders((current) => upsertRealtimeOrder(current, order));
     setLastRealtimeOrder(order);
     setActiveRealtimeOrder(order);
     setRealtimeAlertStartedAt(Date.now());
-  }, []);
+    fetchActiveBills(true);
+  }, [fetchActiveBills]);
 
   const handleRealtimeOrderUpdated = useCallback((order: Order) => {
     setOrders((current) => upsertRealtimeOrder(current, order));
-  }, []);
+    fetchActiveBills(true);
+  }, [fetchActiveBills]);
 
   useRealtimeOrders({
     enabled: Boolean(restaurantId),
@@ -158,6 +182,7 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole 
 
     if (activeRealtimeOrder.status !== OrderStatus.PENDING) {
       clearRealtimeAlert(orderId);
+      fetchActiveBills(true);
       return;
     }
 
@@ -166,12 +191,13 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole 
       const updatedOrder = await orderService.updateStaffOrderStatus(orderId, OrderStatus.CONFIRMED);
       setOrders((current) => upsertRealtimeOrder(current, updatedOrder));
       clearRealtimeAlert(orderId);
+      fetchActiveBills(true);
       toast.success('Đã nhận đơn mới');
     } catch (err: any) {
       setIsConfirmingRealtimeOrder(false);
       toast.error(err.message || 'Không thể xác nhận đơn mới');
     }
-  }, [activeRealtimeOrder, clearRealtimeAlert]);
+  }, [activeRealtimeOrder, clearRealtimeAlert, fetchActiveBills]);
 
   const handleUpdateStatus = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     try {
@@ -182,10 +208,11 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole 
       }
       toast.success(`Đã cập nhật trạng thái đơn hàng sang ${newStatus}`);
       fetchOrders(true);
+      fetchActiveBills(true);
     } catch (err: any) {
       toast.error(err.message || 'Lỗi khi cập nhật đơn hàng');
     }
-  }, [clearRealtimeAlert, fetchOrders]);
+  }, [clearRealtimeAlert, fetchActiveBills, fetchOrders]);
 
   // Group active orders
   const pendingOrders = useMemo(() => orders.filter(o => o.status === OrderStatus.PENDING), [orders]);
@@ -202,7 +229,11 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole 
         <CardHeader className="p-3 bg-gray-50 border-b border-gray-100 flex flex-row justify-between items-center space-y-0">
           <div>
             <CardTitle className="text-sm font-bold text-gray-900">Bàn {order.tableNumber}</CardTitle>
-            <CardDescription className="text-[10px] font-mono">#{String(order.id || (order as any)._id).slice(-6)} • {timeStr}</CardDescription>
+            <CardDescription className="text-[10px] font-mono">
+              #{String(order.id || (order as any)._id).slice(-6)} • {timeStr}
+              {order.sessionCode && ` • Sess: ${order.sessionCode}`}
+              {order.billCode && ` • Bill: ${order.billCode}`}
+            </CardDescription>
           </div>
           {order.customerName && (
             <Badge variant="outline" className="text-[10px] font-semibold bg-white text-gray-700 max-w-[120px] truncate">
@@ -247,24 +278,15 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole 
                   <ChefHat className="w-3.5 h-3.5 mr-1" /> Ra món
                 </Button>
               )}
-              {order.status === OrderStatus.SERVED && canCompleteOrders && (
-                <Button
-                  size="sm"
-                  onClick={() => handleUpdateStatus(order.id || (order as any)._id, OrderStatus.COMPLETED)}
-                  className="bg-green-600 hover:bg-green-700 text-white rounded-lg text-[10px] py-1 h-7"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Hoàn thành
-                </Button>
-              )}
-              {order.status === OrderStatus.SERVED && !canCompleteOrders && (
-                <span className="text-[10px] text-gray-400 italic">Chờ thanh toán</span>
+              {order.status === OrderStatus.SERVED && (
+                <span className="text-[10px] text-gray-400 italic">Chờ thanh toán bill</span>
               )}
             </div>
           </div>
         </CardContent>
       </Card>
     );
-  }, [canCompleteOrders, handleUpdateStatus]);
+  }, [handleUpdateStatus]);
 
   return (
     <div className="space-y-6 px-4">
@@ -318,6 +340,57 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole 
           </div>
         </div>
       )}
+
+      <div className="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-sm font-bold text-gray-900">
+              <Receipt className="h-4 w-4 text-emerald-600" />
+              Bill thanh toán tại bàn
+            </h2>
+            <p className="mt-0.5 text-xs text-gray-500">Staff chọn bill, thu tiền mặt hoặc đưa QR cho khách quét.</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchActiveBills()}
+            disabled={isLoadingBills}
+            className="rounded-lg text-xs font-semibold"
+          >
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isLoadingBills ? 'animate-spin' : ''}`} />
+            Tải bill
+          </Button>
+        </div>
+        {activeBills.length === 0 ? (
+          <p className="rounded-xl bg-gray-50 px-3 py-4 text-center text-xs font-medium text-gray-400">
+            Chưa có bill đang mở để thanh toán.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {activeBills.map((bill) => (
+              <div key={bill.billId} className="rounded-xl border border-gray-100 bg-gray-50/50 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">Bàn {bill.tableNumber}</p>
+                    <p className="mt-0.5 font-mono text-[10px] font-semibold text-gray-500">{bill.billCode}</p>
+                    <p className="mt-1 text-[11px] font-medium text-gray-500">{bill.orderCount} orders • {bill.totalItems} món</p>
+                  </div>
+                  <span className="text-sm font-black text-emerald-700">{formatCurrency(bill.totalAmount)}</span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setSelectedPaymentBill(bill)}
+                  className="mt-3 w-full rounded-lg bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700"
+                >
+                  <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                  Thanh toán bill
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {isLoading ? (
         <div className="flex py-20 justify-center items-center">
@@ -385,6 +458,18 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId, userRole 
 
         </div>
       )}
+
+      <BillPaymentModal
+        open={Boolean(selectedPaymentBill)}
+        bill={selectedPaymentBill}
+        restaurantId={restaurantId || ''}
+        onOpenChange={(open) => {
+          if (!open) setSelectedPaymentBill(null);
+        }}
+        onPaid={async () => {
+          await Promise.all([fetchOrders(true), fetchActiveBills(true)]);
+        }}
+      />
     </div>
   );
 };
@@ -425,7 +510,7 @@ export const StaffDashboard: React.FC = () => {
       {activeTab === 'notifications' ? (
         <StaffNotificationsTab />
       ) : (
-        <StaffOrdersTab restaurantId={user?.restaurantId} userRole={user?.role} />
+        <StaffOrdersTab restaurantId={user?.restaurantId} />
       )}
     </StaffTabErrorBoundary>
   );

@@ -1,10 +1,11 @@
 import React from 'react';
-import { Restaurant } from '@/types';
+import { Restaurant, Role } from '@/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShieldAlert, Landmark } from 'lucide-react';
+import { RestaurantPaymentSettingsPanel } from './RestaurantPaymentSettingsPanel';
 
 export interface RestaurantSettingsTabProps {
   restaurant: Restaurant | null;
@@ -20,6 +21,8 @@ export interface RestaurantSettingsTabProps {
   onSaveGeneralSettings: () => Promise<void>;
   onOpenEmailChangeModal: () => void;
   onOpenBankChangeModal: () => void;
+  restaurantId: string;
+  userRole?: Role;
 }
 
 export const RestaurantSettingsTab: React.FC<RestaurantSettingsTabProps> = ({
@@ -28,7 +31,8 @@ export const RestaurantSettingsTab: React.FC<RestaurantSettingsTabProps> = ({
   onSetGeneralSettingsForm,
   onSaveGeneralSettings,
   onOpenEmailChangeModal,
-  onOpenBankChangeModal
+  restaurantId,
+  userRole
 }) => {
   return (
     <div className="space-y-6">
@@ -107,13 +111,25 @@ export const RestaurantSettingsTab: React.FC<RestaurantSettingsTabProps> = ({
                   <p className="text-sm font-semibold text-neutral-900 mt-1">{restaurant?.bankAccount || 'Chưa cấu hình'}</p>
                 </div>
               </div>
-              <Button variant="outline" onClick={onOpenBankChangeModal} className="rounded-xl font-semibold">
-                Thay đổi Ngân hàng
-              </Button>
+              {userRole === Role.RESTAURANT_OWNER ? (
+                <p className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">
+                  Chủ nhà hàng chỉnh thông tin ngân hàng và QR chuyển khoản ở mục bên dưới.
+                </p>
+              ) : (
+                <p className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-900">
+                  Chỉ Chủ nhà hàng được thay đổi thông tin ngân hàng và QR chuyển khoản.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <RestaurantPaymentSettingsPanel
+        restaurantId={restaurantId}
+        restaurant={restaurant}
+        userRole={userRole}
+      />
     </div>
   );
 };
