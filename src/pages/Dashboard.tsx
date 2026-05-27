@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -10,11 +10,12 @@ import {
   upsertRealtimeOrder
 } from '@/hooks/useRealtimeOrders';
 import { NewOrderAlertOverlay } from '@/components/shared/NewOrderAlertOverlay';
-import { MenuItem, Restaurant, Order, OrderStatus, PaymentMethod, RestaurantStats, Staff, RestaurantStatus, Role } from '@/types';
+import { ActiveBill, MenuItem, Restaurant, Order, OrderStatus, RestaurantStats, Staff, Role } from '@/types';
 import { menuService } from '@/services/menuService';
 import { categoryService, CategoryItem } from '@/services/categoryService';
 import { restaurantService } from '@/services/restaurantService';
 import { orderService } from '@/services/orderService';
+import { billService } from '@/services/billService';
 import { staffService } from '@/services/staffService';
 import { tableService, RestaurantTable } from '@/services/tableService';
 
@@ -30,6 +31,7 @@ import { RestaurantOrdersTab } from '@/components/dashboard/restaurant/Restauran
 import { RestaurantMenuTab } from '@/components/dashboard/restaurant/RestaurantMenuTab';
 import { RestaurantCategoriesTab } from '@/components/dashboard/restaurant/RestaurantCategoriesTab';
 import { RestaurantTablesTab } from '@/components/dashboard/restaurant/RestaurantTablesTab';
+import { RestaurantBillsTab } from '@/components/dashboard/restaurant/RestaurantBillsTab';
 import { RestaurantStaffTab } from '@/components/dashboard/restaurant/RestaurantStaffTab';
 import { RestaurantSettingsTab } from '@/components/dashboard/restaurant/RestaurantSettingsTab';
 import { RestaurantNotificationsTab } from '@/components/dashboard/restaurant/RestaurantNotificationsTab';
@@ -39,9 +41,9 @@ import { MenuItemModal } from '@/components/dashboard/restaurant/modals/MenuItem
 import { CategoryModal } from '@/components/dashboard/restaurant/modals/CategoryModal';
 import { QRPreviewModal } from '@/components/dashboard/restaurant/modals/QRPreviewModal';
 import { StaffModal } from '@/components/dashboard/restaurant/modals/StaffModal';
-import { PaymentCompletionModal } from '@/components/dashboard/restaurant/modals/PaymentCompletionModal';
 import { EmailChangeOtpModal } from '@/components/dashboard/restaurant/modals/EmailChangeOtpModal';
 import { BankChangeOtpModal } from '@/components/dashboard/restaurant/modals/BankChangeOtpModal';
+import { BillPaymentModal } from '@/components/dashboard/restaurant/modals/BillPaymentModal';
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
 
@@ -75,6 +77,7 @@ export const Dashboard: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [activeBills, setActiveBills] = useState<ActiveBill[]>([]);
   const [lastRealtimeOrder, setLastRealtimeOrder] = useState<Order | null>(null);
   const [activeRealtimeOrder, setActiveRealtimeOrder] = useState<Order | null>(null);
   const [realtimeAlertStartedAt, setRealtimeAlertStartedAt] = useState<number | null>(null);
@@ -106,9 +109,9 @@ export const Dashboard: React.FC = () => {
   const [selectedTableQR, setSelectedTableQR] = useState<string | null>(null);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [editingStaffItem, setEditingStaffItem] = useState<Staff | null>(null);
-  const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
   const [isEmailChangeModalOpen, setIsEmailChangeModalOpen] = useState(false);
   const [isBankChangeModalOpen, setIsBankChangeModalOpen] = useState(false);
+  const [selectedPaymentBill, setSelectedPaymentBill] = useState<ActiveBill | null>(null);
 
   // Settings Form
   const [generalSettingsForm, setGeneralSettingsForm] = useState({
@@ -180,18 +183,24 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const loadOrders = async () => {
+  const loadOrderBillGroups = useCallback(async () => {
     if (!restaurantId) return;
     setIsLoadingOrders(true);
     try {
-      const data = await orderService.getAll();
-      setOrders(data);
+      const data = await billService.getBillGroups(restaurantId, {
+        status: orderStatusFilter,
+        search: orderSearch.trim() || undefined,
+        page: 1,
+        limit: 50
+      });
+      setActiveBills(data.bills);
+      setOrders(data.bills.flatMap((bill) => bill.orders));
     } catch (err) {
-      toast.error('Không thể tải danh sách đơn hàng');
+      toast.error('Không thể tải danh sách bill');
     } finally {
       setIsLoadingOrders(false);
     }
-  };
+  }, [restaurantId, orderSearch, orderStatusFilter]);
 
   const loadStaff = async () => {
     if (!restaurantId) return;
@@ -238,13 +247,13 @@ export const Dashboard: React.FC = () => {
     } else if (activeTab === 'categories') {
       loadCategories();
     } else if (activeTab === 'orders') {
-      loadOrders();
+      loadOrderBillGroups();
     } else if (activeTab === 'tables') {
       loadTables();
     } else if (activeTab === 'staff') {
       loadStaff();
     }
-  }, [activeTab, statsPeriod, restaurantId]);
+  }, [activeTab, statsPeriod, restaurantId, loadOrderBillGroups]);
 
   // ============================================
   // CRUD Handlers (delegated to child components)
@@ -399,21 +408,19 @@ export const Dashboard: React.FC = () => {
         clearRealtimeAlert(id);
       }
       toast.success(`Đã chuyển đơn hàng sang trạng thái ${newStatus}`);
-      loadOrders();
+      loadOrderBillGroups();
     } catch (err: any) {
       toast.error(err.message || 'Lỗi khi cập nhật trạng thái đơn hàng');
     }
   };
 
-  const handleCompleteOrder = async (orderId: string, paymentMethod: PaymentMethod) => {
-    try {
-      await orderService.updateStatus(orderId, OrderStatus.COMPLETED, paymentMethod);
-      toast.success('Đơn hàng đã được thanh toán và hoàn thành!');
-      setSelectedOrderForPayment(null);
-      loadOrders();
-    } catch (err) {
-      toast.error('Lỗi khi hoàn thành đơn hàng');
+  const handlePayBill = async (billId: string) => {
+    const bill = activeBills.find((item) => item.billId === billId);
+    if (!bill) {
+      toast.error('Không tìm thấy bill cần thanh toán');
+      return;
     }
+    setSelectedPaymentBill(bill);
   };
 
   // Settings & OTP
@@ -474,30 +481,6 @@ export const Dashboard: React.FC = () => {
   };
 
   // ============================================
-  // Filtered Orders (computed)
-  // ============================================
-  const filteredOrders = useMemo(() => orders.filter(order => {
-    if (orderStatusFilter !== 'ALL' && order.status !== orderStatusFilter) {
-      return false;
-    }
-    if (orderSearch.trim()) {
-      const searchLower = orderSearch.toLowerCase();
-      const orderId = String(order.id || (order as any)._id).toLowerCase();
-      const tableNum = String(order.tableNumber).toLowerCase();
-      const customer = (order.customerName || '').toLowerCase();
-      const itemsString = order.items.map(i => i.name).join(' ').toLowerCase();
-
-      return (
-        orderId.includes(searchLower) ||
-        tableNum.includes(searchLower) ||
-        customer.includes(searchLower) ||
-        itemsString.includes(searchLower)
-      );
-    }
-    return true;
-  }), [orders, orderSearch, orderStatusFilter]);
-
-  // ============================================
   // Realtime Order Alert Logic
   // ============================================
   const handleRealtimeNewOrder = useCallback((order: Order) => {
@@ -505,11 +488,17 @@ export const Dashboard: React.FC = () => {
     setLastRealtimeOrder(order);
     setActiveRealtimeOrder(order);
     setRealtimeAlertStartedAt(Date.now());
-  }, []);
+    if (activeTab === 'orders') {
+      void loadOrderBillGroups();
+    }
+  }, [activeTab, loadOrderBillGroups]);
 
   const handleRealtimeOrderUpdated = useCallback((order: Order) => {
     setOrders((current) => upsertRealtimeOrder(current, order));
-  }, []);
+    if (activeTab === 'orders') {
+      void loadOrderBillGroups();
+    }
+  }, [activeTab, loadOrderBillGroups]);
 
   useRealtimeOrders({
     enabled: Boolean(restaurantId),
@@ -579,6 +568,7 @@ export const Dashboard: React.FC = () => {
       setOrders((current) => upsertRealtimeOrder(current, updatedOrder));
       clearRealtimeAlert(orderId);
       toast.success('Đã xác nhận đơn mới');
+      loadOrderBillGroups();
     } catch (err: any) {
       setIsConfirmingRealtimeOrder(false);
       toast.error(err.message || 'Không thể xác nhận đơn mới');
@@ -640,15 +630,17 @@ export const Dashboard: React.FC = () => {
 
         <TabsContent value="orders" className="space-y-6">
           <RestaurantOrdersTab
-            filteredOrders={filteredOrders}
+            activeBills={activeBills}
             orderSearch={orderSearch}
             orderStatusFilter={orderStatusFilter}
             isLoadingOrders={isLoadingOrders}
             onSetOrderSearch={setOrderSearch}
             onSetOrderStatusFilter={setOrderStatusFilter}
-            onRefreshOrders={loadOrders}
+            onRefreshOrders={loadOrderBillGroups}
             onUpdateOrderStatus={handleUpdateOrderStatus}
-            onOpenCompletePaymentModal={(order) => setSelectedOrderForPayment(order)}
+            onPayBill={handlePayBill}
+            userRole={user?.role as Role | undefined}
+            canPayBill={user?.role === Role.RESTAURANT_ADMIN || user?.role === Role.RESTAURANT_OWNER}
           />
         </TabsContent>
 
@@ -681,7 +673,12 @@ export const Dashboard: React.FC = () => {
             onSetTableCountInput={setTableCountInput}
             onSyncTables={handleSyncTables}
             onSelectTableQR={setSelectedTableQR}
+            onRefreshTables={loadTables}
           />
+        </TabsContent>
+
+        <TabsContent value="bills" className="space-y-6">
+          <RestaurantBillsTab restaurantId={restaurantId} />
         </TabsContent>
 
         <TabsContent value="staff" className="space-y-6">
@@ -696,6 +693,8 @@ export const Dashboard: React.FC = () => {
         <TabsContent value="settings" className="space-y-6">
           <RestaurantSettingsTab
             restaurant={restaurant}
+            restaurantId={restaurantId}
+            userRole={user?.role as Role | undefined}
             generalSettingsForm={generalSettingsForm}
             onSetGeneralSettingsForm={setGeneralSettingsForm}
             onSaveGeneralSettings={handleSaveGeneralSettings}
@@ -739,12 +738,6 @@ export const Dashboard: React.FC = () => {
         onSave={handleSaveStaff}
       />
 
-      <PaymentCompletionModal
-        order={selectedOrderForPayment}
-        onClose={() => setSelectedOrderForPayment(null)}
-        onConfirm={handleCompleteOrder}
-      />
-
       <EmailChangeOtpModal
         open={isEmailChangeModalOpen}
         onOpenChange={setIsEmailChangeModalOpen}
@@ -758,6 +751,18 @@ export const Dashboard: React.FC = () => {
         banksList={banksList}
         onRequestOtp={handleRequestBankOtp}
         onSave={handleSaveBankChange}
+      />
+
+      <BillPaymentModal
+        open={Boolean(selectedPaymentBill)}
+        bill={selectedPaymentBill}
+        restaurantId={restaurantId}
+        onOpenChange={(open) => {
+          if (!open) setSelectedPaymentBill(null);
+        }}
+        onPaid={async () => {
+          await Promise.all([loadOrderBillGroups(), loadTables()]);
+        }}
       />
     </div>
   );

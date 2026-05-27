@@ -1,20 +1,41 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { CartItem, MenuItem } from '@/types';
 
-export function useCart(restaurantId: string) {
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    // Load from local storage if exists for this restaurant
-    try {
-      const saved = localStorage.getItem(`qdish_cart_${restaurantId}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
+export function useCart(restaurantId: string, tableNumber?: string, sessionId?: string) {
+  const storageKey = useMemo(() => {
+    const safeRestaurantId = restaurantId || 'unknown-restaurant';
+    if (tableNumber && sessionId) {
+      return `qdish_cart_${safeRestaurantId}_${tableNumber}_${sessionId}`;
     }
-  });
+    if (tableNumber) {
+      return `qdish_cart_${safeRestaurantId}_${tableNumber}_pending-session`;
+    }
+    return `qdish_cart_${safeRestaurantId}`;
+  }, [restaurantId, sessionId, tableNumber]);
+
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const loadedStorageKeyRef = useRef<string | null>(null);
+  const skipNextSaveRef = useRef(false);
 
   useEffect(() => {
-    localStorage.setItem(`qdish_cart_${restaurantId}`, JSON.stringify(cart));
-  }, [cart, restaurantId]);
+    skipNextSaveRef.current = true;
+    try {
+      const saved = localStorage.getItem(storageKey);
+      setCart(saved ? JSON.parse(saved) : []);
+    } catch (e) {
+      setCart([]);
+    }
+    loadedStorageKeyRef.current = storageKey;
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (loadedStorageKeyRef.current !== storageKey) return;
+    if (skipNextSaveRef.current) {
+      skipNextSaveRef.current = false;
+      return;
+    }
+    localStorage.setItem(storageKey, JSON.stringify(cart));
+  }, [cart, storageKey]);
 
   const addToCart = useCallback((item: MenuItem) => {
     const menuItemId = item.id || item._id;
@@ -56,7 +77,12 @@ export function useCart(restaurantId: string) {
 
   const clearCart = useCallback(() => {
     setCart([]);
-  }, []);
+    try {
+      localStorage.removeItem(storageKey);
+    } catch (e) {
+      // Ignore storage cleanup errors.
+    }
+  }, [storageKey]);
 
   const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + (item.price * item.quantity), 0), [cart]);
   const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);

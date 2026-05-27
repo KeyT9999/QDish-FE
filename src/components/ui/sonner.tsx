@@ -1,15 +1,31 @@
 "use client"
 
-import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const toastStyle = {
+    "--normal-bg": "oklch(0.99 0.004 95)",
+    "--normal-text": "oklch(0.22 0.018 250)",
+    "--normal-border": "oklch(0.9 0.012 95)",
+    "--success-bg": "oklch(0.97 0.035 145)",
+    "--success-border": "oklch(0.88 0.08 145)",
+    "--success-text": "oklch(0.34 0.12 145)",
+    "--info-bg": "oklch(0.97 0.025 250)",
+    "--info-border": "oklch(0.87 0.055 250)",
+    "--info-text": "oklch(0.34 0.13 250)",
+    "--warning-bg": "oklch(0.97 0.045 90)",
+    "--warning-border": "oklch(0.86 0.095 85)",
+    "--warning-text": "oklch(0.34 0.1 80)",
+    "--error-bg": "oklch(0.97 0.035 25)",
+    "--error-border": "oklch(0.87 0.08 25)",
+    "--error-text": "oklch(0.38 0.14 25)",
+    "--border-radius": "12px",
+    ...props.style,
+  } as React.CSSProperties
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
         success: (
@@ -28,20 +44,19 @@ const Toaster = ({ ...props }: ToasterProps) => {
           <Loader2Icon className="size-4 animate-spin" />
         ),
       }}
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
-        } as React.CSSProperties
-      }
+      {...props}
+      theme="light"
+      style={toastStyle}
       toastOptions={{
+        ...props.toastOptions,
         classNames: {
-          toast: "cn-toast",
+          toast: "shadow-lg",
+          title: "font-bold",
+          description: "font-medium",
+          closeButton: "shadow-sm",
+          ...props.toastOptions?.classNames,
         },
       }}
-      {...props}
     />
   )
 }

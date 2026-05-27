@@ -91,6 +91,7 @@ export const DashboardLayout: React.FC = () => {
       return [
         { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
         { id: 'orders', label: 'Đơn hàng', icon: ClipboardList },
+        { id: 'bills', label: 'Hóa đơn', icon: FileText },
         { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
         { id: 'categories', label: 'Danh mục', icon: FileText },
         { id: 'tables', label: 'Bàn & QR', icon: QrCode },
@@ -119,6 +120,7 @@ export const DashboardLayout: React.FC = () => {
           { id: 'notifications', label: 'Thông báo', icon: Bell },
           { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
           { id: 'orders', label: 'Đơn hàng', icon: ClipboardList },
+          { id: 'bills', label: 'Hóa đơn', icon: FileText },
           { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
           { id: 'categories', label: 'Danh mục', icon: FileText },
           { id: 'tables', label: 'Bàn & QR', icon: QrCode },

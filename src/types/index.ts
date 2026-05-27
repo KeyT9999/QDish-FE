@@ -24,6 +24,9 @@ export interface Restaurant {
   status: RestaurantStatus;
   active: boolean;
   bankAccount?: string; // Số tài khoản ngân hàng
+  bankAccountNumber?: string;
+  bankAccountHolder?: string;
+  bankQrImageUrl?: string;
   bankName?: string; // Tên ngân hàng
 }
 
@@ -122,7 +125,9 @@ export enum OrderStatus {
 
 export enum PaymentMethod {
   CASH = 'CASH', // Tiền mặt
-  BANK_TRANSFER = 'BANK_TRANSFER' // Chuyển khoản
+  BANK_TRANSFER = 'BANK_TRANSFER', // Chuyển khoản
+  PAYOS = 'PAYOS',
+  UNKNOWN = 'UNKNOWN'
 }
 
 export interface OrderItem {
@@ -146,6 +151,11 @@ export interface Order {
   paymentMethod?: PaymentMethod; // Hình thức thanh toán
   confirmedByName?: string; // Tên nhân viên đã xác nhận đơn
   updatedByName?: string; // Tên người cập nhật đơn hàng (bất kỳ trạng thái nào)
+  tableSessionId?: string; // ID của phiên bàn ăn
+  sessionCode?: string; // Mã code của phiên bàn ăn
+  billId?: string;
+  billCode?: string;
+  billStatus?: BillStatus;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -493,4 +503,110 @@ export interface CreateNotificationPayload {
   ownerId?: string;
   actionUrl?: string;
   metadata?: Record<string, unknown>;
+}
+
+// ============================================
+// Table Session Management
+// ============================================
+
+export enum TableSessionStatus {
+  OPEN = 'OPEN',
+  PAYMENT_REQUESTED = 'PAYMENT_REQUESTED',
+  PAID = 'PAID',
+  CLOSED = 'CLOSED',
+  CANCELLED = 'CANCELLED'
+}
+
+export interface TableSession {
+  id: string;
+  _id?: string;
+  restaurantId: string;
+  tableNumber: string;
+  billId?: string;
+  sessionCode: string;
+  status: TableSessionStatus;
+  openedAt: string;
+  paymentRequestedAt?: string;
+  paidAt?: string;
+  closedAt?: string;
+  cancelledAt?: string;
+  openedBy?: string;
+  closedBy?: string;
+  totalAmount?: number;
+  paymentMethod?: PaymentMethod;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export enum BillStatus {
+  UNPAID = 'UNPAID',
+  PAYMENT_REQUESTED = 'PAYMENT_REQUESTED',
+  PAID = 'PAID',
+  CANCELLED = 'CANCELLED'
+}
+
+export interface BillItemSnapshot {
+  menuItemId?: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  notes?: string;
+}
+
+export interface Bill {
+  id: string;
+  _id?: string;
+  restaurantId: string;
+  tableSessionId: string;
+  tableNumber: string;
+  sessionCode?: string;
+  billCode: string;
+  status: BillStatus;
+  orderIds: string[];
+  itemsSnapshot: BillItemSnapshot[];
+  subtotal: number;
+  discountAmount: number;
+  serviceFee: number;
+  taxAmount: number;
+  totalAmount: number;
+  totalItems: number;
+  orderCount?: number;
+  paymentMethod?: PaymentMethod;
+  cashReceived?: number;
+  changeAmount?: number;
+  paidBy?: string;
+  paidAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ActiveBill {
+  billId: string;
+  billCode: string;
+  tableNumber: string;
+  tableSessionId: string;
+  sessionCode?: string;
+  sessionStatus?: TableSessionStatus;
+  status: BillStatus;
+  totalAmount: number;
+  totalItems: number;
+  orderCount: number;
+  paymentMethod?: PaymentMethod;
+  cashReceived?: number;
+  changeAmount?: number;
+  paidAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  orders: Order[];
+}
+
+export interface RestaurantPaymentSettings {
+  restaurantId: string;
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountHolder: string;
+  bankQrImageUrl: string;
+  updatedAt?: string;
 }

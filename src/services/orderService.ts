@@ -50,8 +50,12 @@ export const orderService = {
     return normalizeOrder(order);
   },
   
-  getOrdersByTable: async (restaurantId: string, tableNumber: string) => {
-    const params = new URLSearchParams({ restaurantId, tableNumber });
+  getOrdersByTable: async (restaurantId: string, tableNumber: string, sessionId?: string) => {
+    const paramsObj: Record<string, string> = { restaurantId, tableNumber };
+    if (sessionId) {
+      paramsObj.sessionId = sessionId;
+    }
+    const params = new URLSearchParams(paramsObj);
     const data = await apiFetch<BackendOrder[]>(`/api/orders?${params.toString()}`, {
       requireAuth: false
     });
