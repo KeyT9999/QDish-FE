@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { CartItem as CartItemType, PaymentMethod } from '@/types';
+import { CartItem as CartItemType } from '@/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CartItem } from './CartItem';
 import { formatCurrency } from '@/lib/utils';
 import { ShoppingBag, Loader2, ArrowRight } from 'lucide-react';
@@ -18,7 +17,7 @@ interface CartDrawerProps {
   cartTotal: number;
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
-  onSubmitOrder: (details: { customerName: string; note: string; paymentMethod: PaymentMethod }) => Promise<void>;
+  onSubmitOrder: (details: { customerName?: string; note?: string }) => Promise<void>;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -32,10 +31,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 }) => {
   const [customerName, setCustomerName] = useState('');
   const [note, setNote] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<1 | 2>(1); // 1: Cart review, 2: Checkout details
-  const isCustomerNameValid = customerName.trim().length >= 2;
+  const isCustomerNameValid = customerName.trim().length === 0 || customerName.trim().length >= 2;
 
   const handleSubmit = async () => {
     if (!isCustomerNameValid) {
@@ -45,9 +43,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     try {
       setIsSubmitting(true);
       await onSubmitOrder({
-        customerName: customerName.trim(),
-        note,
-        paymentMethod
+        customerName: customerName.trim() || undefined,
+        note: note.trim() || undefined
       });
       // Reset form on success
       setCustomerName('');
@@ -149,10 +146,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       placeholder="VD: Anh Minh" 
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                      required
-                      minLength={2}
                       className="bg-white"
                     />
+                    {!isCustomerNameValid && (
+                      <p className="text-xs font-medium text-red-600">Tên khách cần ít nhất 2 ký tự hoặc để trống.</p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -169,23 +167,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     />
                   </div>
 
-                  <div className="space-y-3">
-                    <Label className="font-semibold text-gray-700">Phương thức thanh toán</Label>
-                    <RadioGroup 
-                      value={paymentMethod} 
-                      onValueChange={(val) => setPaymentMethod(val as PaymentMethod)}
-                      className="gap-3"
-                    >
-                      <div className={`flex items-center space-x-3 border p-3 rounded-xl transition-colors ${paymentMethod === PaymentMethod.CASH ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'}`}>
-                        <RadioGroupItem value={PaymentMethod.CASH} id="r-cash" />
-                        <Label htmlFor="r-cash" className="flex-1 cursor-pointer font-medium">Tiền mặt</Label>
-                      </div>
-                      <div className={`flex items-center space-x-3 border p-3 rounded-xl transition-colors ${paymentMethod === PaymentMethod.BANK_TRANSFER ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white'}`}>
-                        <RadioGroupItem value={PaymentMethod.BANK_TRANSFER} id="r-bank" />
-                        <Label htmlFor="r-bank" className="flex-1 cursor-pointer font-medium">Chuyển khoản / Quét mã QR</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
                 </div>
               )}
             </>
