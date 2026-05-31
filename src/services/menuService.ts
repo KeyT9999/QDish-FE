@@ -11,6 +11,11 @@ type BackendMenuItem = MenuItem & {
   sugar?: number;
   sodium?: number;
   nutritionScore?: number;
+  ingredients?: any[];
+  servingCount?: number;
+  servingSizeGrams?: number;
+  cookingMethod?: string;
+  healthTags?: string[];
 };
 
 const normalizeMenuItem = (item: BackendMenuItem): MenuItem => ({
@@ -25,12 +30,20 @@ const normalizeMenuItem = (item: BackendMenuItem): MenuItem => ({
     sugar: item.sugar ?? 0,
     sodium: item.sodium ?? 0,
     nutritionScore: item.nutritionScore ?? 0
-  }
+  },
+  // Pass through recipe fields
+  ingredients: item.ingredients || [],
+  servingCount: item.servingCount ?? 1,
+  servingSizeGrams: item.servingSizeGrams ?? 0,
+  cookingMethod: item.cookingMethod ?? 'raw',
+  healthTags: item.healthTags || [],
+  allergens: item.allergens || [],
 });
 
 const toBackendMenuPayload = (data: Partial<MenuItem>): Record<string, unknown> => {
   const payload: Record<string, unknown> = {
     ...data,
+    // Flatten nutrition for backend (it stores flat fields + NutritionService populates cache)
     calories: data.calories ?? data.nutrition?.calories,
     protein: data.protein ?? data.nutrition?.protein,
     carbs: data.carbs ?? data.nutrition?.carbs,
@@ -38,7 +51,11 @@ const toBackendMenuPayload = (data: Partial<MenuItem>): Record<string, unknown> 
     fiber: data.fiber ?? data.nutrition?.fiber,
     sugar: data.sugar ?? data.nutrition?.sugar,
     sodium: data.sodium ?? data.nutrition?.sodium,
-    nutritionScore: data.nutritionScore ?? data.nutrition?.nutritionScore
+    nutritionScore: data.nutritionScore ?? data.nutrition?.nutritionScore,
+    // QDish Step 1 recipe fields
+    ingredients: data.ingredients ?? [],
+    servingCount: data.servingCount ?? 1,
+    cookingMethod: data.cookingMethod ?? 'raw',
   };
 
   delete payload.id;

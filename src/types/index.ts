@@ -53,6 +53,47 @@ export interface NutritionInfo {
   nutritionScore?: number;
 }
 
+// QDish Step 1: Ingredient units & dish ingredient
+export type IngredientUnit = 'g' | 'ml' | 'piece' | 'tbsp' | 'tsp' | 'cup' | 'bowl';
+
+export interface DishIngredient {
+  ingredientId: string;
+  ingredientName?: string; // populated for display
+  quantity: number;
+  unit: IngredientUnit;
+  gramsResolved: number;
+}
+
+// QDish Food Attributes (non-judgmental, context-based)
+export type FoodAttribute =
+  | 'HIGH_PROTEIN'
+  | 'LOW_SUGAR'
+  | 'LOW_CALORIE'
+  | 'ENERGY_DENSE'
+  | 'HIGH_FIBER'
+  | 'LOW_FAT'
+  | 'HIGH_CARB';
+
+export const FOOD_ATTRIBUTE_LABELS: Record<FoodAttribute, string> = {
+  HIGH_PROTEIN: 'High Protein',
+  LOW_SUGAR: 'Low Sugar',
+  LOW_CALORIE: 'Low Calorie',
+  ENERGY_DENSE: 'Energy Dense',
+  HIGH_FIBER: 'High Fiber',
+  LOW_FAT: 'Low Fat',
+  HIGH_CARB: 'High Carb',
+};
+
+export const FOOD_ATTRIBUTE_COLORS: Record<FoodAttribute, string> = {
+  HIGH_PROTEIN: 'bg-purple-100 text-purple-800 border-purple-200',
+  LOW_SUGAR: 'bg-sky-100 text-sky-800 border-sky-200',
+  LOW_CALORIE: 'bg-green-100 text-green-800 border-green-200',
+  ENERGY_DENSE: 'bg-amber-100 text-amber-800 border-amber-200',
+  HIGH_FIBER: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  LOW_FAT: 'bg-blue-100 text-blue-800 border-blue-200',
+  HIGH_CARB: 'bg-orange-100 text-orange-800 border-orange-200',
+};
+
 export enum Allergen {
   GLUTEN = 'GLUTEN',
   DAIRY = 'DAIRY',
@@ -97,7 +138,7 @@ export interface MenuItem {
   available: boolean;
   categoryId?: string;
   
-  // New fields for QDish
+  // QDish Nutrition (computed cache)
   nutrition?: NutritionInfo;
   calories?: number;
   protein?: number;
@@ -107,9 +148,15 @@ export interface MenuItem {
   sugar?: number;
   sodium?: number;
   nutritionScore?: number;
-  allergens?: Allergen[];
-  healthTags?: string[];
+  allergens?: Allergen[] | string[];
+  healthTags?: string[];     // raw attribute keys e.g. ['HIGH_PROTEIN']
   healthLabels?: HealthLabel[];
+
+  // QDish Step 1: Recipe
+  ingredients?: DishIngredient[];
+  servingCount?: number;
+  servingSizeGrams?: number;
+  cookingMethod?: string;
 }
 
 export enum OrderStatus {
