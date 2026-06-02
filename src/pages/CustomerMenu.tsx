@@ -5,7 +5,7 @@ import { tableSessionService } from '@/services/tableSessionService';
 import { MenuItem, Restaurant, Allergen, TableSession } from '@/types';
 import { useCart } from '@/hooks/useCart';
 import { useApi } from '@/hooks/useApi';
-import { useHealthProfile } from '@/hooks/useHealthProfile';
+import { useDiningProfile } from '@/hooks/useDiningProfile';
 import { menuService } from '@/services/menuService';
 import { orderService } from '@/services/orderService';
 import { restaurantService } from '@/services/restaurantService';
@@ -15,11 +15,12 @@ import { CategoryFilter } from '@/components/menu/CategoryFilter';
 import { MenuItemCard } from '@/components/menu/MenuItemCard';
 import { MenuItemDetail } from '@/components/menu/MenuItemDetail';
 import { CartDrawer } from '@/components/cart/CartDrawer';
-import { HealthProfileForm } from '@/components/health/HealthProfileForm';
+import { DiningProfileForm } from '@/components/dining/DiningProfileForm';
+import { DiningOnboarding } from '@/components/dining/DiningOnboarding';
 import { OrderHistoryDrawer } from '@/components/menu/OrderHistoryDrawer';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, Loader2, Info, Heart, Clock, Search } from 'lucide-react';
+import { ShoppingBag, Loader2, Info, Sparkles, Clock, Search, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EMPTY_ALLERGIES: Allergen[] = [];
@@ -44,12 +45,83 @@ export const CustomerMenu: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isHealthOpen, setIsHealthOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [pairingSuggestions, setPairingSuggestions] = useState<any[]>([]);
+  const [isRecLoading, setIsRecLoading] = useState(false);
 
   const sessionId = session?.id || session?._id || '';
   const cart = useCart(restaurantId, tableNumber, sessionId || undefined);
   const { addToCart } = cart;
-  const { profile, saveProfile } = useHealthProfile();
+  const { profile, saveProfile } = useDiningProfile();
   const { execute: submitOrder, isLoading: isSubmitting } = useApi(orderService.createOrder);
+
+  // Generate or retrieve persistent guest userId
+  const guestUserId = useMemo(() => {
+    let id = localStorage.getItem('qdish_guest_user_id');
+    if (!id) {
+      id = 'guest_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
+      localStorage.setItem('qdish_guest_user_id', id);
+    }
+    return id;
+  }, []);
+
+  // Automatically trigger premium onboarding for new guest diners
+  useEffect(() => {
+    if (isLoading) return;
+    const hasGoals = profile?.goals && profile.goals.length > 0;
+    const hasPrefs = profile?.preferences && profile.preferences.length > 0;
+    if (!hasGoals && !hasPrefs) {
+      const timer = setTimeout(() => {
+        setIsOnboardingOpen(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, profile]);
+
+  // Fetch smart dining recommendations
+  useEffect(() => {
+    if (isLoading || !restaurantId) return;
+
+    let isMounted = true;
+    const fetchRecs = async () => {
+      setIsRecLoading(true);
+      try {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        const res = await fetch(`${baseUrl}/api/recommendations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            restaurantId,
+            userId: guestUserId,
+            context: {
+              timeOfDay: new Date().getHours() < 11 ? 'breakfast' : new Date().getHours() < 15 ? 'lunch' : new Date().getHours() < 21 ? 'dinner' : 'late_night',
+              postWorkout: profile?.goals?.includes('MUSCLE_GAIN')
+            }
+          })
+        });
+        
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        if (isMounted) {
+          setRecommendations(data.bestForYou || []);
+          setPairingSuggestions(data.pairingSuggestions || []);
+        }
+      } catch (err) {
+        console.error('Failed to load recommendations');
+      } finally {
+        if (isMounted) {
+          setIsRecLoading(false);
+        }
+      }
+    };
+
+    fetchRecs();
+    return () => {
+      isMounted = false;
+    };
+  }, [restaurantId, profile, isLoading, guestUserId]);
   const userAllergies = profile?.allergies || EMPTY_ALLERGIES;
 
   // Fetch initial data
@@ -150,13 +222,13 @@ export const CustomerMenu: React.FC = () => {
           case 'UNDER_400_KCAL':
             return cal < 400;
           case 'HIGH_PROTEIN':
-            return prot >= 20 || item.healthLabels?.includes('HIGH_PROTEIN' as any);
+            return prot >= 20 || item.foodAttributes?.includes('HIGH_PROTEIN');
           case 'LOW_CARB':
-            return (carb > 0 && carb <= 20) || item.healthLabels?.includes('LOW_CARB' as any);
+            return (carb > 0 && carb <= 20) || item.foodAttributes?.includes('KETO_FRIENDLY');
           case 'LOW_FAT':
-            return (fat > 0 && fat <= 10) || item.healthLabels?.includes('LOW_FAT' as any);
+            return (fat > 0 && fat <= 10) || item.foodAttributes?.includes('LOW_FAT');
           case 'LOW_SUGAR':
-            return (sug > 0 && sug <= 5) || item.healthLabels?.includes('SUGAR_FREE' as any);
+            return (sug > 0 && sug <= 5) || item.foodAttributes?.includes('LOW_SUGAR');
           case 'LOW_SODIUM':
             return sod > 0 && sod <= 140;
           case 'HIGH_FIBER':
@@ -181,9 +253,9 @@ export const CustomerMenu: React.FC = () => {
     const hasUserAllergen = item.allergens && item.allergens.some(a => profile.allergies.includes(a as Allergen));
     if (hasUserAllergen) return false;
 
-    // 1. Matches dietary preference
-    if (profile.preferences && profile.preferences.length > 0 && item.healthLabels) {
-      if (item.healthLabels.some(label => profile.preferences.includes(label as any))) {
+    // 1. Matches dining preference via food attributes
+    if (profile.preferences && profile.preferences.length > 0 && item.foodAttributes) {
+      if (item.foodAttributes.some(attr => profile.preferences.includes(attr as any))) {
         return true;
       }
     }
@@ -347,8 +419,8 @@ export const CustomerMenu: React.FC = () => {
           onClick={() => setIsHealthOpen(true)}
           className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl font-semibold shadow-sm text-xs py-2 flex items-center justify-center"
         >
-          <Heart className="w-4 h-4 mr-1 text-red-500 fill-red-500" />
-          Hồ sơ sức khỏe
+          <Sparkles className="w-4 h-4 mr-1 text-amber-500" />
+          Hồ sơ ẩm thực
         </Button>
         <Button 
           type="button" 
@@ -359,6 +431,120 @@ export const CustomerMenu: React.FC = () => {
           Món đã gọi
         </Button>
       </div>
+
+      {/* ── Best For You (Smart Recommendations Section) ── */}
+      {recommendations.length > 0 && (
+        <div className="mb-6 pt-2">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+            <h3 className="text-xs font-heading font-black text-neutral-900 uppercase tracking-wider flex items-center gap-1.5">
+              Dành riêng cho bạn
+            </h3>
+            <span className="text-[9px] bg-green-50 text-green-700 font-extrabold px-2 py-0.5 rounded-full border border-green-200">
+              QDish Match
+            </span>
+          </div>
+
+          <div className="overflow-x-auto flex gap-4 scrollbar-none pb-3 -mx-4 px-4">
+            {recommendations.map((rec) => {
+              const dishItem = rec.dish;
+              const itemId = dishItem._id || dishItem.id;
+              
+              return (
+                <div 
+                  key={itemId}
+                  className="shrink-0 w-[260px] bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden flex flex-col justify-between"
+                >
+                  {/* Dish Image */}
+                  <div className="relative aspect-[16/10] bg-neutral-50 overflow-hidden">
+                    {dishItem.imageUrl ? (
+                      <img 
+                        src={dishItem.imageUrl} 
+                        alt={dishItem.name} 
+                        className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
+                        onClick={() => handleItemClick(dishItem)}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div 
+                        className="w-full h-full flex items-center justify-center text-neutral-300 font-medium text-xs cursor-pointer"
+                        onClick={() => handleItemClick(dishItem)}
+                      >
+                        Chưa có ảnh
+                      </div>
+                    )}
+                    
+                    {/* Fit Score Badge overlay */}
+                    <div className="absolute top-2.5 right-2.5 bg-green-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-full shadow-md border border-green-500 flex items-center gap-1">
+                      <span>{rec.fitScore}%</span>
+                      <span className="text-[9px] font-medium opacity-90">Fit</span>
+                    </div>
+
+                    <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                      {rec.bestContextLabel}
+                    </div>
+                  </div>
+
+                  {/* Body details */}
+                  <div className="p-3.5 flex-1 flex flex-col justify-between gap-3">
+                    <div className="space-y-1">
+                      <h4 
+                        className="font-bold text-xs text-neutral-800 line-clamp-1 hover:text-green-600 cursor-pointer transition-colors"
+                        onClick={() => handleItemClick(dishItem)}
+                      >
+                        {dishItem.name}
+                      </h4>
+                      <p className="text-[10px] text-green-700 font-bold bg-green-50 px-2 py-1 rounded-xl leading-snug border border-green-100/30">
+                        {rec.reason}
+                      </p>
+                    </div>
+
+                    {/* Price and Add button */}
+                    <div className="flex items-center justify-between pt-2 border-t border-neutral-50 shrink-0">
+                      <span className="text-xs font-black text-neutral-900">
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(dishItem.price)}
+                      </span>
+                      <Button
+                        onClick={() => handleAddToCart(dishItem)}
+                        className="bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold h-7 rounded-xl px-3"
+                      >
+                        Thêm món
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Pairing Suggestions ── */}
+      {pairingSuggestions.length > 0 && (
+        <div className="mb-6 p-4 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-transparent rounded-2xl border border-amber-100/60">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 animate-pulse" />
+            <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-wider">Mẹo kết hợp trọn vị</h4>
+          </div>
+          {pairingSuggestions.slice(0, 1).map((p, idx) => (
+            <div key={idx} className="text-xs leading-relaxed text-neutral-700 space-y-2">
+              <p className="font-semibold text-neutral-800">
+                Ăn kèm {p.mainDishName} + <strong className="text-green-700">{p.pairedDish.name}</strong>:
+              </p>
+              <p className="text-[11px] text-neutral-500 leading-normal">{p.reason}</p>
+              <div className="flex justify-end pt-1">
+                <Button
+                  onClick={() => handleAddToCart(p.pairedDish)}
+                  variant="outline"
+                  className="border-green-200 text-green-700 text-[9px] font-bold h-6 rounded-lg px-2 hover:bg-green-50"
+                >
+                  Thêm {p.pairedDish.name} (+{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.pairedDish.price)})
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Categories */}
       <CategoryFilter 
@@ -473,13 +659,13 @@ export const CustomerMenu: React.FC = () => {
         onSubmitOrder={handleSubmitOrder}
       />
 
-      {/* Health Profile Sheet Drawer */}
+      {/* Dining Profile Sheet Drawer */}
       <Sheet open={isHealthOpen} onOpenChange={setIsHealthOpen}>
         <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl p-0 border-none shadow-[0_-10px_40px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col">
           <div className="w-full flex justify-center pt-3 pb-1 shrink-0 bg-surface">
             <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
           </div>
-          <HealthProfileForm
+          <DiningProfileForm
             initialProfile={profile}
             onSave={saveProfile}
             onClose={() => setIsHealthOpen(false)}
@@ -495,6 +681,14 @@ export const CustomerMenu: React.FC = () => {
         tableNumber={tableNumber}
         sessionId={sessionId}
         onSessionClosed={handleSessionClosed}
+      />
+
+      {/* Onboarding Dialog Wizard */}
+      <DiningOnboarding
+        open={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onComplete={saveProfile}
+        userId={guestUserId}
       />
     </div>
   );

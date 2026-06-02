@@ -53,8 +53,97 @@ export interface NutritionInfo {
   fiber?: number;   // grams
   sugar?: number;   // grams
   sodium?: number;  // mg
-  nutritionScore?: number;
+  confidenceScore?: number;
 }
+
+// QDish Step 1: Ingredient units & dish ingredient
+export type IngredientUnit = 'g' | 'ml' | 'piece' | 'tbsp' | 'tsp' | 'cup' | 'bowl';
+
+export interface DishIngredient {
+  ingredientId: string;
+  ingredientName?: string; // populated for display
+  quantity: number;
+  unit: IngredientUnit;
+  gramsResolved: number;
+}
+
+// QDish Food Attributes (non-judgmental, context-based)
+export type FoodAttribute =
+  | 'HIGH_PROTEIN'
+  | 'VERY_HIGH_PROTEIN'
+  | 'ENERGY_DENSE'
+  | 'HEAVY_MEAL'
+  | 'LIGHT_MEAL'
+  | 'LOW_SUGAR'
+  | 'LOW_CALORIE'
+  | 'HIGH_FIBER'
+  | 'LOW_FAT'
+  | 'HIGH_CARB'
+  | 'KETO_FRIENDLY'
+  | 'POST_WORKOUT'
+  | 'SOCIAL_SHARING'
+  | 'VEGETARIAN'
+  | 'VEGAN'
+  | 'GLUTEN_FREE'
+  | 'DAIRY_FREE'
+  | 'OFFICE_LUNCH'
+  | 'QUICK_BITE'
+  | 'FAMILY_MEAL'
+  | 'LATE_NIGHT_FIT'
+  | 'COMFORT_FOOD'
+  | 'REFRESHING';
+
+export const FOOD_ATTRIBUTE_LABELS: Record<FoodAttribute, string> = {
+  HIGH_PROTEIN: '💪 High Protein',
+  VERY_HIGH_PROTEIN: '🏋️ Very High Protein',
+  ENERGY_DENSE: '⚡ Energy Dense',
+  HEAVY_MEAL: '🍖 Heavy Meal',
+  LIGHT_MEAL: '🥗 Light Meal',
+  LOW_SUGAR: '🍬 Low Sugar',
+  LOW_CALORIE: '🌿 Low Calorie',
+  HIGH_FIBER: '🌾 High Fiber',
+  LOW_FAT: '💧 Low Fat',
+  HIGH_CARB: '🍚 High Carb',
+  KETO_FRIENDLY: '🥑 Keto Friendly',
+  POST_WORKOUT: '🏋️ Post Workout',
+  SOCIAL_SHARING: '👥 Great for Sharing',
+  VEGETARIAN: '🌿 Vegetarian',
+  VEGAN: '🌱 Vegan',
+  GLUTEN_FREE: '🌾 Gluten Free',
+  DAIRY_FREE: '🥛 Dairy Free',
+  OFFICE_LUNCH: '💼 Office Lunch',
+  QUICK_BITE: '⏱️ Quick Bite',
+  FAMILY_MEAL: '👨‍👩‍👧 Family Meal',
+  LATE_NIGHT_FIT: '🌙 Late Night Fit',
+  COMFORT_FOOD: '🫶 Comfort Food',
+  REFRESHING: '🧊 Refreshing',
+};
+
+export const FOOD_ATTRIBUTE_COLORS: Record<FoodAttribute, string> = {
+  HIGH_PROTEIN: 'bg-purple-100 text-purple-800 border-purple-200',
+  VERY_HIGH_PROTEIN: 'bg-violet-100 text-violet-800 border-violet-200',
+  ENERGY_DENSE: 'bg-amber-100 text-amber-800 border-amber-200',
+  HEAVY_MEAL: 'bg-red-100 text-red-800 border-red-200',
+  LIGHT_MEAL: 'bg-green-100 text-green-800 border-green-200',
+  LOW_SUGAR: 'bg-sky-100 text-sky-800 border-sky-200',
+  LOW_CALORIE: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  HIGH_FIBER: 'bg-lime-100 text-lime-800 border-lime-200',
+  LOW_FAT: 'bg-blue-100 text-blue-800 border-blue-200',
+  HIGH_CARB: 'bg-orange-100 text-orange-800 border-orange-200',
+  KETO_FRIENDLY: 'bg-teal-100 text-teal-800 border-teal-200',
+  POST_WORKOUT: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  SOCIAL_SHARING: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-200',
+  VEGETARIAN: 'bg-green-100 text-green-800 border-green-200',
+  VEGAN: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  GLUTEN_FREE: 'bg-stone-100 text-stone-800 border-stone-200',
+  DAIRY_FREE: 'bg-slate-100 text-slate-800 border-slate-200',
+  OFFICE_LUNCH: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+  QUICK_BITE: 'bg-orange-100 text-orange-800 border-orange-200',
+  FAMILY_MEAL: 'bg-pink-100 text-pink-800 border-pink-200',
+  LATE_NIGHT_FIT: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  COMFORT_FOOD: 'bg-rose-100 text-rose-800 border-rose-200',
+  REFRESHING: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+};
 
 export enum Allergen {
   GLUTEN = 'GLUTEN',
@@ -66,22 +155,22 @@ export enum Allergen {
   FISH = 'FISH',
 }
 
-export enum HealthLabel {
-  VEGAN = 'VEGAN',
-  VEGETARIAN = 'VEGETARIAN',
-  LOW_CARB = 'LOW_CARB',
-  HIGH_PROTEIN = 'HIGH_PROTEIN',
-  KETO = 'KETO',
-  GLUTEN_FREE = 'GLUTEN_FREE',
-  LOW_FAT = 'LOW_FAT',
-  SUGAR_FREE = 'SUGAR_FREE',
-}
+// DiningPreference replaces HealthLabel — non-judgmental, context-based
+export type DiningPreference =
+  | 'VEGAN'
+  | 'VEGETARIAN'
+  | 'LOW_CARB'
+  | 'HIGH_PROTEIN'
+  | 'KETO'
+  | 'GLUTEN_FREE'
+  | 'LOW_FAT'
+  | 'SUGAR_FREE';
 
-export interface HealthProfile {
-  goals: ('WEIGHT_LOSS' | 'MUSCLE_GAIN' | 'MAINTENANCE' | 'GENERAL_HEALTH')[];
+export interface DiningProfile {
+  goals: ('MUSCLE_GAIN' | 'ENERGY_BOOST' | 'LIGHT_MEAL' | 'COMFORT' | 'BALANCED' | 'WEIGHT_LOSS' | 'MAINTENANCE' | 'GENERAL_HEALTH')[];
   allergies: Allergen[];
   conditions: ('DIABETES' | 'HYPERTENSION' | 'CELIAC')[];
-  preferences: HealthLabel[];
+  preferences: DiningPreference[];
 }
 
 // ============================================
@@ -100,7 +189,7 @@ export interface MenuItem {
   available: boolean;
   categoryId?: string;
   
-  // New fields for QDish
+  // QDish Nutrition (computed cache)
   nutrition?: NutritionInfo;
   calories?: number;
   protein?: number;
@@ -109,10 +198,15 @@ export interface MenuItem {
   fiber?: number;
   sugar?: number;
   sodium?: number;
-  nutritionScore?: number;
-  allergens?: Allergen[];
-  healthTags?: string[];
-  healthLabels?: HealthLabel[];
+  confidenceScore?: number;
+  allergens?: Allergen[] | string[];
+  foodAttributes?: string[];     // context-based attribute keys e.g. ['HIGH_PROTEIN', 'POST_WORKOUT']
+
+  // QDish Step 1: Recipe
+  ingredients?: DishIngredient[];
+  servingCount?: number;
+  servingSizeGrams?: number;
+  cookingMethod?: string;
 }
 
 export enum OrderStatus {

@@ -27,6 +27,7 @@ import { formatCurrency } from '@/lib/utils';
 
 // Tab Components
 import { RestaurantOverviewTab } from '@/components/dashboard/restaurant/RestaurantOverviewTab';
+import { MerchantInsightsTab } from '@/components/dashboard/restaurant/MerchantInsightsTab';
 import { RestaurantOrdersTab } from '@/components/dashboard/restaurant/RestaurantOrdersTab';
 import { RestaurantMenuTab } from '@/components/dashboard/restaurant/RestaurantMenuTab';
 import { RestaurantCategoriesTab } from '@/components/dashboard/restaurant/RestaurantCategoriesTab';
@@ -626,6 +627,10 @@ export const Dashboard: React.FC = () => {
             isLoadingStats={isLoadingStats}
             onSetStatsPeriod={setStatsPeriod}
           />
+        </TabsContent>
+
+        <TabsContent value="insights" className="space-y-6">
+          <MerchantInsightsTab />
         </TabsContent>
 
         <TabsContent value="orders" className="space-y-6">

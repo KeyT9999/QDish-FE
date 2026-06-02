@@ -119,20 +119,20 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                                 <span>Na: {item.nutrition.sodium}mg</span>
                               </>
                             )}
-                            {item.nutrition.nutritionScore !== undefined && item.nutrition.nutritionScore > 0 && (
+                            {item.nutrition.confidenceScore !== undefined && item.nutrition.confidenceScore > 0 && (
                               <>
                                 <span className="w-1 h-1 rounded-full bg-neutral-300" />
-                                <span className="text-emerald-600 font-bold">Score: {item.nutrition.nutritionScore}</span>
+                                <span className="text-emerald-600 font-bold">Confidence: {item.nutrition.confidenceScore}%</span>
                               </>
                             )}
                           </div>
                         )}
                         
                         <div className="flex flex-wrap gap-1">
-                          {/* Health & Allergen tags */}
-                          {item.healthLabels?.slice(0, 3).map((lbl) => (
-                            <span key={lbl} className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-blue-50/70 text-blue-700 border border-blue-200/20">
-                              {lbl}
+                          {/* Food Attributes */}
+                          {item.foodAttributes?.slice(0, 3).map((attr) => (
+                            <span key={attr} className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-blue-50/70 text-blue-700 border border-blue-200/20">
+                              {attr}
                             </span>
                           ))}
                         </div>
