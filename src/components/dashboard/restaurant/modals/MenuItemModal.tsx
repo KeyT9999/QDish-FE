@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MenuItem, Allergen, HealthLabel, DishIngredient } from '@/types';
+import { MenuItem, Allergen, DishIngredient } from '@/types';
 import { CategoryItem } from '@/services/categoryService';
 import { uploadService } from '@/services/uploadService';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,9 +39,9 @@ const getDefaultMenuForm = () => ({
   fiber: 0,
   sugar: 0,
   sodium: 0,
-  nutritionScore: 0,
+  confidenceScore: 0,
   allergens: [] as Allergen[],
-  healthLabels: [] as HealthLabel[],
+  foodAttributes: [] as string[],
 });
 
 export const MenuItemModal: React.FC<MenuItemModalProps> = ({
@@ -84,9 +84,9 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
         fiber: editingItem.nutrition?.fiber || editingItem.fiber || 0,
         sugar: editingItem.nutrition?.sugar || editingItem.sugar || 0,
         sodium: editingItem.nutrition?.sodium || editingItem.sodium || 0,
-        nutritionScore: editingItem.nutrition?.nutritionScore || editingItem.nutritionScore || 0,
+        confidenceScore: editingItem.nutrition?.confidenceScore || editingItem.confidenceScore || 0,
         allergens: (editingItem.allergens as Allergen[]) || [],
-        healthLabels: editingItem.healthLabels || [],
+        foodAttributes: editingItem.foodAttributes || [],
       });
       setRecipeIngredients(editingItem.ingredients || []);
       setServingCount(editingItem.servingCount ?? 1);
@@ -145,10 +145,10 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
           fiber: menuForm.fiber,
           sugar: menuForm.sugar,
           sodium: menuForm.sodium,
-          nutritionScore: menuForm.nutritionScore,
+          confidenceScore: menuForm.confidenceScore,
         },
         allergens: menuForm.allergens,
-        healthLabels: menuForm.healthLabels,
+        foodAttributes: menuForm.foodAttributes,
       }),
       // Recipe fields
       ingredients: recipeIngredients,

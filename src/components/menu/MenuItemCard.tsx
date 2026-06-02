@@ -1,8 +1,7 @@
 import React from 'react';
-import { MenuItem, Allergen, CartItem } from '@/types';
+import { MenuItem, Allergen, CartItem, FoodAttribute, FOOD_ATTRIBUTE_LABELS, FOOD_ATTRIBUTE_COLORS } from '@/types';
 import { Minus, Plus, ShieldAlert, Award } from 'lucide-react';
 import { NutritionBadge } from './NutritionBadge';
-import { HealthLabelBadge } from '../shared/HealthLabelBadge';
 import { formatCurrency } from '@/lib/utils';
 
 interface MenuItemCardProps {
@@ -101,13 +100,19 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
             </div>
           ) : item.nutrition ? (
             <NutritionBadge nutrition={item.nutrition} />
-          ) : (
+          ) : item.foodAttributes && item.foodAttributes.length > 0 ? (
             <div className="flex gap-1">
-              {item.healthLabels?.slice(0, 2).map((label, idx) => (
-                <HealthLabelBadge key={idx} type={label} className="scale-90 origin-left" />
-              ))}
+              {item.foodAttributes.slice(0, 2).map((attr, idx) => {
+                const label = FOOD_ATTRIBUTE_LABELS[attr as FoodAttribute] || attr;
+                const colorClass = FOOD_ATTRIBUTE_COLORS[attr as FoodAttribute] || 'bg-gray-100 text-gray-700 border-gray-200';
+                return (
+                  <span key={idx} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${colorClass}`}>
+                    {label}
+                  </span>
+                );
+              })}
             </div>
-          )}
+          ) : null}
         </div>
         
         {/* Stepper / Add */}

@@ -65,9 +65,9 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
     item.allergens &&
     item.allergens.some((a) => userAllergies.includes(a as Allergen));
 
-  // Resolve food attributes from healthTags or healthLabels
-  const foodAttributes: string[] = item.healthTags?.length
-    ? item.healthTags
+  // Resolve food attributes from the new context-based system
+  const foodAttributes: string[] = item.foodAttributes?.length
+    ? item.foodAttributes
     : [];
 
   const allergenList = item.allergens || [];
@@ -209,11 +209,11 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                   </div>
 
                   {/* Nutrition score */}
-                  {(item.nutrition.nutritionScore ?? 0) > 0 && (
+                  {(item.nutrition.confidenceScore ?? 0) > 0 && (
                     <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-2.5 flex items-center justify-between">
-                      <span className="text-xs font-bold text-green-800">Nutrition Score</span>
+                      <span className="text-xs font-bold text-green-800">Độ tin cậy dữ liệu</span>
                       <span className="bg-green-600 text-white font-extrabold text-xs px-3 py-1 rounded-full shadow-sm">
-                        {item.nutrition.nutritionScore}/100
+                        {item.nutrition.confidenceScore}%
                       </span>
                     </div>
                   )}
