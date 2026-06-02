@@ -173,6 +173,22 @@ export interface DiningProfile {
   preferences: DiningPreference[];
 }
 
+// Legacy health definitions for backward compatibility
+export type HealthLabel = DiningPreference;
+export const HealthLabel = {
+  VEGAN: 'VEGAN' as DiningPreference,
+  VEGETARIAN: 'VEGETARIAN' as DiningPreference,
+  LOW_CARB: 'LOW_CARB' as DiningPreference,
+  HIGH_PROTEIN: 'HIGH_PROTEIN' as DiningPreference,
+  KETO: 'KETO' as DiningPreference,
+  GLUTEN_FREE: 'GLUTEN_FREE' as DiningPreference,
+  LOW_FAT: 'LOW_FAT' as DiningPreference,
+  SUGAR_FREE: 'SUGAR_FREE' as DiningPreference
+} as const;
+
+export type HealthProfile = DiningProfile;
+
+
 // ============================================
 // Core Entities
 // ============================================
