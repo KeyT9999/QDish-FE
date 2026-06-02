@@ -291,7 +291,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                       value={menuForm.category || undefined}
                       onValueChange={(value) => {
                         const selected = categories.find((cat) => cat.name === value);
-                        setMenuForm({ ...menuForm, categoryId: selected?._id || '', category: value });
+                        setMenuForm({ ...menuForm, categoryId: selected?._id || '', category: value || '' });
                       }}
                     >
                       <SelectTrigger className="rounded-xl"><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>

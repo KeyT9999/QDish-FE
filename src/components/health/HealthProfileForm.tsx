@@ -51,7 +51,7 @@ export const HealthProfileForm: React.FC<HealthProfileFormProps> = ({
 
   const handleToggleGoal = (value: typeof goalsList[number]['value']) => {
     if (goals.includes(value)) {
-      setGoals(goals.filter(g => g !== value));
+      setGoals(goals.filter((g: string) => g !== value));
     } else {
       setGoals([...goals, value]);
     }
