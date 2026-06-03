@@ -9,6 +9,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Plus, Edit2, Eye, EyeOff, Users, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { useIsMobile } from '@/hooks/useIsMobile';
