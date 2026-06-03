@@ -1,0 +1,27 @@
+# Task Checklist - Mobile UI for Super Admin QDish
+
+- [ ] Task 1: Refactor SuperAdmin.tsx Tab Navigation
+  - [ ] Implement scrollable horizontal tab bar for mobile viewports
+  - [ ] Adjust title page heading responsiveness
+- [ ] Task 2: Refactor OwnersTab.tsx
+  - [ ] Add mobile container wrapper for search/filter/action toolbar (vertical stacking on mobile)
+  - [ ] Implement responsive card list view with standard Tailwind hidden/block utilities
+  - [ ] Adapt toggle switch and actions buttons for easy tapping (>= 44px touch target)
+- [ ] Task 3: Refactor PlansTab.tsx
+  - [ ] Add mobile container wrapper for title and action buttons
+  - [ ] Implement responsive card list view showing detailed limits, prices, and toggles
+  - [ ] Hide desktop table view on mobile
+- [ ] Task 4: Refactor RestaurantsTab.tsx
+  - [ ] Stack search/status filters and create button on mobile
+  - [ ] Implement card-based list layout for mobile screens
+  - [ ] Connect status switches and action buttons inside card layout
+- [ ] Task 5: Refactor Stats and Charts
+  - [ ] Stack SuperAdminStatsTab KPI cards into 1 column
+  - [ ] Ensure TopRestaurantsChart and SubscriptionTransactionsTable are mobile-friendly and card-based
+- [ ] Task 6: Refactor Ingredients Tab
+  - [ ] Reorganize layout of toolbar (search, category, source selectors) to stack vertically
+- [ ] Task 7: Adapt Modals for Mobile Viewports
+  - [ ] Adapt OwnerModal, ResetPasswordModal, PlanModal, OwnerPlanOverrideModal, and RestaurantModal
+- [ ] Task 8: Verification & Bundling
+  - [ ] Perform build test (`npm run build`)
+  - [ ] Verify responsivity and visual correctness on simulated phone sizes

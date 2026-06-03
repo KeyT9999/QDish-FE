@@ -75,7 +75,7 @@ export const OwnerModal: React.FC<OwnerModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-white rounded-2xl p-6">
+      <DialogContent className="w-[95vw] max-w-md bg-white rounded-2xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-gray-900">
             {editingOwner ? 'Sửa thông tin chủ nhà hàng' : 'Thêm chủ nhà hàng mới'}

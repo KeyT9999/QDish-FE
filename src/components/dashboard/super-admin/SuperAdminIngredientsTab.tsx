@@ -151,7 +151,7 @@ export const SuperAdminIngredientsTab: React.FC = () => {
         </div>
         <Button
           onClick={handleAddNew}
-          className="rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-md shadow-green-600/10 gap-1.5 h-9.5 text-xs px-4 cursor-pointer"
+          className="rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-md shadow-green-600/10 gap-1.5 h-11 sm:h-9.5 text-xs px-4 cursor-pointer w-full sm:w-auto shrink-0"
         >
           <Plus className="w-4 h-4" /> Thêm nguyên liệu hệ thống
         </Button>
@@ -386,25 +386,25 @@ export const SuperAdminIngredientsTab: React.FC = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => handleView(ing)}
-                className="h-8 text-[11px] font-bold rounded-lg border-neutral-200 gap-1 cursor-pointer"
+                className="h-10 text-xs font-bold rounded-xl border-neutral-200 gap-1 cursor-pointer flex-1"
               >
-                <Eye className="w-3 h-3" /> Chi tiết
+                <Eye className="w-3.5 h-3.5" /> Chi tiết
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleEdit(ing)}
-                className="h-8 text-[11px] font-bold rounded-lg border-neutral-200 hover:border-green-200 hover:bg-green-50 text-neutral-600 hover:text-green-700 gap-1 cursor-pointer"
+                className="h-10 text-xs font-bold rounded-xl border-neutral-200 hover:border-green-200 hover:bg-green-50 text-neutral-600 hover:text-green-700 gap-1 cursor-pointer flex-1"
               >
-                <Edit3 className="w-3 h-3" /> Sửa
+                <Edit3 className="w-3.5 h-3.5" /> Sửa
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleDelete(ing._id)}
-                className="h-8 text-[11px] font-bold rounded-lg border-neutral-200 hover:border-rose-200 hover:bg-rose-50 text-neutral-600 hover:text-rose-600 gap-1 cursor-pointer"
+                className="h-10 text-xs font-bold rounded-xl border-neutral-200 hover:border-rose-200 hover:bg-rose-50 text-neutral-600 hover:text-rose-600 gap-1 cursor-pointer flex-1"
               >
-                <Trash2 className="w-3 h-3 text-rose-500" /> Xóa
+                <Trash2 className="w-3.5 h-3.5 text-rose-500" /> Xóa
               </Button>
             </div>
           </div>
