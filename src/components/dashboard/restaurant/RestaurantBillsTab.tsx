@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CheckCircle2, Eye, Receipt, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface RestaurantBillsTabProps {
   restaurantId: string;
@@ -41,6 +42,7 @@ const formatDate = (value?: string) => {
 };
 
 export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaurantId }) => {
+  const isMobile = useIsMobile(640);
   const [bills, setBills] = useState<Bill[]>([]);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<Order[]>([]);
@@ -126,79 +128,162 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
         </select>
       </div>
 
-      <Card className="overflow-hidden rounded-2xl border-neutral-200/50 bg-white shadow-sm">
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-neutral-100 hover:bg-transparent">
-                <TableHead className="w-[140px] pl-6 text-xs font-bold text-neutral-400">Mã bill</TableHead>
-                <TableHead className="w-[90px] text-xs font-bold text-neutral-400">Bàn</TableHead>
-                <TableHead className="w-[140px] text-xs font-bold text-neutral-400">Session</TableHead>
-                <TableHead className="w-[100px] text-xs font-bold text-neutral-400">Tổng món</TableHead>
-                <TableHead className="w-[130px] text-xs font-bold text-neutral-400">Tổng tiền</TableHead>
-                <TableHead className="w-[140px] text-xs font-bold text-neutral-400">Trạng thái</TableHead>
-                <TableHead className="text-xs font-bold text-neutral-400">Thanh toán lúc</TableHead>
-                <TableHead className="w-[210px] pr-6 text-right text-xs font-bold text-neutral-400">Thao tác</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {bills.map((bill) => {
-                const billId = getBillId(bill);
-                const canPay = bill.status === BillStatus.UNPAID || bill.status === BillStatus.PAYMENT_REQUESTED;
+      {isMobile ? (
+        <div className="space-y-4">
+          {bills.map((bill) => {
+            const billId = getBillId(bill);
+            const canPay = bill.status === BillStatus.UNPAID || bill.status === BillStatus.PAYMENT_REQUESTED;
 
-                return (
-                  <TableRow key={billId} className="border-neutral-100 hover:bg-neutral-50/40">
-                    <TableCell className="pl-6 font-mono text-xs font-bold text-neutral-700">{bill.billCode}</TableCell>
-                    <TableCell className="text-xs font-bold text-neutral-900">Bàn {bill.tableNumber}</TableCell>
-                    <TableCell className="font-mono text-[11px] text-neutral-500">{bill.sessionCode || '-'}</TableCell>
-                    <TableCell className="text-xs font-semibold text-neutral-700">{bill.totalItems}</TableCell>
-                    <TableCell className="text-xs font-bold text-neutral-900">{formatCurrency(bill.totalAmount)}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold ${statusClass[bill.status]}`}>
-                        {statusLabel[bill.status]}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-xs font-medium text-neutral-500">{formatDate(bill.paidAt)}</TableCell>
-                    <TableCell className="pr-6 text-right">
-                      <div className="flex justify-end gap-1.5">
-                        <Button size="sm" variant="outline" onClick={() => handleViewDetail(bill)} className="h-8 rounded-lg text-xs font-semibold">
-                          <Eye className="mr-1 h-3.5 w-3.5" />
-                          Chi tiết
-                        </Button>
-                        {canPay && (
-                          <Button
-                            size="sm"
-                            onClick={() => handlePayBill(bill)}
-                            className="h-8 rounded-lg bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
-                          >
-                            <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                            Thanh toán
+            return (
+              <div
+                key={billId}
+                className="bg-white border border-neutral-200/60 rounded-2xl p-5 shadow-sm space-y-4 transition-all duration-200 hover:shadow-md"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 block">Bàn ăn</span>
+                    <span className="text-base font-bold text-neutral-900">Bàn {bill.tableNumber}</span>
+                  </div>
+                  <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusClass[bill.status]}`}>
+                    {statusLabel[bill.status]}
+                  </span>
+                </div>
+
+                <div className="border-t border-neutral-100 pt-3 grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">Mã Hóa Đơn</span>
+                    <span className="font-mono font-bold text-neutral-800 text-xs break-all">{bill.billCode}</span>
+                  </div>
+                  <div>
+                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">Session</span>
+                    <span className="font-mono text-neutral-600 text-xs break-all">{bill.sessionCode || '-'}</span>
+                  </div>
+                  <div>
+                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">Tổng số món</span>
+                    <span className="font-bold text-neutral-800">{bill.totalItems} món</span>
+                  </div>
+                  <div>
+                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">Tổng tiền</span>
+                    <span className="font-black text-emerald-600 text-sm">{formatCurrency(bill.totalAmount)}</span>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-neutral-400 font-medium pt-2 border-t border-neutral-100 flex items-center gap-1">
+                  <span>🕒 Thanh toán: {formatDate(bill.paidAt)}</span>
+                </div>
+
+                <div className="flex gap-2.5 pt-1">
+                  <Button
+                    onClick={() => handleViewDetail(bill)}
+                    variant="outline"
+                    className="flex-1 h-11 text-xs font-bold rounded-xl border-neutral-200 hover:bg-neutral-50"
+                  >
+                    <Eye className="mr-1.5 h-4 w-4" />
+                    Xem chi tiết
+                  </Button>
+                  {canPay && (
+                    <Button
+                      onClick={() => handlePayBill(bill)}
+                      className="flex-1 h-11 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                      Thanh toán
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {bills.length === 0 && (
+            <div className="py-16 text-center bg-white border border-neutral-200/60 rounded-2xl shadow-sm">
+              <div className="flex flex-col items-center justify-center space-y-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-neutral-200/50 bg-neutral-50">
+                  <Receipt className="h-6 w-6 text-neutral-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-800">Chưa có bill phù hợp</h3>
+                  <p className="mt-1 text-xs text-neutral-400">Bill sẽ xuất hiện sau khi khách bắt đầu đặt món.</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <Card className="overflow-hidden rounded-2xl border-neutral-200/50 bg-white shadow-sm">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-neutral-100 hover:bg-transparent">
+                  <TableHead className="w-[140px] pl-6 text-xs font-bold text-neutral-400">Mã bill</TableHead>
+                  <TableHead className="w-[90px] text-xs font-bold text-neutral-400">Bàn</TableHead>
+                  <TableHead className="w-[140px] text-xs font-bold text-neutral-400">Session</TableHead>
+                  <TableHead className="w-[100px] text-xs font-bold text-neutral-400">Tổng món</TableHead>
+                  <TableHead className="w-[130px] text-xs font-bold text-neutral-400">Tổng tiền</TableHead>
+                  <TableHead className="w-[140px] text-xs font-bold text-neutral-400">Trạng thái</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400">Thanh toán lúc</TableHead>
+                  <TableHead className="w-[210px] pr-6 text-right text-xs font-bold text-neutral-400">Thao tác</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {bills.map((bill) => {
+                  const billId = getBillId(bill);
+                  const canPay = bill.status === BillStatus.UNPAID || bill.status === BillStatus.PAYMENT_REQUESTED;
+
+                  return (
+                    <TableRow key={billId} className="border-neutral-100 hover:bg-neutral-50/40">
+                      <TableCell className="pl-6 font-mono text-xs font-bold text-neutral-700">{bill.billCode}</TableCell>
+                      <TableCell className="text-xs font-bold text-neutral-900">Bàn {bill.tableNumber}</TableCell>
+                      <TableCell className="font-mono text-[11px] text-neutral-500">{bill.sessionCode || '-'}</TableCell>
+                      <TableCell className="text-xs font-semibold text-neutral-700">{bill.totalItems}</TableCell>
+                      <TableCell className="text-xs font-bold text-neutral-900">{formatCurrency(bill.totalAmount)}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold ${statusClass[bill.status]}`}>
+                          {statusLabel[bill.status]}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs font-medium text-neutral-500">{formatDate(bill.paidAt)}</TableCell>
+                      <TableCell className="pr-6 text-right">
+                        <div className="flex justify-end gap-1.5">
+                          <Button size="sm" variant="outline" onClick={() => handleViewDetail(bill)} className="h-8 rounded-lg text-xs font-semibold">
+                            <Eye className="mr-1 h-3.5 w-3.5" />
+                            Chi tiết
                           </Button>
-                        )}
+                          {canPay && (
+                            <Button
+                              size="sm"
+                              onClick={() => handlePayBill(bill)}
+                              className="h-8 rounded-lg bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
+                            >
+                              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                              Thanh toán
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {bills.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="py-16 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-neutral-200/50 bg-neutral-50">
+                          <Receipt className="h-6 w-6 text-neutral-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-neutral-800">Chưa có bill phù hợp</h3>
+                          <p className="mt-1 text-xs text-neutral-400">Bill sẽ xuất hiện sau khi khách bắt đầu đặt món trong phiên bàn.</p>
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>
-                );
-              })}
-              {bills.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={8} className="py-16 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-neutral-200/50 bg-neutral-50">
-                        <Receipt className="h-6 w-6 text-neutral-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-neutral-800">Chưa có bill phù hợp</h3>
-                        <p className="mt-1 text-xs text-neutral-400">Bill sẽ xuất hiện sau khi khách bắt đầu đặt món trong phiên bàn.</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       {selectedBill && (
         <Card className="rounded-2xl border-neutral-200/50 bg-white shadow-sm">

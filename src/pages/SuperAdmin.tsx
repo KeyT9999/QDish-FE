@@ -13,6 +13,7 @@ import { RestaurantsTab } from '@/components/dashboard/super-admin/RestaurantsTa
 import { OwnersTab } from '@/components/dashboard/super-admin/OwnersTab';
 import { PlansTab } from '@/components/dashboard/super-admin/PlansTab';
 import { AdminNotificationsTab } from '@/components/dashboard/super-admin/AdminNotificationsTab';
+import { SuperAdminIngredientsTab } from '@/components/dashboard/super-admin/SuperAdminIngredientsTab';
 
 // Import Modals
 import { RestaurantModal } from '@/components/dashboard/super-admin/modals/RestaurantModal';
@@ -23,9 +24,9 @@ import { OwnerPlanOverrideModal } from '@/components/dashboard/super-admin/modal
 
 export const SuperAdmin: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryTab = searchParams.get('tab') as 'stats' | 'restaurants' | 'owners' | 'plans' | 'notifications' || 'restaurants';
-  const activeTab = ['stats', 'restaurants', 'owners', 'plans', 'notifications'].includes(queryTab) ? queryTab : 'restaurants';
-  const setActiveTab = (tab: 'stats' | 'restaurants' | 'owners' | 'plans' | 'notifications') => setSearchParams({ tab });
+  const queryTab = searchParams.get('tab') as 'stats' | 'restaurants' | 'owners' | 'plans' | 'notifications' | 'ingredients' || 'restaurants';
+  const activeTab = ['stats', 'restaurants', 'owners', 'plans', 'notifications', 'ingredients'].includes(queryTab) ? queryTab : 'restaurants';
+  const setActiveTab = (tab: 'stats' | 'restaurants' | 'owners' | 'plans' | 'notifications' | 'ingredients') => setSearchParams({ tab });
 
   // Data States
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -472,6 +473,10 @@ export const SuperAdmin: React.FC = () => {
           onDeleteClick={handleDeletePlan}
           onToggleActive={handleTogglePlanActive}
         />
+      )}
+
+      {activeTab === 'ingredients' && (
+        <SuperAdminIngredientsTab />
       )}
 
       {activeTab === 'notifications' && (

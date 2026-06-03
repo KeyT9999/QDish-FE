@@ -23,8 +23,8 @@ export const getRealtimeSocket = () => {
     transports: ['websocket', 'polling'],
     autoConnect: true,
     reconnection: true,
-    reconnectionAttempts: SOCKET_RECONNECTION_ATTEMPTS,
-    reconnectionDelay: 600,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
   });
 

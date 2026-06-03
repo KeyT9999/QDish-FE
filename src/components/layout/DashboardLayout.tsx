@@ -23,7 +23,8 @@ import {
   Plus,
   CreditCard,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  Apple
 } from 'lucide-react';
 import { Role } from '@/types';
 import { restaurantService } from '@/services/restaurantService';
@@ -96,6 +97,7 @@ export const DashboardLayout: React.FC = () => {
         { id: 'bills', label: 'Hóa đơn', icon: FileText },
         { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
         { id: 'categories', label: 'Danh mục', icon: FileText },
+        { id: 'ingredients', label: 'Nguyên liệu', icon: Apple },
         { id: 'tables', label: 'Bàn & QR', icon: QrCode },
         { id: 'staff', label: 'Nhân viên', icon: Users },
         { id: 'settings', label: 'Thiết lập', icon: Settings },
@@ -107,6 +109,7 @@ export const DashboardLayout: React.FC = () => {
         { id: 'owners', label: 'Chủ nhà hàng', icon: Users },
         { id: 'restaurants', label: 'Chi nhánh', icon: Store },
         { id: 'plans', label: 'Gói dịch vụ', icon: ShieldCheck },
+        { id: 'ingredients', label: 'Nguyên liệu hệ thống', icon: Apple },
         { id: 'notifications', label: 'Thông báo', icon: Bell },
       ];
     } else if (user?.role === Role.STAFF) {
@@ -126,6 +129,7 @@ export const DashboardLayout: React.FC = () => {
           { id: 'bills', label: 'Hóa đơn', icon: FileText },
           { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
           { id: 'categories', label: 'Danh mục', icon: FileText },
+          { id: 'ingredients', label: 'Nguyên liệu', icon: Apple },
           { id: 'tables', label: 'Bàn & QR', icon: QrCode },
           { id: 'staff', label: 'Nhân viên', icon: Users },
           { id: 'settings', label: 'Thiết lập', icon: Settings },
@@ -355,11 +359,21 @@ export const DashboardLayout: React.FC = () => {
               <MenuIcon className="w-4 h-4" />
             </button>
 
-            {/* Breadcrumbs */}
-            <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-semibold">
-              <span>{user?.role === Role.SUPER_ADMIN ? 'Hệ thống' : 'Quản lý'}</span>
-              <span className="text-neutral-300">/</span>
-              <span className="text-gray-900 font-bold">{getActiveTabLabel()}</span>
+            {/* Breadcrumbs / Restaurant Name */}
+            <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-semibold min-w-0">
+              {/* Desktop breadcrumbs */}
+              <span className="hidden lg:inline">{user?.role === Role.SUPER_ADMIN ? 'Hệ thống' : 'Quản lý'}</span>
+              <span className="hidden lg:inline text-neutral-300">/</span>
+              <span className="hidden lg:inline text-gray-900 font-bold">{getActiveTabLabel()}</span>
+              
+              {/* Mobile Restaurant Name / Super Admin status */}
+              <span className="lg:hidden text-gray-900 font-extrabold text-sm truncate max-w-[140px] sm:max-w-[200px]">
+                {user?.role === Role.SUPER_ADMIN ? 'Quản lý SaaS' : restaurantName}
+              </span>
+              <span className="lg:hidden text-neutral-300">/</span>
+              <span className="lg:hidden text-neutral-600 font-bold text-xs truncate max-w-[100px]">
+                {getActiveTabLabel()}
+              </span>
             </div>
           </div>
 
