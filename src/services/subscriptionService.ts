@@ -21,6 +21,13 @@ export interface OwnerSubscriptionDetails {
     tableLimit: number;
     menuItemLimit: number;
     staffLimit: number;
+    scanLimitMonthly: number;
+    fitScoreEnabled: boolean;
+    foodAttributesEnabled: boolean;
+    recommendationEnabled: boolean;
+    personalizedMenuEnabled: boolean;
+    advancedAnalyticsEnabled: boolean;
+    customerInsightsEnabled: boolean;
     features: string[];
   };
   usage: {
@@ -28,6 +35,7 @@ export interface OwnerSubscriptionDetails {
     tableCount: number;
     menuItemCount: number;
     staffCount: number;
+    scanCount: number;
   };
 }
 

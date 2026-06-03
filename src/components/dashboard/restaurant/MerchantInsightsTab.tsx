@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/services/api';
+import { Restaurant } from '@/types';
 import {
   Sparkles,
   ChefHat,
@@ -38,10 +39,22 @@ interface InsightsPayload {
   gapAnalysis: string[];
 }
 
-export const MerchantInsightsTab: React.FC = () => {
+export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = ({ restaurant }) => {
   const [insights, setInsights] = useState<InsightsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshingAI, setRefreshingAI] = useState(false);
+
+  const features = restaurant?.features || {
+    fitScoreEnabled: false,
+    foodAttributesEnabled: false,
+    recommendationEnabled: false,
+    personalizedMenuEnabled: false,
+    advancedAnalyticsEnabled: false,
+    customerInsightsEnabled: false
+  };
+
+  const isFree = !features.personalizedMenuEnabled;
+  const isPlus = features.personalizedMenuEnabled && !features.advancedAnalyticsEnabled;
 
   const fetchInsights = async () => {
     setLoading(true);
@@ -76,14 +89,68 @@ export const MerchantInsightsTab: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchInsights();
-  }, []);
+    if (!isFree) {
+      fetchInsights();
+    } else {
+      setLoading(false);
+    }
+  }, [isFree]);
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <Loader2 className="w-8 h-8 animate-spin text-green-600 mb-3" />
         <p className="text-sm font-medium text-neutral-500">Đang tổng hợp báo cáo dữ liệu thực đơn...</p>
+      </div>
+    );
+  }
+
+  if (isFree) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent p-5 rounded-2xl border border-emerald-100">
+          <div>
+            <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+              QDish Intelligence Advisor
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Phân tích thói quen ăn uống của thực khách quét QR & tối ưu hóa thực đơn tăng trưởng doanh thu.
+            </p>
+          </div>
+        </div>
+
+        <div className="relative border border-neutral-200/80 rounded-3xl p-8 bg-white shadow-xl overflow-hidden flex flex-col items-center justify-center min-h-[450px] text-center space-y-6">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-indigo-500/5 to-transparent opacity-60" />
+          
+          <div className="relative z-10 w-20 h-20 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white font-extrabold text-3xl shadow-xl shadow-indigo-500/20 animate-bounce">
+            🔒
+          </div>
+
+          <div className="relative z-10 space-y-2.5 max-w-md">
+            <h3 className="text-xl font-bold text-neutral-900 tracking-tight">Tính năng Phân tích chuyên sâu bị khóa</h3>
+            <p className="text-xs text-neutral-500 leading-relaxed">
+              Bạn đang sử dụng gói <strong>FREE</strong>. Tính năng phân tích thực đơn, thị hiếu dinh dưỡng thực khách (Smart Menu Analysis & Customer Insights) chỉ khả dụng từ gói <strong>PLUS</strong> trở lên.
+            </p>
+          </div>
+
+          <div className="relative z-10 p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/60 max-w-sm text-left space-y-2">
+            <span className="text-[10px] font-black uppercase text-indigo-700 tracking-wider">Đặc quyền gói PLUS & PRO:</span>
+            <ul className="text-[11px] text-neutral-600 space-y-1.5 font-medium list-disc list-inside">
+              <li>Biểu đồ thị hiếu & xu hướng ăn uống của thực khách</li>
+              <li>Bản đồ định vị thuộc tính dinh dưỡng thực đơn</li>
+              <li>AI phân tích khoảng trống thực đơn (Gap Analysis)</li>
+              <li>Đề xuất tối ưu thực đơn tăng trưởng 18%+ doanh thu</li>
+            </ul>
+          </div>
+
+          <Button
+            onClick={() => window.location.href = '/owner?tab=billing'}
+            className="relative z-10 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-2xl text-xs font-bold px-6 h-11 shadow-lg shadow-indigo-500/25 transition-transform active:scale-[0.98]"
+          >
+            Nâng cấp gói dịch vụ ngay ✨
+          </Button>
+        </div>
       </div>
     );
   }
@@ -215,280 +282,324 @@ export const MerchantInsightsTab: React.FC = () => {
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
           }}
-          className="rounded-3xl p-6 flex flex-col space-y-5"
+          className="rounded-3xl p-6 flex flex-col space-y-5 relative overflow-hidden"
         >
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-green-600/10">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-extrabold text-neutral-800 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400 animate-pulse" />
-                  QDish Intelligence
-                </h3>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#dcfce7] text-[#15803d]">
-                  AI ACTIVE
-                </span>
+          <div className={isPlus ? "blur-[3px] select-none pointer-events-none flex-1 flex flex-col space-y-5" : "flex-1 flex flex-col space-y-5"}>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-green-600/10">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-extrabold text-neutral-800 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400 animate-pulse" />
+                    QDish Intelligence
+                  </h3>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#dcfce7] text-[#15803d]">
+                    AI ACTIVE
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-500">
+                  Phân tích hành vi khách quét QR và đề xuất tăng doanh thu bằng AI.
+                </p>
               </div>
-              <p className="text-[11px] text-neutral-500">
-                Phân tích hành vi khách quét QR và đề xuất tăng doanh thu bằng AI.
-              </p>
+              <Button
+                onClick={handleRefreshAI}
+                disabled={refreshingAI}
+                variant="outline"
+                className="rounded-xl border-green-600/20 hover:border-green-600/40 text-green-700 text-[11px] font-bold px-3 h-8 shrink-0 flex items-center gap-1.5 bg-white/50 backdrop-blur-sm self-start sm:self-auto shadow-sm"
+              >
+                <RefreshCw className={`w-3 h-3 ${refreshingAI ? 'animate-spin' : ''}`} />
+                Làm mới AI
+              </Button>
             </div>
-            <Button
-              onClick={handleRefreshAI}
-              disabled={refreshingAI}
-              variant="outline"
-              className="rounded-xl border-green-600/20 hover:border-green-600/40 text-green-700 text-[11px] font-bold px-3 h-8 shrink-0 flex items-center gap-1.5 bg-white/50 backdrop-blur-sm self-start sm:self-auto shadow-sm"
-            >
-              <RefreshCw className={`w-3 h-3 ${refreshingAI ? 'animate-spin' : ''}`} />
-              Làm mới AI
-            </Button>
-          </div>
 
-          {refreshingAI ? (
-            <div className="space-y-5 animate-pulse">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="h-16 bg-emerald-50/60 rounded-2xl"></div>
-                <div className="h-16 bg-emerald-50/60 rounded-2xl"></div>
-                <div className="h-16 bg-emerald-50/60 rounded-2xl"></div>
+            {refreshingAI ? (
+              <div className="space-y-5 animate-pulse">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="h-16 bg-emerald-50/60 rounded-2xl"></div>
+                  <div className="h-16 bg-emerald-50/60 rounded-2xl"></div>
+                  <div className="h-16 bg-emerald-50/60 rounded-2xl"></div>
+                </div>
+                <div className="p-4 bg-neutral-100 rounded-2xl h-24"></div>
+                <div className="space-y-3">
+                  <div className="h-20 bg-neutral-100 rounded-2xl"></div>
+                  <div className="h-20 bg-neutral-100 rounded-2xl"></div>
+                  <div className="h-20 bg-neutral-100 rounded-2xl"></div>
+                </div>
               </div>
-              <div className="p-4 bg-neutral-100 rounded-2xl h-24"></div>
-              <div className="space-y-3">
-                <div className="h-20 bg-neutral-100 rounded-2xl"></div>
-                <div className="h-20 bg-neutral-100 rounded-2xl"></div>
-                <div className="h-20 bg-neutral-100 rounded-2xl"></div>
-              </div>
-            </div>
-          ) : (() => {
-            const totalScans = customerSegments.reduce((sum, s) => sum + s.count, 0);
-            const totalOrders = topDishes.reduce((sum, d) => sum + d.orderCount, 0);
-            const healthyCount = customerSegments.find(s => s.segment === 'LIGHT_MEAL' || s.segment === 'BALANCED' || s.segment === 'WEIGHT_LOSS')?.count || 0;
-            const gapCount = gapAnalysis.filter(g => !g.includes('Thực đơn của bạn')).length;
+            ) : (() => {
+              const totalScans = customerSegments.reduce((sum, s) => sum + s.count, 0);
+              const totalOrders = topDishes.reduce((sum, d) => sum + d.orderCount, 0);
+              const healthyCount = customerSegments.find(s => s.segment === 'LIGHT_MEAL' || s.segment === 'BALANCED' || s.segment === 'WEIGHT_LOSS')?.count || 0;
+              const gapCount = gapAnalysis.filter(g => !g.includes('Thực đơn của bạn')).length;
 
-            if (totalScans < 20 || totalOrders < 10) {
-              return (
-                <div className="flex flex-col items-center justify-center py-10 px-4 text-center space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-4xl animate-bounce">
-                    🥦
+              if (totalScans < 20 || totalOrders < 10) {
+                return (
+                  <div className="flex flex-col items-center justify-center py-10 px-4 text-center space-y-4">
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-4xl animate-bounce">
+                      🥦
+                    </div>
+                    <div className="space-y-2 max-w-sm">
+                      <h4 className="text-xs font-bold text-neutral-800">Cần thêm dữ liệu hoạt động</h4>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed">
+                        Để AI phân tích chính xác nhất hành vi thực khách, nhà hàng cần tích lũy tối thiểu <strong>20 lượt quét QR</strong> và <strong>10 đơn hàng đặt món thành công</strong>.
+                      </p>
+                      <div className="flex justify-center gap-4 text-[10px] text-neutral-400 font-bold bg-neutral-50/50 p-2 rounded-xl border border-neutral-100">
+                        <span>Quét QR: {totalScans}/20</span>
+                        <span>Đơn hàng: {totalOrders}/10</span>
+                      </div>
+                    </div>
+                    <Button
+                      variant="link"
+                      className="text-xs text-emerald-600 font-bold hover:text-emerald-700 flex items-center gap-1 mt-2"
+                      onClick={() => {
+                        toast.info('Tính năng AI phân tích tự động dựa trên học máy (Machine Learning) để nhận diện khoảng trống dinh dưỡng trong thực đơn dựa theo hồ sơ người dùng thực khách.');
+                      }}
+                    >
+                      Tìm hiểu thêm
+                    </Button>
                   </div>
-                  <div className="space-y-2 max-w-sm">
-                    <h4 className="text-xs font-bold text-neutral-800">Cần thêm dữ liệu hoạt động</h4>
-                    <p className="text-[11px] text-neutral-500 leading-relaxed">
-                      Để AI phân tích chính xác nhất hành vi thực khách, nhà hàng cần tích lũy tối thiểu <strong>20 lượt quét QR</strong> và <strong>10 đơn hàng đặt món thành công</strong>.
-                    </p>
-                    <div className="flex justify-center gap-4 text-[10px] text-neutral-400 font-bold bg-neutral-50/50 p-2 rounded-xl border border-neutral-100">
-                      <span>Quét QR: {totalScans}/20</span>
-                      <span>Đơn hàng: {totalOrders}/10</span>
+                );
+              }
+
+              const getMissingCategory = () => {
+                if (gapAnalysis.length === 0) return 'Đầy đủ ✨';
+                const firstGap = gapAnalysis[0] || '';
+                if (firstGap.includes('Giàu Đạm') || firstGap.includes('HIGH_PROTEIN')) return 'Giàu Đạm 🍗';
+                if (firstGap.includes('Chay') || firstGap.includes('VEGETARIAN')) return 'Đồ Chay 🌱';
+                if (firstGap.includes('Ăn nhanh') || firstGap.includes('QUICK_BITE')) return 'Ăn Nhẹ ⏱️';
+                if (firstGap.includes('Ít đường') || firstGap.includes('LOW_SUGAR')) return 'Ít Đường 🍬';
+                return 'Thực Đơn 📋';
+              };
+
+              return (
+                <div className="space-y-5">
+                  {/* KPI Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Card 1: Revenue growth opportunity */}
+                    <div className="bg-white/80 backdrop-blur-sm border border-neutral-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Cơ hội doanh thu</span>
+                        <div className="text-sm font-black text-emerald-600 flex items-center gap-0.5">
+                          +18% 📈
+                        </div>
+                      </div>
+                      <div className="p-1.5 bg-emerald-50 rounded-xl">
+                        <TrendingUp className="w-4 h-4 text-emerald-600" />
+                      </div>
+                    </div>
+
+                    {/* Card 2: Missing Category */}
+                    <div className="bg-white/80 backdrop-blur-sm border border-neutral-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Thiếu danh mục</span>
+                        <div className="text-xs font-extrabold text-amber-600 flex items-center gap-1">
+                          {getMissingCategory()}
+                        </div>
+                      </div>
+                      <div className="p-1.5 bg-amber-50 rounded-xl">
+                        <ChefHat className="w-4 h-4 text-amber-500" />
+                      </div>
+                    </div>
+
+                    {/* Card 3: Priority */}
+                    <div className="bg-white/80 backdrop-blur-sm border border-neutral-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Mức ưu tiên</span>
+                        <div className="text-xs font-extrabold text-red-600 flex items-center gap-1">
+                          Cao 🎯
+                        </div>
+                      </div>
+                      <div className="p-1.5 bg-red-50 rounded-xl">
+                        <ShieldCheck className="w-4 h-4 text-red-500" />
+                      </div>
                     </div>
                   </div>
-                  <Button
-                    variant="link"
-                    className="text-xs text-emerald-600 font-bold hover:text-emerald-700 flex items-center gap-1 mt-2"
-                    onClick={() => {
-                      toast.info('Tính năng AI phân tích tự động dựa trên học máy (Machine Learning) để nhận diện khoảng trống dinh dưỡng trong thực đơn dựa theo hồ sơ người dùng thực khách.');
-                    }}
-                  >
-                    Tìm hiểu thêm
-                  </Button>
+
+                  {/* AI Chat Bubble */}
+                  <div className="flex items-start gap-3 bg-neutral-50/70 border border-neutral-100 rounded-2xl p-4">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-base shrink-0">
+                      🤖
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-neutral-800">QDish AI Assistant</span>
+                        <span className="text-[9px] text-neutral-400 font-medium">Vừa phân tích xong</span>
+                      </div>
+                      <p className="text-[11px] text-neutral-600 leading-relaxed">
+                        Xin chào! Hệ thống ghi nhận <strong>{totalScans} lượt quét QR</strong> từ khách hàng và <strong>{totalOrders} đơn đặt món</strong> thành công. Nhóm thực khách quan tâm tới lối sống lành mạnh đang chiếm tỷ trọng cao (<strong>{healthyCount} lượt tìm kiếm</strong>). QDish phát hiện thực đơn của bạn có <strong>{gapCount} điểm khuyết thiếu</strong>. Khắc phục các điểm này dự kiến mang lại <strong>+18% cơ hội tăng trưởng doanh thu</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Recommendations list */}
+                  <div className="space-y-3">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 block">Đề xuất tối ưu thực đơn</span>
+                    
+                    {/* Card 1: Gap Analysis */}
+                    <div className="bg-white/95 border border-neutral-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-base shrink-0 mt-0.5">
+                          🍗
+                        </div>
+                        <div className="space-y-0.5">
+                          <h4 className="text-xs font-bold text-neutral-800">
+                            {gapAnalysis[0]?.includes('Chay') ? 'Bổ sung món chay / thuần chay' : 'Bổ sung món ăn Giàu Đạm'}
+                          </h4>
+                          <p className="text-[11px] text-neutral-500 leading-relaxed">
+                            {gapAnalysis[0] || 'Menu đang thiếu hụt món ăn chứa lượng dinh dưỡng phù hợp cho nhu cầu thực khách.'}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-[10px] font-bold text-emerald-600 border-emerald-100 hover:bg-emerald-50 rounded-xl shrink-0 h-8 self-end sm:self-auto"
+                        onClick={() => {
+                          toast.success('Đang chuyển tới Recipe Builder để thêm nguyên liệu...');
+                        }}
+                      >
+                        Xem gợi ý món
+                      </Button>
+                    </div>
+
+                    {/* Card 2: Growth Segment */}
+                    <div className="bg-white/95 border border-neutral-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-base shrink-0 mt-0.5">
+                          🥗
+                        </div>
+                        <div className="space-y-0.5">
+                          <h4 className="text-xs font-bold text-neutral-800">Healthy đang tăng trưởng</h4>
+                          <p className="text-[11px] text-neutral-500 leading-relaxed">
+                            Phân khúc khách hàng ăn uống Healthy chiếm tỷ trọng <strong>{healthyCount} lượt quét</strong>. Hãy tối ưu các tag Calo.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-[10px] font-bold text-emerald-600 border-emerald-100 hover:bg-emerald-50 rounded-xl shrink-0 h-8 self-end sm:self-auto"
+                        onClick={() => {
+                          toast.success('Đang mở chi tiết phân khúc khách hàng...');
+                        }}
+                      >
+                        Xem dữ liệu
+                      </Button>
+                    </div>
+
+                    {/* Card 3: Performance Leader */}
+                    <div className="bg-white/95 border border-neutral-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base shrink-0 mt-0.5">
+                          💰
+                        </div>
+                        <div className="space-y-0.5">
+                          <h4 className="text-xs font-bold text-neutral-800">Món bán tốt nhất: {topDishes[0]?.name || 'N/A'}</h4>
+                          <p className="text-[11px] text-neutral-500 leading-relaxed">
+                            Mang lại <strong>{formatVND(topDishes[0]?.revenue || 0)}</strong> doanh thu. Đề xuất ghim món này lên đầu thực đơn QR.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-[10px] font-bold text-emerald-600 border-emerald-100 hover:bg-emerald-50 rounded-xl shrink-0 h-8 self-end sm:self-auto"
+                        onClick={() => {
+                          toast.success('Đang mở báo cáo chi tiết doanh thu món ăn...');
+                        }}
+                      >
+                        Chi tiết
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               );
-            }
+            })()}
 
-            const getMissingCategory = () => {
-              if (gapAnalysis.length === 0) return 'Đầy đủ ✨';
-              const firstGap = gapAnalysis[0] || '';
-              if (firstGap.includes('Giàu Đạm') || firstGap.includes('HIGH_PROTEIN')) return 'Giàu Đạm 🍗';
-              if (firstGap.includes('Chay') || firstGap.includes('VEGETARIAN')) return 'Đồ Chay 🌱';
-              if (firstGap.includes('Ăn nhanh') || firstGap.includes('QUICK_BITE')) return 'Ăn Nhẹ ⏱️';
-              if (firstGap.includes('Ít đường') || firstGap.includes('LOW_SUGAR')) return 'Ít Đường 🍬';
-              return 'Thực Đơn 📋';
-            };
-
-            return (
-              <div className="space-y-5">
-                {/* KPI Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* Card 1: Revenue growth opportunity */}
-                  <div className="bg-white/80 backdrop-blur-sm border border-neutral-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Cơ hội doanh thu</span>
-                      <div className="text-sm font-black text-emerald-600 flex items-center gap-0.5">
-                        +18% 📈
-                      </div>
-                    </div>
-                    <div className="p-1.5 bg-emerald-50 rounded-xl">
-                      <TrendingUp className="w-4 h-4 text-emerald-600" />
-                    </div>
-                  </div>
-
-                  {/* Card 2: Missing Category */}
-                  <div className="bg-white/80 backdrop-blur-sm border border-neutral-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Thiếu danh mục</span>
-                      <div className="text-xs font-extrabold text-amber-600 flex items-center gap-1">
-                        {getMissingCategory()}
-                      </div>
-                    </div>
-                    <div className="p-1.5 bg-amber-50 rounded-xl">
-                      <ChefHat className="w-4 h-4 text-amber-500" />
-                    </div>
-                  </div>
-
-                  {/* Card 3: Priority */}
-                  <div className="bg-white/80 backdrop-blur-sm border border-neutral-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Mức ưu tiên</span>
-                      <div className="text-xs font-extrabold text-red-600 flex items-center gap-1">
-                        Cao 🎯
-                      </div>
-                    </div>
-                    <div className="p-1.5 bg-red-50 rounded-xl">
-                      <ShieldCheck className="w-4 h-4 text-red-500" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Chat Bubble */}
-                <div className="flex items-start gap-3 bg-neutral-50/70 border border-neutral-100 rounded-2xl p-4">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 border border-emerald-200 flex items-center justify-center text-base shrink-0">
-                    🤖
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-neutral-800">QDish AI Assistant</span>
-                      <span className="text-[9px] text-neutral-400 font-medium">Vừa phân tích xong</span>
-                    </div>
-                    <p className="text-[11px] text-neutral-600 leading-relaxed">
-                      Xin chào! Hệ thống ghi nhận <strong>{totalScans} lượt quét QR</strong> từ khách hàng và <strong>{totalOrders} đơn đặt món</strong> thành công. Nhóm thực khách quan tâm tới lối sống lành mạnh đang chiếm tỷ trọng cao (<strong>{healthyCount} lượt tìm kiếm</strong>). QDish phát hiện thực đơn của bạn có <strong>{gapCount} điểm khuyết thiếu</strong>. Khắc phục các điểm này dự kiến mang lại <strong>+18% cơ hội tăng trưởng doanh thu</strong>.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Recommendations list */}
-                <div className="space-y-3">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 block">Đề xuất tối ưu thực đơn</span>
-                  
-                  {/* Card 1: Gap Analysis */}
-                  <div className="bg-white/95 border border-neutral-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-base shrink-0 mt-0.5">
-                        🍗
-                      </div>
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs font-bold text-neutral-800">
-                          {gapAnalysis[0]?.includes('Chay') ? 'Bổ sung món chay / thuần chay' : 'Bổ sung món ăn Giàu Đạm'}
-                        </h4>
-                        <p className="text-[11px] text-neutral-500 leading-relaxed">
-                          {gapAnalysis[0] || 'Menu đang thiếu hụt món ăn chứa lượng dinh dưỡng phù hợp cho nhu cầu thực khách.'}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-[10px] font-bold text-emerald-600 border-emerald-100 hover:bg-emerald-50 rounded-xl shrink-0 h-8 self-end sm:self-auto"
-                      onClick={() => {
-                        toast.success('Đang chuyển tới Recipe Builder để thêm nguyên liệu...');
-                      }}
-                    >
-                      Xem gợi ý món
-                    </Button>
-                  </div>
-
-                  {/* Card 2: Growth Segment */}
-                  <div className="bg-white/95 border border-neutral-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-green-50 border border-green-100 flex items-center justify-center text-base shrink-0 mt-0.5">
-                        🥗
-                      </div>
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs font-bold text-neutral-800">Healthy đang tăng trưởng</h4>
-                        <p className="text-[11px] text-neutral-500 leading-relaxed">
-                          Phân khúc khách hàng ăn uống Healthy chiếm tỷ trọng <strong>{healthyCount} lượt quét</strong>. Hãy tối ưu các tag Calo.
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-[10px] font-bold text-emerald-600 border-emerald-100 hover:bg-emerald-50 rounded-xl shrink-0 h-8 self-end sm:self-auto"
-                      onClick={() => {
-                        toast.success('Đang mở chi tiết phân khúc khách hàng...');
-                      }}
-                    >
-                      Xem dữ liệu
-                    </Button>
-                  </div>
-
-                  {/* Card 3: Performance Leader */}
-                  <div className="bg-white/95 border border-neutral-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm hover:shadow-md transition-all duration-300">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base shrink-0 mt-0.5">
-                        💰
-                      </div>
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs font-bold text-neutral-800">Món bán tốt nhất: {topDishes[0]?.name || 'N/A'}</h4>
-                        <p className="text-[11px] text-neutral-500 leading-relaxed">
-                          Mang lại <strong>{formatVND(topDishes[0]?.revenue || 0)}</strong> doanh thu. Đề xuất ghim món này lên đầu thực đơn QR.
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-[10px] font-bold text-emerald-600 border-emerald-100 hover:bg-emerald-50 rounded-xl shrink-0 h-8 self-end sm:self-auto"
-                      onClick={() => {
-                        toast.success('Đang mở báo cáo chi tiết doanh thu món ăn...');
-                      }}
-                    >
-                      Chi tiết
-                    </Button>
-                  </div>
-                </div>
+            {/* Footer info (only if above threshold) */}
+            {(!refreshingAI && (customerSegments.reduce((sum, s) => sum + s.count, 0) >= 20 && topDishes.reduce((sum, d) => sum + d.orderCount, 0) >= 10)) && (
+              <div className="text-[10px] text-neutral-400 italic pt-2 border-t border-green-600/10 flex items-center gap-1.5">
+                <Info className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
+                <span>Dữ liệu đề xuất được cập nhật tự động dựa trên thói quen ăn uống của các lượt quét QR gần nhất.</span>
               </div>
-            );
-          })()}
+            )}
+          </div>
 
-          {/* Footer info (only if above threshold) */}
-          {(!refreshingAI && (customerSegments.reduce((sum, s) => sum + s.count, 0) >= 20 && topDishes.reduce((sum, d) => sum + d.orderCount, 0) >= 10)) && (
-            <div className="text-[10px] text-neutral-400 italic pt-2 border-t border-green-600/10 flex items-center gap-1.5">
-              <Info className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
-              <span>Dữ liệu đề xuất được cập nhật tự động dựa trên thói quen ăn uống của các lượt quét QR gần nhất.</span>
+          {isPlus && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1px] p-6 text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/20 animate-pulse">
+                🔒
+              </div>
+              <div className="space-y-1.5 max-w-[280px]">
+                <h4 className="text-sm font-bold text-neutral-900">Tính năng AI Advisor bị khóa</h4>
+                <p className="text-xs text-neutral-500 leading-normal">
+                  Tính năng phân tích đề xuất tối ưu khoảng trống thực đơn bằng AI chỉ khả dụng cho gói <strong>PRO</strong>.
+                </p>
+              </div>
+              <Button
+                onClick={() => window.location.href = '/owner?tab=billing'}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold px-4 h-9 shadow-md shadow-indigo-500/20"
+              >
+                Nâng cấp gói PRO ngay ✨
+              </Button>
             </div>
           )}
         </div>
 
         {/* Right: Customer Segment Profile Demands */}
-        <div className="bg-white rounded-3xl border border-neutral-100 p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-green-600" />
-              <h3 className="text-sm font-bold text-neutral-800">Thị hiếu của Thực khách quét QR</h3>
+        <div className="bg-white rounded-3xl border border-neutral-100 p-6 shadow-sm space-y-4 relative overflow-hidden flex flex-col justify-between">
+          <div className={isPlus ? "blur-[3px] select-none pointer-events-none flex-1 flex flex-col space-y-4" : "flex-1 flex flex-col space-y-4"}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-green-600" />
+                <h3 className="text-sm font-bold text-neutral-800">Thị hiếu của Thực khách quét QR</h3>
+              </div>
+              <span className="text-[10px] text-neutral-400 font-medium">Xu hướng ăn uống</span>
             </div>
-            <span className="text-[10px] text-neutral-400 font-medium">Xu hướng ăn uống</span>
+
+            <div className="space-y-3.5 max-h-[350px] overflow-y-auto pr-1">
+              {customerSegments.map((seg) => {
+                // Calculate width percentage relative to highest count
+                const maxCount = Math.max(...customerSegments.map(s => s.count)) || 1;
+                const widthPct = Math.max(15, Math.round((seg.count / maxCount) * 100));
+
+                return (
+                  <div key={seg.segment} className="space-y-1">
+                    <div className="flex justify-between text-xs font-semibold text-neutral-700">
+                      <span>{seg.label}</span>
+                      <span className="text-green-600 font-bold">{seg.count} lượt quét</span>
+                    </div>
+                    <div className="h-3 w-full bg-neutral-50 rounded-full overflow-hidden border border-neutral-100/50">
+                      <div
+                        className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full"
+                        style={{ width: `${widthPct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="space-y-3.5 max-h-[350px] overflow-y-auto pr-1">
-            {customerSegments.map((seg) => {
-              // Calculate width percentage relative to highest count
-              const maxCount = Math.max(...customerSegments.map(s => s.count)) || 1;
-              const widthPct = Math.max(15, Math.round((seg.count / maxCount) * 100));
-
-              return (
-                <div key={seg.segment} className="space-y-1">
-                  <div className="flex justify-between text-xs font-semibold text-neutral-700">
-                    <span>{seg.label}</span>
-                    <span className="text-green-600 font-bold">{seg.count} lượt quét</span>
-                  </div>
-                  <div className="h-3 w-full bg-neutral-50 rounded-full overflow-hidden border border-neutral-100/50">
-                    <div
-                      className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full"
-                      style={{ width: `${widthPct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {isPlus && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1px] p-6 text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/20 animate-pulse">
+                🔒
+              </div>
+              <div className="space-y-1.5 max-w-[280px]">
+                <h4 className="text-sm font-bold text-neutral-900">Thị hiếu Thực khách bị khóa</h4>
+                <p className="text-xs text-neutral-500 leading-normal">
+                  Biểu đồ phân tích sâu xu hướng và nhu cầu dinh dưỡng của khách hàng quét QR chỉ khả dụng cho gói <strong>PRO</strong>.
+                </p>
+              </div>
+              <Button
+                onClick={() => window.location.href = '/owner?tab=billing'}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold px-4 h-9 shadow-md shadow-indigo-500/20"
+              >
+                Nâng cấp gói PRO ngay ✨
+              </Button>
+            </div>
+          )}
         </div>
 
       </div>

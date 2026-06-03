@@ -631,7 +631,7 @@ export const Dashboard: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">
-          <MerchantInsightsTab />
+          <MerchantInsightsTab restaurant={restaurant} />
         </TabsContent>
 
         <TabsContent value="orders" className="space-y-6">
