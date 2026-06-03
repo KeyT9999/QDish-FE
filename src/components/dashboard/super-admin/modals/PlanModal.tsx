@@ -116,7 +116,7 @@ export const PlanModal: React.FC<PlanModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg bg-white rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
+      <DialogContent className="w-[95vw] max-w-lg bg-white rounded-2xl p-5 sm:p-6 overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-gray-900">
             {editingPlan ? 'Sửa gói dịch vụ' : 'Tạo gói dịch vụ mới'}

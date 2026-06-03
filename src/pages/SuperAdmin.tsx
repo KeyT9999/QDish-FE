@@ -351,21 +351,21 @@ export const SuperAdmin: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 px-4">
+    <div className="space-y-6">
       {/* Title */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-heading font-bold text-gray-900">Quản trị hệ thống SaaS</h1>
-          <p className="text-gray-500 text-sm">Quản lý tài khoản chi nhánh, xem thống kê doanh số toàn hệ thống.</p>
+          <h1 className="text-2xl sm:text-3xl font-heading font-bold text-gray-900">Quản trị hệ thống SaaS</h1>
+          <p className="text-gray-500 text-xs sm:text-sm">Quản lý tài khoản chi nhánh, xem thống kê doanh số toàn hệ thống.</p>
         </div>
       </div>
 
       {/* Tabs list Navigation */}
-      <div className="flex gap-2 border-b border-gray-200 pb-3 flex-wrap">
+      <div className="flex gap-2 border-b border-gray-200 pb-3 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 whitespace-nowrap">
         <Button 
           variant={activeTab === 'restaurants' ? 'default' : 'ghost'} 
           onClick={() => setActiveTab('restaurants')}
-          className={`rounded-lg px-4 font-semibold text-sm ${
+          className={`rounded-lg px-4 font-semibold text-sm shrink-0 ${
             activeTab === 'restaurants' 
               ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm' 
               : 'text-gray-600'
@@ -377,7 +377,7 @@ export const SuperAdmin: React.FC = () => {
         <Button 
           variant={activeTab === 'owners' ? 'default' : 'ghost'} 
           onClick={() => setActiveTab('owners')}
-          className={`rounded-lg px-4 font-semibold text-sm ${
+          className={`rounded-lg px-4 font-semibold text-sm shrink-0 ${
             activeTab === 'owners' 
               ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm' 
               : 'text-gray-600'
@@ -389,7 +389,7 @@ export const SuperAdmin: React.FC = () => {
         <Button 
           variant={activeTab === 'stats' ? 'default' : 'ghost'} 
           onClick={() => setActiveTab('stats')}
-          className={`rounded-lg px-4 font-semibold text-sm ${
+          className={`rounded-lg px-4 font-semibold text-sm shrink-0 ${
             activeTab === 'stats' 
               ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm' 
               : 'text-gray-600'
@@ -401,7 +401,7 @@ export const SuperAdmin: React.FC = () => {
         <Button 
           variant={activeTab === 'plans' ? 'default' : 'ghost'} 
           onClick={() => setActiveTab('plans')}
-          className={`rounded-lg px-4 font-semibold text-sm ${
+          className={`rounded-lg px-4 font-semibold text-sm shrink-0 ${
             activeTab === 'plans' 
               ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm' 
               : 'text-gray-600'
@@ -413,7 +413,7 @@ export const SuperAdmin: React.FC = () => {
         <Button 
           variant={activeTab === 'notifications' ? 'default' : 'ghost'} 
           onClick={() => setActiveTab('notifications')}
-          className={`rounded-lg px-4 font-semibold text-sm ${
+          className={`rounded-lg px-4 font-semibold text-sm shrink-0 ${
             activeTab === 'notifications' 
               ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm' 
               : 'text-gray-600'
