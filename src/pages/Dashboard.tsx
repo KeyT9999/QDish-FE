@@ -36,6 +36,7 @@ import { RestaurantBillsTab } from '@/components/dashboard/restaurant/Restaurant
 import { RestaurantStaffTab } from '@/components/dashboard/restaurant/RestaurantStaffTab';
 import { RestaurantSettingsTab } from '@/components/dashboard/restaurant/RestaurantSettingsTab';
 import { RestaurantNotificationsTab } from '@/components/dashboard/restaurant/RestaurantNotificationsTab';
+import { RestaurantIngredientsTab } from '@/components/dashboard/restaurant/RestaurantIngredientsTab';
 
 // Modal Components
 import { MenuItemModal } from '@/components/dashboard/restaurant/modals/MenuItemModal';
@@ -667,6 +668,10 @@ export const Dashboard: React.FC = () => {
             onOpenCategoryModal={handleOpenCategoryModal}
             onDeleteCategory={handleDeleteCategory}
           />
+        </TabsContent>
+
+        <TabsContent value="ingredients" className="space-y-6">
+          <RestaurantIngredientsTab restaurantId={restaurantId} />
         </TabsContent>
 
         <TabsContent value="tables" className="space-y-6">

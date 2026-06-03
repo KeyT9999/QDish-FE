@@ -21,6 +21,7 @@ export interface Ingredient {
   allergens: string[];
   isVerified: boolean;
   source: string;
+  restaurantId?: string | null;
 }
 
 export interface DishIngredientInput {
@@ -91,13 +92,69 @@ export const ingredientService = {
   },
 
   /**
-   * Create a custom ingredient for the restaurant.
+   * Get paginated and filtered ingredients.
+   * Requires auth.
+   */
+  getAll: async (params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    category?: string;
+    type?: 'all' | 'global' | 'custom';
+  } = {}): Promise<{ ingredients: Ingredient[]; total: number; pages: number; page: number }> => {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.set('page', String(params.page));
+    if (params.limit) queryParams.set('limit', String(params.limit));
+    if (params.search) queryParams.set('search', params.search);
+    if (params.category) queryParams.set('category', params.category);
+    if (params.type) queryParams.set('type', params.type);
+
+    return apiFetch<{ ingredients: Ingredient[]; total: number; pages: number; page: number }>(
+      `/api/ingredients?${queryParams.toString()}`,
+      { requireAuth: true }
+    );
+  },
+
+  /**
+   * Create an ingredient (global or custom depending on role).
+   * Requires auth.
+   */
+  create: async (data: Omit<Ingredient, '_id' | 'slug' | 'isVerified' | 'source'>): Promise<Ingredient> => {
+    return apiFetch<Ingredient>('/api/ingredients', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Create a custom ingredient for the restaurant (legacy compatibility).
    * Requires auth.
    */
   createCustom: async (data: Omit<Ingredient, '_id' | 'slug' | 'isVerified' | 'source'>): Promise<Ingredient> => {
     return apiFetch<Ingredient>('/api/ingredients/custom', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Update an ingredient.
+   * Requires auth.
+   */
+  update: async (id: string, data: Partial<Ingredient>): Promise<Ingredient> => {
+    return apiFetch<Ingredient>(`/api/ingredients/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete an ingredient.
+   * Requires auth.
+   */
+  delete: async (id: string): Promise<void> => {
+    return apiFetch<void>(`/api/ingredients/${id}`, {
+      method: 'DELETE',
     });
   },
 
