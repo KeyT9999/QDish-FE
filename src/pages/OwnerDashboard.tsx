@@ -386,6 +386,15 @@ export const OwnerDashboard: React.FC = () => {
                   {/* Progress Items list */}
                   {[
                     {
+                      label: 'Lượt quét QR (scans/tháng)',
+                      count: subDetails.usage.scanCount || 0,
+                      limit: subDetails.limits.scanLimitMonthly !== undefined ? subDetails.limits.scanLimitMonthly : -1,
+                      icon: QrCode,
+                      color: 'bg-indigo-500',
+                      bgColor: 'bg-indigo-50',
+                      textColor: 'text-indigo-700'
+                    },
+                    {
                       label: 'Chi nhánh / Nhà hàng',
                       count: subDetails.usage.restaurantCount,
                       limit: subDetails.limits.restaurantLimit,
@@ -455,7 +464,7 @@ export const OwnerDashboard: React.FC = () => {
                             </div>
                             {isAtLimit && (
                               <span className="text-[9px] font-bold text-rose-500 mt-1 block">
-                                Đã đạt giới hạn tối đa! Vui lòng nâng cấp gói để tạo thêm.
+                                Đã đạt giới hạn tối đa! Vui lòng nâng cấp gói để tiếp tục sử dụng thêm.
                               </span>
                             )}
                           </div>
@@ -475,15 +484,49 @@ export const OwnerDashboard: React.FC = () => {
                 <CardHeader>
                   <CardTitle className="text-lg font-bold text-slate-800">Tính năng gói sở hữu</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(subDetails.limits.features || []).map((feat: string, idx: number) => (
-                    <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-600">
-                      <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
-                        <Check className="w-3.5 h-3.5" />
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {(subDetails.limits.features || []).map((feat: string, idx: number) => (
+                      <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-600">
+                        <div className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                          <Check className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="leading-snug">{feat}</span>
                       </div>
-                      <span className="leading-snug">{feat}</span>
+                    ))}
+                  </div>
+
+                  {/* AI Feature Flags */}
+                  <div className="border-t border-slate-100 pt-4 mt-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Tính năng AI & phân tích dữ liệu</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {[
+                        { label: 'Cá nhân hóa Fit Score', enabled: subDetails.limits.fitScoreEnabled || false },
+                        { label: 'Hồ sơ dinh dưỡng món ăn', enabled: subDetails.limits.foodAttributesEnabled || false },
+                        { label: 'Gợi ý món ăn AI (AI Recommendation)', enabled: subDetails.limits.recommendationEnabled || false },
+                        { label: 'Cá nhân hóa thực đơn (Personalized Menu)', enabled: subDetails.limits.personalizedMenuEnabled || false },
+                        { label: 'Báo cáo phân tích chuyên sâu', enabled: subDetails.limits.advancedAnalyticsEnabled || false },
+                        { label: 'Phân tích hành vi khách hàng', enabled: subDetails.limits.customerInsightsEnabled || false }
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2.5 text-xs">
+                          <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
+                            item.enabled 
+                              ? 'bg-purple-50 text-purple-750 border border-purple-200' 
+                              : 'bg-slate-50 text-slate-400 border border-slate-200'
+                          }`}>
+                            {item.enabled ? (
+                              <Sparkles className="w-3 h-3 text-purple-600" />
+                            ) : (
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                            )}
+                          </div>
+                          <span className={item.enabled ? 'text-slate-800 font-medium' : 'text-slate-400 line-through'}>
+                            {item.label}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </CardContent>
               </Card>
 
@@ -515,16 +558,49 @@ export const OwnerDashboard: React.FC = () => {
                     const planId = plan.id || plan._id;
                     const isCurrent = subDetails.subscription.planId === planId;
                     const price = billingCycle === BillingCycle.YEARLY ? plan.priceYearly : plan.priceMonthly;
+                    
+                    let cardBorderClass = 'border-slate-150';
+                    let cardBgClass = 'bg-slate-50/50';
+                    let btnClass = isCurrent ? 'bg-slate-200 text-slate-500' : 'bg-emerald-600 hover:bg-emerald-500 text-white';
+                    
+                    if (plan.code === 'FREE') {
+                      cardBorderClass = 'border-emerald-500/30 hover:border-emerald-500 bg-emerald-50/5 shadow-sm transition-all duration-300';
+                      if (!isCurrent) btnClass = 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/10';
+                    } else if (plan.code === 'PLUS') {
+                      cardBorderClass = 'border-blue-500/30 hover:border-blue-500 bg-blue-50/5 shadow-sm transition-all duration-300';
+                      if (!isCurrent) btnClass = 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/10';
+                    } else if (plan.code === 'PRO') {
+                      cardBorderClass = 'border-purple-500/45 hover:border-purple-500 bg-purple-50/5 shadow-[0_4px_15px_rgba(168,85,247,0.04)] scale-102 transition-all duration-300 relative';
+                      if (!isCurrent) btnClass = 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-550 hover:to-indigo-550 text-white shadow-md shadow-purple-600/10';
+                    }
+
                     return (
-                      <div key={planId || plan.code} className="rounded-2xl border border-slate-150 bg-slate-50/50 p-4 flex flex-col gap-4">
+                      <div 
+                        key={planId || plan.code} 
+                        className={`rounded-2xl border p-4 flex flex-col gap-4 group transition-all duration-300 hover:-translate-y-0.5 ${cardBorderClass} ${cardBgClass}`}
+                      >
+                        {plan.code === 'PRO' && (
+                          <div className="absolute top-0 right-4 -translate-y-1/2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-extrabold text-[8px] uppercase px-2 py-0.5 rounded-full shadow-md">
+                            Khuyên dùng
+                          </div>
+                        )}
                         <div>
                           <div className="flex items-center justify-between gap-2">
-                            <h4 className="font-black text-slate-900 text-sm">{plan.name}</h4>
+                            <h4 className="font-black text-slate-900 text-sm flex items-center gap-1.5">
+                              {plan.name}
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase ${
+                                plan.code === 'FREE' ? 'bg-emerald-100 text-emerald-800' :
+                                plan.code === 'PLUS' ? 'bg-blue-100 text-blue-800' :
+                                'bg-purple-100 text-purple-800'
+                              }`}>
+                                {plan.code}
+                              </span>
+                            </h4>
                             {plan.isPopular && (
-                              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-black uppercase">Hot</span>
+                              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-black uppercase animate-pulse">Hot</span>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">{plan.description}</p>
+                          <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 min-h-[32px]">{plan.description}</p>
                         </div>
 
                         <div>
@@ -536,18 +612,17 @@ export const OwnerDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="space-y-1.5 text-[11px] text-slate-600 flex-1">
-                          <div>Chi nhánh: <strong>{plan.restaurantLimit === -1 ? 'Không giới hạn' : plan.restaurantLimit}</strong></div>
-                          <div>Bàn: <strong>{plan.tableLimit === -1 ? 'Không giới hạn' : plan.tableLimit}</strong></div>
-                          <div>Món: <strong>{plan.menuItemLimit === -1 ? 'Không giới hạn' : plan.menuItemLimit}</strong></div>
-                          <div>Staff: <strong>{plan.staffLimit === -1 ? 'Không giới hạn' : plan.staffLimit}</strong></div>
+                        <div className="space-y-1.5 text-[11px] text-slate-600 flex-1 border-t border-slate-100 pt-3">
+                          <div>Lượt quét: <strong>{plan.scanLimitMonthly === -1 ? 'Vô hạn' : `${plan.scanLimitMonthly?.toLocaleString('vi-VN')} scans/tháng`}</strong></div>
+                          <div>Chi nhánh: <strong>{plan.restaurantLimit === -1 ? 'Không giới hạn' : `${plan.restaurantLimit} chi nhánh`}</strong></div>
+                          <div>AI & Analytics: <strong>{plan.code === 'FREE' ? 'Cơ bản' : plan.code === 'PLUS' ? 'AI Fit Score & Cá nhân hóa' : 'Full AI & Phân tích chuyên sâu'}</strong></div>
                         </div>
 
                         <Button
                           type="button"
                           disabled={!planId || checkoutPlanId !== null || isCurrent}
                           onClick={() => handleBillingCheckout(plan)}
-                          className={`rounded-xl text-xs font-bold ${isCurrent ? 'bg-slate-200 text-slate-500' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}
+                          className={`rounded-xl text-xs font-bold transition-all duration-200 ${btnClass}`}
                         >
                           {checkoutPlanId === planId ? (
                             <span className="flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang xử lý</span>

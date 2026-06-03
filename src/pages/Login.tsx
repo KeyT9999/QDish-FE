@@ -25,7 +25,7 @@ export const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const { token } = await authService.login({ username, password });
+      const { token } = await authService.login({ username: username.trim(), password });
       const role = login(token);
       
       if (role === Role.SUPER_ADMIN) {

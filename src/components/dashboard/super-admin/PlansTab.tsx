@@ -52,6 +52,7 @@ export const PlansTab: React.FC<PlansTabProps> = ({
                     <TableRow>
                       <TableHead className="text-xs">Tên gói / Mã</TableHead>
                       <TableHead className="text-xs">Giá tháng / năm</TableHead>
+                      <TableHead className="text-xs">Hạn mức quét</TableHead>
                       <TableHead className="text-xs">Hạn mức chi nhánh</TableHead>
                       <TableHead className="text-xs">Hạn mức bàn</TableHead>
                       <TableHead className="text-xs">Hạn mức món</TableHead>
@@ -85,6 +86,9 @@ export const PlansTab: React.FC<PlansTabProps> = ({
                               {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(plan.priceYearly)} / năm
                             </span>
                           )}
+                        </TableCell>
+                        <TableCell className="text-xs text-gray-750">
+                          {plan.scanLimitMonthly === -1 || plan.scanLimitMonthly === undefined ? 'Vô hạn' : `${plan.scanLimitMonthly?.toLocaleString('vi-VN')} scans`}
                         </TableCell>
                         <TableCell className="text-xs text-gray-700">
                           {plan.restaurantLimit === -1 ? 'Không giới hạn' : `${plan.restaurantLimit} chi nhánh`}
@@ -184,6 +188,12 @@ export const PlansTab: React.FC<PlansTabProps> = ({
                       )}
                       
                       <div className="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-xl border border-gray-100/50 mt-2 text-[11px]">
+                        <div className="flex items-center justify-between col-span-2 border-b border-gray-100 pb-1.5 mb-0.5">
+                          <span className="text-gray-400">Lượt quét:</span>
+                          <span className="font-bold text-gray-800">
+                            {plan.scanLimitMonthly === -1 || plan.scanLimitMonthly === undefined ? 'Vô hạn' : `${plan.scanLimitMonthly?.toLocaleString('vi-VN')} scans/tháng`}
+                          </span>
+                        </div>
                         <div className="flex items-center justify-between">
                           <span className="text-gray-400">Chi nhánh:</span>
                           <span className="font-bold text-gray-800">

@@ -28,6 +28,14 @@ export interface Restaurant {
   bankAccountHolder?: string;
   bankQrImageUrl?: string;
   bankName?: string; // Tên ngân hàng
+  features?: {
+    fitScoreEnabled: boolean;
+    foodAttributesEnabled: boolean;
+    recommendationEnabled: boolean;
+    personalizedMenuEnabled: boolean;
+    advancedAnalyticsEnabled?: boolean;
+    customerInsightsEnabled?: boolean;
+  };
 }
 
 export interface NewRestaurantPayload {
@@ -443,6 +451,13 @@ export interface Plan {
   tableLimit: number;      // -1 for unlimited
   menuItemLimit: number;   // -1 for unlimited
   staffLimit: number;      // -1 for unlimited
+  scanLimitMonthly: number; // -1 for unlimited
+  fitScoreEnabled: boolean;
+  foodAttributesEnabled: boolean;
+  recommendationEnabled: boolean;
+  personalizedMenuEnabled: boolean;
+  advancedAnalyticsEnabled: boolean;
+  customerInsightsEnabled: boolean;
   features: string[];
   unavailableFeatures: string[];
   isPopular: boolean;

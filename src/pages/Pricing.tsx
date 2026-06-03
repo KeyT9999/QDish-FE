@@ -173,104 +173,90 @@ export const Pricing: React.FC = () => {
             const isFree = plan.priceMonthly === 0;
             const price = billingCycle === BillingCycle.YEARLY ? plan.priceYearly : plan.priceMonthly;
             const cycleText = billingCycle === BillingCycle.YEARLY ? 'năm' : 'tháng';
-            const isPopular = plan.isPopular;
             
             const isCurrentActive = currentSub && 
                                    currentSub.planId === (plan.id || plan._id) && 
                                    currentSub.status === 'ACTIVE';
 
+            let cardStyle = 'bg-slate-850/60 border-slate-700/50 hover:border-slate-600 shadow-xl hover:-translate-y-1';
+            let badgeStyle = 'bg-slate-800 border-slate-700 text-slate-400';
+            let ribbonText = '';
+            let scansText = '';
+            let scansSubtitle = '';
+
+            if (plan.code === 'FREE') {
+              cardStyle = 'border-emerald-500/80 bg-slate-900/60 shadow-[0_10px_30px_rgba(16,185,129,0.06)] hover:-translate-y-1';
+              badgeStyle = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+              scansText = '500';
+              scansSubtitle = 'scans / tháng';
+            } else if (plan.code === 'PLUS') {
+              cardStyle = 'border-blue-500/80 bg-slate-900/60 shadow-[0_10px_30px_rgba(59,130,246,0.06)] hover:-translate-y-1';
+              badgeStyle = 'bg-blue-500/10 border-blue-500/30 text-blue-400';
+              scansText = '5.000';
+              scansSubtitle = 'scans / tháng';
+            } else if (plan.code === 'PRO') {
+              cardStyle = 'border-purple-500 bg-slate-900/60 shadow-[0_10px_30px_rgba(168,85,247,0.08)] scale-105 z-10';
+              badgeStyle = 'bg-purple-500/10 border-purple-500/30 text-purple-400';
+              ribbonText = 'KHUYÊN DÙNG';
+              scansText = 'Vô hạn';
+              scansSubtitle = '50.000+ scans/tháng';
+            }
+
             return (
               <div 
                 key={plan.id || plan._id}
-                className={`relative rounded-3xl p-6 md:p-8 flex flex-col transition-all duration-300 border backdrop-blur-md group ${
-                  isPopular 
-                    ? 'bg-gradient-to-b from-slate-800 via-slate-850 to-slate-900 border-emerald-500/60 shadow-[0_10px_30px_rgba(16,185,129,0.08)] scale-105 z-10' 
-                    : 'bg-slate-850/60 border-slate-700/50 hover:border-slate-600 shadow-xl hover:-translate-y-1'
-                }`}
+                className={`relative rounded-3xl p-6 md:p-8 flex flex-col transition-all duration-300 border backdrop-blur-md group ${cardStyle}`}
               >
-                {/* Popularity Badge */}
-                {isPopular && (
-                  <div className="absolute top-0 right-1/2 translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-500 to-green-500 text-slate-900 font-extrabold text-[10px] uppercase px-4 py-1 rounded-full shadow-lg flex items-center gap-1 leading-none tracking-wider">
-                    <Sparkles className="w-3.5 h-3.5" /> Phổ biến nhất
+                {/* PRO ribbon "KHUYÊN DÙNG" */}
+                {ribbonText && (
+                  <div className="absolute top-0 right-1/2 translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-extrabold text-[10px] uppercase px-4 py-1 rounded-full shadow-lg flex items-center gap-1 leading-none tracking-wider">
+                    <Sparkles className="w-3.5 h-3.5" /> {ribbonText}
                   </div>
                 )}
 
-                {/* Gói hiện tại Badge */}
-                {isCurrentActive && (
-                  <div className="absolute top-4 right-4 bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 font-bold text-[9px] uppercase px-2.5 py-1 rounded-lg">
-                    Gói hiện tại
+                {/* Header & Badges */}
+                <div className="flex justify-between items-start mb-4">
+                  <div className={`px-2.5 py-1 border rounded-lg font-bold text-[9px] uppercase tracking-wider ${badgeStyle}`}>
+                    Gói {plan.code}
                   </div>
-                )}
-
-                {/* Plan Info */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                  <p className="text-slate-400 text-xs leading-relaxed min-h-[40px]">{plan.description}</p>
-                </div>
-
-                {/* Price Display */}
-                <div className="mb-8">
-                  {isFree ? (
-                    <div className="flex items-baseline text-white">
-                      <span className="text-4xl md:text-5xl font-black tracking-tight">Miễn phí</span>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex items-baseline text-white">
-                        <span className="text-4xl md:text-5xl font-black tracking-tight">
-                          {formatPrice(price).replace('₫', '')}
-                        </span>
-                        <span className="text-emerald-500 font-black text-xl ml-1">₫</span>
-                        <span className="text-slate-400 text-xs font-semibold ml-2">/ {cycleText}</span>
-                      </div>
-                      
-                      {billingCycle === BillingCycle.YEARLY && (
-                        <div className="text-[10px] text-amber-400 font-bold mt-1">
-                          Được giảm giá đặc biệt khi chọn chu kỳ 12 tháng!
-                        </div>
-                      )}
+                  {isCurrentActive && (
+                    <div className="bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 font-bold text-[9px] uppercase px-2.5 py-1 rounded-lg">
+                      Gói hiện tại
                     </div>
                   )}
                 </div>
 
-                {/* Core limits details */}
-                <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 mb-8 space-y-3">
-                  <div className="flex items-center justify-between text-xs text-slate-300">
-                    <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                      <Building className="w-3.5 h-3.5 text-emerald-500" /> Chi nhánh:
-                    </span>
-                    <span className="font-bold text-white">
-                      {plan.restaurantLimit === -1 ? 'Không giới hạn' : `${plan.restaurantLimit} chi nhánh`}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-slate-300">
-                    <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                      <QrCode className="w-3.5 h-3.5 text-emerald-500" /> Bàn ăn / QR:
-                    </span>
-                    <span className="font-bold text-white">
-                      {plan.tableLimit === -1 ? 'Không giới hạn' : `Tối đa ${plan.tableLimit} bàn`}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-slate-300">
-                    <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                      <DollarSign className="w-3.5 h-3.5 text-emerald-500" /> Món ăn thực đơn:
-                    </span>
-                    <span className="font-bold text-white">
-                      {plan.menuItemLimit === -1 ? 'Không giới hạn' : `Tối đa ${plan.menuItemLimit} món`}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-slate-300">
-                    <span className="flex items-center gap-1.5 font-semibold text-slate-400">
-                      <Users className="w-3.5 h-3.5 text-emerald-500" /> Nhân viên:
-                    </span>
-                    <span className="font-bold text-white">
-                      {plan.staffLimit === -1 ? 'Không giới hạn' : `Tối đa ${plan.staffLimit} nhân viên`}
-                    </span>
-                  </div>
+                {/* Plan Info */}
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+                  <p className="text-slate-400 text-xs leading-relaxed min-h-[40px]">{plan.description}</p>
+                </div>
+
+                {/* Scans Limit Display */}
+                <div className="mb-6 py-4 border-y border-slate-800 flex flex-col justify-center items-center text-center bg-slate-900/30 rounded-2xl p-4">
+                  <span className={`text-4xl md:text-5xl font-black tracking-tight ${plan.code === 'PRO' ? 'text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-indigo-350 to-purple-400' : 'text-white'}`}>
+                    {scansText}
+                  </span>
+                  <span className="text-slate-400 text-xs font-semibold mt-1">{scansSubtitle}</span>
+                </div>
+
+                {/* Pricing Details */}
+                <div className="mb-6 text-center">
+                  {isFree ? (
+                    <span className="text-xs font-bold text-slate-500">Hoàn toàn miễn phí</span>
+                  ) : (
+                    <div className="flex items-baseline justify-center text-white">
+                      <span className="text-2xl font-black">
+                        {formatPrice(price).replace('₫', '')}
+                      </span>
+                      <span className="text-emerald-500 font-black text-md ml-0.5">₫</span>
+                      <span className="text-slate-400 text-xs font-semibold ml-1">/ {cycleText}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Features List */}
-                <div className="flex-1 mb-8 space-y-3">
+                <div className="flex-1 mb-6 space-y-3">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Tính năng bao gồm:</span>
                   {plan.features.map((feat, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
@@ -289,9 +275,11 @@ export const Pricing: React.FC = () => {
                   className={`w-full py-6 rounded-2xl text-xs font-bold transition-all duration-300 ${
                     isCurrentActive 
                       ? 'bg-slate-800 text-emerald-400 border border-emerald-500/30 cursor-not-allowed'
-                      : isPopular 
-                        ? 'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-slate-900 shadow-lg shadow-emerald-500/10'
-                        : 'bg-slate-750 hover:bg-slate-700 text-white hover:text-white border border-slate-650'
+                      : plan.code === 'PRO' 
+                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-550 hover:to-indigo-550 text-white shadow-lg shadow-purple-600/10'
+                        : plan.code === 'PLUS'
+                          ? 'bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-550 hover:to-sky-550 text-white shadow-lg shadow-blue-600/10'
+                          : 'bg-slate-750 hover:bg-slate-700 text-white border border-slate-650'
                   }`}
                 >
                   {isProcessing === (plan.id || plan._id || 'free') ? (

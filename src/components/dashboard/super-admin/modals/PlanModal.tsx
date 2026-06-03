@@ -23,6 +23,13 @@ const getDefaultPlanForm = () => ({
   tableLimit: -1,
   menuItemLimit: -1,
   staffLimit: -1,
+  scanLimitMonthly: -1,
+  fitScoreEnabled: false,
+  foodAttributesEnabled: false,
+  recommendationEnabled: false,
+  personalizedMenuEnabled: false,
+  advancedAnalyticsEnabled: false,
+  customerInsightsEnabled: false,
   featuresText: '',
   unavailableFeaturesText: '',
   isPopular: false,
@@ -57,6 +64,13 @@ export const PlanModal: React.FC<PlanModalProps> = ({
         tableLimit: editingPlan.tableLimit,
         menuItemLimit: editingPlan.menuItemLimit,
         staffLimit: editingPlan.staffLimit,
+        scanLimitMonthly: editingPlan.scanLimitMonthly !== undefined ? editingPlan.scanLimitMonthly : -1,
+        fitScoreEnabled: editingPlan.fitScoreEnabled || false,
+        foodAttributesEnabled: editingPlan.foodAttributesEnabled || false,
+        recommendationEnabled: editingPlan.recommendationEnabled || false,
+        personalizedMenuEnabled: editingPlan.personalizedMenuEnabled || false,
+        advancedAnalyticsEnabled: editingPlan.advancedAnalyticsEnabled || false,
+        customerInsightsEnabled: editingPlan.customerInsightsEnabled || false,
         featuresText: editingPlan.features ? editingPlan.features.join(', ') : '',
         unavailableFeaturesText: editingPlan.unavailableFeatures ? editingPlan.unavailableFeatures.join(', ') : '',
         isPopular: editingPlan.isPopular || false,
@@ -82,6 +96,7 @@ export const PlanModal: React.FC<PlanModalProps> = ({
       ['Hạn mức bàn ăn', planForm.tableLimit, -1],
       ['Hạn mức món ăn', planForm.menuItemLimit, -1],
       ['Hạn mức nhân viên', planForm.staffLimit, -1],
+      ['Hạn mức lượt quét', planForm.scanLimitMonthly, -1],
       ['Thứ tự sắp xếp', planForm.sortOrder, 0]
     ] as const;
 
@@ -104,6 +119,13 @@ export const PlanModal: React.FC<PlanModalProps> = ({
       tableLimit: planForm.tableLimit,
       menuItemLimit: planForm.menuItemLimit,
       staffLimit: planForm.staffLimit,
+      scanLimitMonthly: planForm.scanLimitMonthly,
+      fitScoreEnabled: planForm.fitScoreEnabled,
+      foodAttributesEnabled: planForm.foodAttributesEnabled,
+      recommendationEnabled: planForm.recommendationEnabled,
+      personalizedMenuEnabled: planForm.personalizedMenuEnabled,
+      advancedAnalyticsEnabled: planForm.advancedAnalyticsEnabled,
+      customerInsightsEnabled: planForm.customerInsightsEnabled,
       features,
       unavailableFeatures,
       isPopular: planForm.isPopular,
@@ -195,6 +217,20 @@ export const PlanModal: React.FC<PlanModalProps> = ({
             <span className="text-xs font-bold text-slate-800 block">Giới hạn tài nguyên (-1 = Không giới hạn)</span>
             
             <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1 col-span-2">
+                <Label htmlFor="planScanL" className="text-xs text-gray-600 font-semibold">Hạn mức lượt quét (scans/tháng)</Label>
+                <Input 
+                  id="planScanL" 
+                  type="number" 
+                  min="-1" 
+                  value={planForm.scanLimitMonthly} 
+                  onChange={(e) => setPlanForm({ ...planForm, scanLimitMonthly: Number(e.target.value) || 0 })} 
+                  className="rounded-xl" 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label htmlFor="planResL" className="text-xs text-gray-600 font-semibold">Hạn mức chi nhánh</Label>
                 <Input 
@@ -241,6 +277,70 @@ export const PlanModal: React.FC<PlanModalProps> = ({
                   onChange={(e) => setPlanForm({ ...planForm, staffLimit: Number(e.target.value) || 0 })} 
                   className="rounded-xl" 
                 />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 my-4 pt-3 space-y-3">
+            <span className="text-xs font-bold text-slate-800 block">Tính năng thông minh & AI</span>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  checked={planForm.fitScoreEnabled} 
+                  onCheckedChange={(val) => setPlanForm({ ...planForm, fitScoreEnabled: val })} 
+                  id="planFitScore" 
+                />
+                <Label htmlFor="planFitScore" className="text-xs text-gray-600 font-semibold">Cá nhân hóa Fit Score</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  checked={planForm.foodAttributesEnabled} 
+                  onCheckedChange={(val) => setPlanForm({ ...planForm, foodAttributesEnabled: val })} 
+                  id="planFoodAttr" 
+                />
+                <Label htmlFor="planFoodAttr" className="text-xs text-gray-600 font-semibold">Hồ sơ dinh dưỡng món ăn</Label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  checked={planForm.recommendationEnabled} 
+                  onCheckedChange={(val) => setPlanForm({ ...planForm, recommendationEnabled: val })} 
+                  id="planRecommend" 
+                />
+                <Label htmlFor="planRecommend" className="text-xs text-gray-600 font-semibold">Gợi ý món ăn AI</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  checked={planForm.personalizedMenuEnabled} 
+                  onCheckedChange={(val) => setPlanForm({ ...planForm, personalizedMenuEnabled: val })} 
+                  id="planPersonalMenu" 
+                />
+                <Label htmlFor="planPersonalMenu" className="text-xs text-gray-600 font-semibold">Cá nhân hóa thực đơn</Label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  checked={planForm.advancedAnalyticsEnabled} 
+                  onCheckedChange={(val) => setPlanForm({ ...planForm, advancedAnalyticsEnabled: val })} 
+                  id="planAdvAnalytics" 
+                />
+                <Label htmlFor="planAdvAnalytics" className="text-xs text-gray-600 font-semibold">Báo cáo phân tích sâu</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  checked={planForm.customerInsightsEnabled} 
+                  onCheckedChange={(val) => setPlanForm({ ...planForm, customerInsightsEnabled: val })} 
+                  id="planCustInsights" 
+                />
+                <Label htmlFor="planCustInsights" className="text-xs text-gray-600 font-semibold">Phân tích hành vi khách hàng</Label>
               </div>
             </div>
           </div>

@@ -68,7 +68,10 @@ export const CustomerMenu: React.FC = () => {
 
   // Automatically trigger premium onboarding for new guest diners
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !restaurant) return;
+    // Chỉ tự động hiển thị bảng khảo sát khi gói dịch vụ nhà hàng cho phép cá nhân hóa thực đơn
+    if (!restaurant.features?.personalizedMenuEnabled) return;
+
     const hasGoals = profile?.goals && profile.goals.length > 0;
     const hasPrefs = profile?.preferences && profile.preferences.length > 0;
     if (!hasGoals && !hasPrefs) {
@@ -77,11 +80,12 @@ export const CustomerMenu: React.FC = () => {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, profile]);
+  }, [isLoading, profile, restaurant]);
 
   // Fetch smart dining recommendations
   useEffect(() => {
-    if (isLoading || !restaurantId) return;
+    if (isLoading || !restaurantId || !restaurant) return;
+    if (!restaurant.features?.recommendationEnabled) return;
 
     let isMounted = true;
     const fetchRecs = async () => {
@@ -413,19 +417,21 @@ export const CustomerMenu: React.FC = () => {
       </div>
       
       {/* QDish Smart Buttons */}
-      <div className="grid grid-cols-2 gap-2.5 mb-3 px-1">
-        <Button 
-          type="button" 
-          onClick={() => setIsHealthOpen(true)}
-          className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl font-semibold shadow-sm text-xs py-2 flex items-center justify-center"
-        >
-          <Sparkles className="w-4 h-4 mr-1 text-amber-500" />
-          Hồ sơ ẩm thực
-        </Button>
+      <div className={restaurant?.features?.personalizedMenuEnabled ? "grid grid-cols-2 gap-2.5 mb-3 px-1" : "mb-3 px-1"}>
+        {restaurant?.features?.personalizedMenuEnabled && (
+          <Button 
+            type="button" 
+            onClick={() => setIsHealthOpen(true)}
+            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl font-semibold shadow-sm text-xs py-2 flex items-center justify-center w-full"
+          >
+            <Sparkles className="w-4 h-4 mr-1 text-amber-500" />
+            Hồ sơ ẩm thực
+          </Button>
+        )}
         <Button 
           type="button" 
           onClick={() => setIsHistoryOpen(true)}
-          className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl font-semibold shadow-sm text-xs py-2 flex items-center justify-center"
+          className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl font-semibold shadow-sm text-xs py-2 flex items-center justify-center w-full"
         >
           <Clock className="w-4 h-4 mr-1 text-blue-500" />
           Món đã gọi
@@ -433,7 +439,7 @@ export const CustomerMenu: React.FC = () => {
       </div>
 
       {/* ── Best For You (Smart Recommendations Section) ── */}
-      {recommendations.length > 0 && (
+      {restaurant?.features?.recommendationEnabled && recommendations.length > 0 && (
         <div className="mb-6 pt-2">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
