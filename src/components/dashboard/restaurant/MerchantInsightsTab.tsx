@@ -57,9 +57,11 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
   const isPlus = features.personalizedMenuEnabled && !features.advancedAnalyticsEnabled;
 
   const fetchInsights = async () => {
+    const restId = restaurant?.id || (restaurant as any)?._id;
+    if (!restId) return;
     setLoading(true);
     try {
-      const data = await apiFetch<InsightsPayload>('/api/restaurants/insights', {
+      const data = await apiFetch<InsightsPayload>(`/api/restaurants/insights?restaurantId=${restId}`, {
         requireAuth: true
       });
       setInsights(data);
@@ -72,10 +74,12 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
   };
 
   const handleRefreshAI = async () => {
+    const restId = restaurant?.id || (restaurant as any)?._id;
+    if (!restId) return;
     setRefreshingAI(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1200));
-      const data = await apiFetch<InsightsPayload>('/api/restaurants/insights', {
+      const data = await apiFetch<InsightsPayload>(`/api/restaurants/insights?restaurantId=${restId}`, {
         requireAuth: true
       });
       setInsights(data);
@@ -526,19 +530,19 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
           </div>
 
           {isPlus && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1px] p-6 text-center space-y-4">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1.5px] p-6 text-center space-y-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/20 animate-pulse">
                 🔒
               </div>
               <div className="space-y-1.5 max-w-[280px]">
                 <h4 className="text-sm font-bold text-neutral-900">Tính năng AI Advisor bị khóa</h4>
                 <p className="text-xs text-neutral-500 leading-normal">
-                  Tính năng phân tích đề xuất tối ưu khoảng trống thực đơn bằng AI chỉ khả dụng cho gói <strong>PRO</strong>.
+                  Tính năng phân tích đề xuất tối ưu khoảng trống thực đơn bằng AI chỉ khả dụng cho gói <strong>PRO</strong>. Nâng cấp để sở hữu trợ lý AI tư vấn món ăn tăng trưởng 18%+ doanh thu!
                 </p>
               </div>
               <Button
                 onClick={() => window.location.href = '/owner?tab=billing'}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold px-4 h-9 shadow-md shadow-indigo-500/20"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold px-4 h-9 shadow-md shadow-indigo-500/20 transition-transform active:scale-95"
               >
                 Nâng cấp gói PRO ngay ✨
               </Button>
@@ -582,19 +586,19 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
           </div>
 
           {isPlus && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1px] p-6 text-center space-y-4">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1.5px] p-6 text-center space-y-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/20 animate-pulse">
                 🔒
               </div>
               <div className="space-y-1.5 max-w-[280px]">
                 <h4 className="text-sm font-bold text-neutral-900">Thị hiếu Thực khách bị khóa</h4>
                 <p className="text-xs text-neutral-500 leading-normal">
-                  Biểu đồ phân tích sâu xu hướng và nhu cầu dinh dưỡng của khách hàng quét QR chỉ khả dụng cho gói <strong>PRO</strong>.
+                  Biểu đồ phân tích sâu xu hướng và nhu cầu dinh dưỡng của khách hàng quét QR chỉ khả dụng cho gói <strong>PRO</strong>. Nâng cấp để nắm bắt trọn vẹn thị hiếu ăn uống lành mạnh của khách hàng!
                 </p>
               </div>
               <Button
                 onClick={() => window.location.href = '/owner?tab=billing'}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold px-4 h-9 shadow-md shadow-indigo-500/20"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold px-4 h-9 shadow-md shadow-indigo-500/20 transition-transform active:scale-95"
               >
                 Nâng cấp gói PRO ngay ✨
               </Button>

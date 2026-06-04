@@ -413,6 +413,7 @@ export interface Owner {
   planCode?: string;
   subscriptionStatus?: string;
   subscriptionExpiresAt?: string | null;
+  daysRemaining?: number | null;
   createdAt?: string;
   updatedAt?: string;
 }

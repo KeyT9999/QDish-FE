@@ -83,6 +83,8 @@ export const OwnersTab: React.FC<OwnersTabProps> = ({
                       <TableHead className="text-xs">Xác thực email</TableHead>
                       <TableHead className="text-xs">Nhà hàng quản lý</TableHead>
                       <TableHead className="text-xs">Gói dịch vụ</TableHead>
+                      <TableHead className="text-xs">Hạn sử dụng</TableHead>
+                      <TableHead className="text-xs">Còn lại</TableHead>
                       <TableHead className="text-xs">Ngày đăng ký</TableHead>
                       <TableHead className="text-xs">Trạng thái</TableHead>
                       <TableHead className="text-right text-xs">Thao tác</TableHead>
@@ -137,6 +139,32 @@ export const OwnersTab: React.FC<OwnersTabProps> = ({
                               {owner.subscriptionStatus === 'ACTIVE' ? 'Đang kích hoạt' : 'Chờ thanh toán'}
                             </span>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-gray-900 font-bold">
+                          {owner.planCode === 'FREE' 
+                            ? 'Vô thời hạn' 
+                            : owner.subscriptionExpiresAt 
+                              ? new Date(owner.subscriptionExpiresAt).toLocaleDateString('vi-VN') 
+                              : '---'}
+                        </TableCell>
+                        <TableCell>
+                          {owner.planCode === 'FREE' ? (
+                            <span className="text-xs text-slate-400 font-medium">---</span>
+                          ) : owner.daysRemaining !== undefined && owner.daysRemaining !== null ? (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                              owner.daysRemaining <= 0
+                                ? 'bg-rose-50 text-rose-700 border border-rose-100 animate-pulse'
+                                : owner.daysRemaining <= 3
+                                  ? 'bg-orange-50 text-orange-700 border border-orange-100'
+                                  : owner.daysRemaining <= 7
+                                    ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            }`}>
+                              {owner.daysRemaining} ngày
+                            </span>
+                          ) : (
+                            <span className="text-xs text-slate-400">---</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-xs text-gray-500">
                           {owner.createdAt ? new Date(owner.createdAt).toLocaleDateString('vi-VN') : '---'}
@@ -260,6 +288,36 @@ export const OwnersTab: React.FC<OwnersTabProps> = ({
                           </span>
                         </div>
                       </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400">Hạn sử dụng:</span>
+                        <span className="font-bold text-gray-800">
+                          {owner.planCode === 'FREE' 
+                            ? 'Vô thời hạn' 
+                            : owner.subscriptionExpiresAt 
+                              ? new Date(owner.subscriptionExpiresAt).toLocaleDateString('vi-VN') 
+                              : '---'}
+                        </span>
+                      </div>
+                      {owner.planCode !== 'FREE' && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400">Còn lại:</span>
+                          {owner.daysRemaining !== undefined && owner.daysRemaining !== null ? (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                              owner.daysRemaining <= 0
+                                ? 'bg-rose-50 text-rose-700 border border-rose-100 animate-pulse'
+                                : owner.daysRemaining <= 3
+                                  ? 'bg-orange-50 text-orange-700 border border-orange-100'
+                                  : owner.daysRemaining <= 7
+                                    ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            }`}>
+                              {owner.daysRemaining} ngày
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">---</span>
+                          )}
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-400">Ngày đăng ký:</span>
                         <span className="text-gray-800">{owner.createdAt ? new Date(owner.createdAt).toLocaleDateString('vi-VN') : '---'}</span>
