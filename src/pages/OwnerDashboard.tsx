@@ -304,20 +304,73 @@ export const OwnerDashboard: React.FC = () => {
             <Button onClick={loadSubscription} className="bg-emerald-600 text-white rounded-xl">Thử lại</Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* 1. Left Section: Package Info & Status */}
-            <div className="lg:col-span-1 space-y-6">
-              <Card className="rounded-2xl border border-slate-150 bg-white shadow-sm overflow-hidden relative">
-                <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-600" />
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold text-slate-800">Gói hiện tại</CardTitle>
-                  <CardDescription className="text-xs">Thông tin chi tiết về gói dịch vụ của bạn</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 rounded-xl bg-emerald-50/40 border border-emerald-500/10">
-                    <span className="text-[10px] uppercase font-extrabold text-emerald-700 tracking-wider block mb-1">Gói hoạt động</span>
-                    <h3 className="text-2xl font-black text-slate-900">{subDetails.subscription.planName}</h3>
+          <div className="space-y-6">
+            {/* Expiry Warning Banners */}
+            {subDetails.subscription.expiryWarningLevel && subDetails.subscription.expiryWarningLevel !== 'none' && (
+              (() => {
+                const level = subDetails.subscription.expiryWarningLevel;
+                const planName = subDetails.subscription.planName;
+                
+                let bgClass = '';
+                let borderClass = '';
+                let textClass = '';
+                let message = '';
+
+                if (level === '7days') {
+                  bgClass = 'bg-amber-50';
+                  borderClass = 'border-amber-200';
+                  textClass = 'text-amber-800';
+                  message = `Gói ${planName} của bạn sẽ hết hạn sau 7 ngày. Vui lòng gia hạn để tránh gián đoạn dịch vụ.`;
+                } else if (level === '3days') {
+                  bgClass = 'bg-orange-50';
+                  borderClass = 'border-orange-200';
+                  textClass = 'text-orange-900';
+                  message = `Gói ${planName} của bạn sắp hết hạn (còn 3 ngày). Các tính năng cao cấp sẽ bị khóa sau khi hết hạn.`;
+                } else if (level === '1day') {
+                  bgClass = 'bg-rose-50 border-rose-200 text-rose-800 animate-pulse';
+                  borderClass = 'border-rose-200';
+                  textClass = 'text-rose-800';
+                  message = `Gói ${planName} của bạn sẽ bị hạ xuống FREE sau 24 giờ nữa. Hãy gia hạn ngay để giữ tất cả tính năng cao cấp.`;
+                } else if (level === 'expired') {
+                  bgClass = 'bg-rose-100 border-rose-300 text-rose-900';
+                  borderClass = 'border-rose-300';
+                  textClass = 'text-rose-950';
+                  message = `Gói dịch vụ cao cấp đã hết hạn. Hệ thống đã tự động chuyển tài khoản về gói FREE. Các tính năng nâng cao đã bị tạm khóa.`;
+                }
+
+                return (
+                  <div className={`p-4 rounded-2xl border ${bgClass} ${borderClass} ${textClass} flex items-start gap-3 shadow-sm`}>
+                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-extrabold text-sm mb-0.5">
+                        {level === 'expired' ? 'Cảnh báo: Gói dịch vụ đã hết hạn' : 'Thông báo: Gói dịch vụ sắp hết hạn'}
+                      </h4>
+                      <p className="text-xs font-semibold leading-relaxed">{message}</p>
+                    </div>
                   </div>
+                );
+              })()
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* 1. Left Section: Package Info & Status */}
+              <div className="lg:col-span-1 space-y-6">
+                <Card className="rounded-2xl border border-slate-150 bg-white shadow-sm overflow-hidden relative">
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-600" />
+                  <CardHeader>
+                    <CardTitle className="text-lg font-bold text-slate-800">Gói hiện tại</CardTitle>
+                    <CardDescription className="text-xs">Thông tin chi tiết về gói dịch vụ của bạn</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 rounded-xl bg-emerald-50/40 border border-emerald-500/10 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] uppercase font-extrabold text-emerald-700 tracking-wider block mb-1">Gói hoạt động</span>
+                        <h3 className="text-2xl font-black text-slate-900">{subDetails.subscription.planName}</h3>
+                      </div>
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                        <Check className="w-3.5 h-3.5" /> GÓI HIỆN TẠI
+                      </span>
+                    </div>
 
                   <div className="space-y-3 pt-2 text-xs">
                     <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
@@ -355,22 +408,36 @@ export const OwnerDashboard: React.FC = () => {
                         <span className="font-semibold text-slate-400">Hạn sử dụng:</span>
                         <span className="font-bold text-slate-850 flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5 text-slate-455" />
-                          {subDetails.subscription.amount === 0 
+                          {subDetails.subscription.planCode === 'FREE' 
                             ? 'Vô thời hạn' 
                             : new Date(subDetails.subscription.expiresAt).toLocaleDateString('vi-VN')}
                         </span>
                       </div>
                     )}
+
+                    {subDetails.subscription.planCode !== 'FREE' && subDetails.subscription.daysRemaining !== undefined && (
+                      <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                        <span className="font-semibold text-slate-400">Thời gian còn lại:</span>
+                        <span className="font-bold text-slate-850 flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-slate-455" />
+                          {subDetails.subscription.daysRemaining > 0 
+                            ? `${subDetails.subscription.daysRemaining} ngày` 
+                            : 'Đã hết hạn'}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="pt-4">
-                    <Button 
-                      onClick={() => navigate('/pricing')}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-md py-6"
-                    >
-                      Nâng cấp gói dịch vụ <ArrowUpRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </div>
+                  {subDetails.subscription.planCode !== 'PRO' && (
+                    <div className="pt-4">
+                      <Button 
+                        onClick={() => navigate('/pricing')}
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-md py-6"
+                      >
+                        Nâng cấp gói dịch vụ <ArrowUpRight className="w-4 h-4 ml-1" />
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -530,119 +597,124 @@ export const OwnerDashboard: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-2xl border border-slate-150 bg-white shadow-sm">
-                <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-bold text-slate-800">Gói có thể nâng cấp</CardTitle>
-                    <CardDescription className="text-xs">Danh sách gói đang được Super Admin kích hoạt</CardDescription>
-                  </div>
-                  <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
-                    <button
-                      type="button"
-                      onClick={() => setBillingCycle(BillingCycle.MONTHLY)}
-                      className={`px-3 py-1.5 text-[11px] font-bold rounded-lg ${billingCycle === BillingCycle.MONTHLY ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
-                    >
-                      Tháng
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBillingCycle(BillingCycle.YEARLY)}
-                      className={`px-3 py-1.5 text-[11px] font-bold rounded-lg ${billingCycle === BillingCycle.YEARLY ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
-                    >
-                      Năm
-                    </button>
-                  </div>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {billingPlans.map((plan) => {
-                    const planId = plan.id || plan._id;
-                    const isCurrent = subDetails.subscription.planId === planId;
-                    const price = billingCycle === BillingCycle.YEARLY ? plan.priceYearly : plan.priceMonthly;
-                    
-                    let cardBorderClass = 'border-slate-150';
-                    let cardBgClass = 'bg-slate-50/50';
-                    let btnClass = isCurrent ? 'bg-slate-200 text-slate-500' : 'bg-emerald-600 hover:bg-emerald-500 text-white';
-                    
-                    if (plan.code === 'FREE') {
-                      cardBorderClass = 'border-emerald-500/30 hover:border-emerald-500 bg-emerald-50/5 shadow-sm transition-all duration-300';
-                      if (!isCurrent) btnClass = 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/10';
-                    } else if (plan.code === 'PLUS') {
-                      cardBorderClass = 'border-blue-500/30 hover:border-blue-500 bg-blue-50/5 shadow-sm transition-all duration-300';
-                      if (!isCurrent) btnClass = 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/10';
-                    } else if (plan.code === 'PRO') {
-                      cardBorderClass = 'border-purple-500/45 hover:border-purple-500 bg-purple-50/5 shadow-[0_4px_15px_rgba(168,85,247,0.04)] scale-102 transition-all duration-300 relative';
-                      if (!isCurrent) btnClass = 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-550 hover:to-indigo-550 text-white shadow-md shadow-purple-600/10';
-                    }
-
-                    return (
-                      <div 
-                        key={planId || plan.code} 
-                        className={`rounded-2xl border p-4 flex flex-col gap-4 group transition-all duration-300 hover:-translate-y-0.5 ${cardBorderClass} ${cardBgClass}`}
+              {subDetails.subscription.canUpgradeTo && subDetails.subscription.canUpgradeTo.length > 0 && (
+                <Card className="rounded-2xl border border-slate-150 bg-white shadow-sm">
+                  <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <CardTitle className="text-lg font-bold text-slate-800">Gói có thể nâng cấp</CardTitle>
+                      <CardDescription className="text-xs">Danh sách gói đang được Super Admin kích hoạt</CardDescription>
+                    </div>
+                    <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setBillingCycle(BillingCycle.MONTHLY)}
+                        className={`px-3 py-1.5 text-[11px] font-bold rounded-lg ${billingCycle === BillingCycle.MONTHLY ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
                       >
-                        {plan.code === 'PRO' && (
-                          <div className="absolute top-0 right-4 -translate-y-1/2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-extrabold text-[8px] uppercase px-2 py-0.5 rounded-full shadow-md">
-                            Khuyên dùng
-                          </div>
-                        )}
-                        <div>
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className="font-black text-slate-900 text-sm flex items-center gap-1.5">
-                              {plan.name}
-                              <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase ${
-                                plan.code === 'FREE' ? 'bg-emerald-100 text-emerald-800' :
-                                plan.code === 'PLUS' ? 'bg-blue-100 text-blue-800' :
-                                'bg-purple-100 text-purple-800'
-                              }`}>
-                                {plan.code}
-                              </span>
-                            </h4>
-                            {plan.isPopular && (
-                              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-black uppercase animate-pulse">Hot</span>
+                        Tháng
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBillingCycle(BillingCycle.YEARLY)}
+                        className={`px-3 py-1.5 text-[11px] font-bold rounded-lg ${billingCycle === BillingCycle.YEARLY ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500'}`}
+                      >
+                        Năm
+                      </button>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {billingPlans
+                      .filter((plan) => subDetails.subscription.canUpgradeTo?.includes(plan.code))
+                      .map((plan) => {
+                        const planId = plan.id || plan._id;
+                        const isCurrent = subDetails.subscription.planId === planId;
+                        const price = billingCycle === BillingCycle.YEARLY ? plan.priceYearly : plan.priceMonthly;
+                        
+                        let cardBorderClass = 'border-slate-150';
+                        let cardBgClass = 'bg-slate-50/50';
+                        let btnClass = isCurrent ? 'bg-slate-200 text-slate-500' : 'bg-emerald-600 hover:bg-emerald-500 text-white';
+                        
+                        if (plan.code === 'FREE') {
+                          cardBorderClass = 'border-emerald-500/30 hover:border-emerald-500 bg-emerald-50/5 shadow-sm transition-all duration-300';
+                          if (!isCurrent) btnClass = 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/10';
+                        } else if (plan.code === 'PLUS') {
+                          cardBorderClass = 'border-blue-500/30 hover:border-blue-500 bg-blue-50/5 shadow-sm transition-all duration-300';
+                          if (!isCurrent) btnClass = 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/10';
+                        } else if (plan.code === 'PRO') {
+                          cardBorderClass = 'border-purple-500/45 hover:border-purple-500 bg-purple-50/5 shadow-[0_4px_15px_rgba(168,85,247,0.04)] scale-102 transition-all duration-300 relative';
+                          if (!isCurrent) btnClass = 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-550 hover:to-indigo-550 text-white shadow-md shadow-purple-600/10';
+                        }
+
+                        return (
+                          <div 
+                            key={planId || plan.code} 
+                            className={`rounded-2xl border p-4 flex flex-col gap-4 group transition-all duration-300 hover:-translate-y-0.5 ${cardBorderClass} ${cardBgClass}`}
+                          >
+                            {plan.code === 'PRO' && (
+                              <div className="absolute top-0 right-4 -translate-y-1/2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-extrabold text-[8px] uppercase px-2 py-0.5 rounded-full shadow-md">
+                                Khuyên dùng
+                              </div>
                             )}
-                          </div>
-                          <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 min-h-[32px]">{plan.description}</p>
-                        </div>
+                            <div>
+                              <div className="flex items-center justify-between gap-2">
+                                <h4 className="font-black text-slate-900 text-sm flex items-center gap-1.5">
+                                  {plan.name}
+                                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase ${
+                                    plan.code === 'FREE' ? 'bg-emerald-100 text-emerald-800' :
+                                    plan.code === 'PLUS' ? 'bg-blue-100 text-blue-800' :
+                                    'bg-purple-100 text-purple-800'
+                                  }`}>
+                                    {plan.code}
+                                  </span>
+                                </h4>
+                                {plan.isPopular && (
+                                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-black uppercase animate-pulse">Hot</span>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-500 mt-1 line-clamp-2 min-h-[32px]">{plan.description}</p>
+                            </div>
 
-                        <div>
-                          <div className="text-xl font-black text-slate-900">
-                            {price === 0 ? '0đ' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)}
-                          </div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase">
-                            / {billingCycle === BillingCycle.YEARLY ? 'năm' : 'tháng'}
-                          </div>
-                        </div>
+                            <div>
+                              <div className="text-xl font-black text-slate-900">
+                                {price === 0 ? '0đ' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)}
+                              </div>
+                              <div className="text-[10px] font-bold text-slate-400 uppercase">
+                                / {billingCycle === BillingCycle.YEARLY ? 'năm' : 'tháng'}
+                              </div>
+                            </div>
 
-                        <div className="space-y-1.5 text-[11px] text-slate-600 flex-1 border-t border-slate-100 pt-3">
-                          <div>Lượt quét: <strong>{plan.scanLimitMonthly === -1 ? 'Vô hạn' : `${plan.scanLimitMonthly?.toLocaleString('vi-VN')} scans/tháng`}</strong></div>
-                          <div>Chi nhánh: <strong>{plan.restaurantLimit === -1 ? 'Không giới hạn' : `${plan.restaurantLimit} chi nhánh`}</strong></div>
-                          <div>AI & Analytics: <strong>{plan.code === 'FREE' ? 'Cơ bản' : plan.code === 'PLUS' ? 'AI Fit Score & Cá nhân hóa' : 'Full AI & Phân tích chuyên sâu'}</strong></div>
-                        </div>
+                            <div className="space-y-1.5 text-[11px] text-slate-600 flex-1 border-t border-slate-100 pt-3">
+                              <div>Lượt quét: <strong>{plan.scanLimitMonthly === -1 ? 'Vô hạn' : `${plan.scanLimitMonthly?.toLocaleString('vi-VN')} scans/tháng`}</strong></div>
+                              <div>Chi nhánh: <strong>{plan.restaurantLimit === -1 ? 'Không giới hạn' : `${plan.restaurantLimit} chi nhánh`}</strong></div>
+                              <div>AI & Analytics: <strong>{plan.code === 'FREE' ? 'Cơ bản' : plan.code === 'PLUS' ? 'AI Fit Score & Cá nhân hóa' : 'Full AI & Phân tích chuyên sâu'}</strong></div>
+                            </div>
 
-                        <Button
-                          type="button"
-                          disabled={!planId || checkoutPlanId !== null || isCurrent}
-                          onClick={() => handleBillingCheckout(plan)}
-                          className={`rounded-xl text-xs font-bold transition-all duration-200 ${btnClass}`}
-                        >
-                          {checkoutPlanId === planId ? (
-                            <span className="flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang xử lý</span>
-                          ) : isCurrent ? (
-                            'Gói hiện tại'
-                          ) : price === 0 ? (
-                            'Chọn FREE'
-                          ) : (
-                            `Nâng cấp ${plan.code}`
-                          )}
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </CardContent>
-              </Card>
+                            <Button
+                              type="button"
+                              disabled={!planId || checkoutPlanId !== null || isCurrent}
+                              onClick={() => handleBillingCheckout(plan)}
+                              className={`rounded-xl text-xs font-bold transition-all duration-200 ${btnClass}`}
+                            >
+                              {checkoutPlanId === planId ? (
+                                <span className="flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang xử lý</span>
+                              ) : isCurrent ? (
+                                'Gói hiện tại'
+                              ) : price === 0 ? (
+                                'Chọn FREE'
+                              ) : (
+                                `Nâng cấp ${plan.code}`
+                              )}
+                            </Button>
+                          </div>
+                        );
+                      })}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+    </div>
     );
   }
 

@@ -19,6 +19,12 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+const PLAN_LEVELS: Record<string, number> = {
+  FREE: 0,
+  PLUS: 1,
+  PRO: 2
+};
+
 export const Pricing: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -27,6 +33,9 @@ export const Pricing: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(BillingCycle.MONTHLY);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
+
+  const currentLevel = currentSub ? (PLAN_LEVELS[currentSub.planCode?.toUpperCase()] ?? 0) : 0;
+  const visiblePlans = plans.filter(plan => (PLAN_LEVELS[plan.code?.toUpperCase()] ?? 0) >= currentLevel);
 
   useEffect(() => {
     const loadData = async () => {
@@ -169,7 +178,7 @@ export const Pricing: React.FC = () => {
 
         {/* Pricing Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          {plans.map((plan) => {
+          {visiblePlans.map((plan) => {
             const isFree = plan.priceMonthly === 0;
             const price = billingCycle === BillingCycle.YEARLY ? plan.priceYearly : plan.priceMonthly;
             const cycleText = billingCycle === BillingCycle.YEARLY ? 'năm' : 'tháng';

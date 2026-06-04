@@ -15,6 +15,9 @@ export interface OwnerSubscriptionDetails {
     amount: number;
     startedAt?: string;
     expiresAt?: string;
+    daysRemaining?: number;
+    expiryWarningLevel?: string;
+    canUpgradeTo?: string[];
   };
   limits: {
     restaurantLimit: number;
