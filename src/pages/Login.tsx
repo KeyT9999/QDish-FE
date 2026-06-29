@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { authService } from '@/services/authService';
 import { Role } from '@/types';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Lock, Eye, EyeOff, AlertCircle, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const Login: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -18,6 +19,88 @@ export const Login: React.FC = () => {
   
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Read redirected state from register owner
+  useEffect(() => {
+    if (location.state?.username) {
+      setUsername(location.state.username);
+    }
+  }, [location.state]);
+
+  // Load/initialize Google Sign-in for Login
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    const initGoogle = () => {
+      if ((window as any).google) {
+        (window as any).google.accounts.id.initialize({
+          client_id: clientId || 'MOCK_CLIENT_ID',
+          callback: handleGoogleLoginResponse,
+        });
+
+        const btnContainer = document.getElementById('google-login-button');
+        if (btnContainer && clientId) {
+          (window as any).google.accounts.id.renderButton(btnContainer, {
+            theme: 'outline',
+            size: 'large',
+            width: btnContainer.offsetWidth || 350,
+            text: 'signin_with',
+            shape: 'rectangular',
+          });
+        }
+      }
+    };
+
+    const interval = setInterval(() => {
+      if ((window as any).google) {
+        initGoogle();
+        clearInterval(interval);
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleGoogleLoginResponse = async (response: any) => {
+    const token = response.credential;
+    if (!token) return;
+
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const { token: jwtToken } = await authService.googleLogin({ googleToken: token });
+      const role = login(jwtToken);
+      toast.success('Đăng nhập bằng Google thành công!');
+
+      if (role === Role.SUPER_ADMIN) {
+        navigate('/super-admin');
+      } else if (role === Role.RESTAURANT_ADMIN) {
+        navigate('/dashboard');
+      } else if (role === Role.STAFF) {
+        navigate('/staff');
+      } else if (role === Role.RESTAURANT_OWNER) {
+        navigate('/owner');
+      } else {
+        setError('Tài khoản không có quyền truy cập hệ thống');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Đăng nhập bằng Google thất bại. Vui lòng kiểm tra lại.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMockGoogleLogin = () => {
+    const mockEmailInput = prompt("Nhập email Google của tài khoản đã đăng ký (Ví dụ: testowner_1234):");
+    if (!mockEmailInput) return;
+    
+    // Auto add domain if they just enter username
+    const formattedEmail = mockEmailInput.includes('@') ? mockEmailInput.split('@')[0] : mockEmailInput;
+    const mockToken = `mock-google-token-${formattedEmail.trim()}`;
+    handleGoogleLoginResponse({ credential: mockToken });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +151,36 @@ export const Login: React.FC = () => {
         <p className="text-slate-400 text-xs sm:text-sm mt-1.5 max-w-[280px] mx-auto leading-relaxed">
           Dành cho quản lý nhà hàng, đối tác liên kết và nhân viên vận hành
         </p>
+      </div>
+
+      {/* Google Login Options */}
+      <div className="space-y-4 mb-5">
+        <div className="flex flex-col gap-2.5">
+          <div id="google-login-button" className="w-full flex justify-center min-h-[40px]" />
+          
+          {/* Mock Google Login button for development */}
+          {(!import.meta.env.VITE_GOOGLE_CLIENT_ID) && (
+            <button
+              type="button"
+              onClick={handleMockGoogleLogin}
+              className="w-full h-11 bg-slate-50 hover:bg-slate-100 active:scale-[0.99] border border-slate-200 text-slate-700 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm cursor-pointer shadow-sm"
+            >
+              <svg className="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.24 10.285V13.4h6.887c-.648 2.41-2.519 4.19-5.136 4.19A5.69 5.69 0 0 1 8.24 12a5.69 5.69 0 0 1 5.75-5.59c1.47 0 2.82.52 3.89 1.52l2.46-2.46C18.83 4.03 16.54 3 13.99 3 9.02 3 5 7.03 5 12s4.02 9 8.99 9c4.97 0 8.25-3.46 8.25-8.4 0-.58-.06-1.12-.17-1.615H12.24Z" />
+              </svg>
+              Đăng nhập nhanh bằng Google (Mock)
+            </button>
+          )}
+        </div>
+        
+        <div className="relative flex items-center justify-center py-1">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-slate-100" />
+          </div>
+          <span className="relative px-3 bg-white text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+            Hoặc dùng tài khoản hệ thống
+          </span>
+        </div>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-5">
