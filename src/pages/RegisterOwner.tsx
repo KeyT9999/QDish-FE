@@ -49,7 +49,7 @@ export const RegisterOwner: React.FC = () => {
             size: 'large',
             width: btnContainer.offsetWidth || 350,
             text: 'signup_with',
-            shape: 'rectangular',
+            shape: 'pill',
           });
         }
       }
@@ -308,7 +308,7 @@ export const RegisterOwner: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleMockGoogleSignup}
-                      className="w-full h-11 bg-slate-50 hover:bg-slate-100 active:scale-[0.99] border border-slate-200 text-slate-700 font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm cursor-pointer shadow-sm"
+                      className="w-full h-11 bg-slate-50 hover:bg-slate-100 active:scale-[0.99] border border-slate-200 text-slate-700 font-semibold rounded-full transition-all duration-200 flex items-center justify-center gap-2 text-sm cursor-pointer shadow-sm"
                     >
                       <svg className="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12.24 10.285V13.4h6.887c-.648 2.41-2.519 4.19-5.136 4.19A5.69 5.69 0 0 1 8.24 12a5.69 5.69 0 0 1 5.75-5.59c1.47 0 2.82.52 3.89 1.52l2.46-2.46C18.83 4.03 16.54 3 13.99 3 9.02 3 5 7.03 5 12s4.02 9 8.99 9c4.97 0 8.25-3.46 8.25-8.4 0-.58-.06-1.12-.17-1.615H12.24Z" />
