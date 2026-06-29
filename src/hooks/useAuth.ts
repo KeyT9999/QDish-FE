@@ -42,6 +42,7 @@ export function useAuth() {
   const [isLoading] = useState(false);
 
   const login = (token: string) => {
+    localStorage.removeItem('selected_restaurant_id');
     setAuthToken(token);
     const decodedUser = decodeUserFromToken(token);
     setUser(decodedUser);
@@ -49,6 +50,7 @@ export function useAuth() {
   };
 
   const logout = () => {
+    localStorage.removeItem('selected_restaurant_id');
     disconnectRealtimeSocket();
     removeAuthToken();
     setUser(null);

@@ -19,6 +19,10 @@ export const RegisterOwner: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
+  // Google Auth State
+  const [isGoogle, setIsGoogle] = useState(false);
+  const [googleToken, setGoogleToken] = useState('');
+  
   // OTP State
   const [otp, setOtp] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -26,6 +30,121 @@ export const RegisterOwner: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Load/initialize Google Sign-in
+  useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    const initGoogle = () => {
+      if ((window as any).google) {
+        (window as any).google.accounts.id.initialize({
+          client_id: clientId || 'MOCK_CLIENT_ID',
+          callback: handleGoogleCredentialResponse,
+        });
+
+        const btnContainer = document.getElementById('google-signin-button');
+        if (btnContainer && clientId) {
+          (window as any).google.accounts.id.renderButton(btnContainer, {
+            theme: 'outline',
+            size: 'large',
+            width: btnContainer.offsetWidth || 350,
+            text: 'signup_with',
+            shape: 'pill',
+          });
+        }
+      }
+    };
+
+    // Retry initialization if google script takes time to load
+    const interval = setInterval(() => {
+      if ((window as any).google) {
+        initGoogle();
+        clearInterval(interval);
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleGoogleCredentialResponse = async (response: any) => {
+    const token = response.credential;
+    if (!token) return;
+
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const checkRes = await authService.googleCheckEmail({ googleToken: token });
+      
+      if (checkRes.exists) {
+        setError('Email tài khoản Google này đã được đăng ký làm chủ nhà hàng. Vui lòng chuyển sang trang Đăng nhập.');
+        toast.error('Email Google đã tồn tại trong hệ thống.');
+      } else {
+        setFullName(checkRes.name || '');
+        setEmail(checkRes.email || '');
+        setIsGoogle(true);
+        setGoogleToken(token);
+        toast.success('Xác thực Google thành công! Vui lòng hoàn thành các thông tin còn lại.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Xác thực Google thất bại.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleMockGoogleSignup = () => {
+    const mockEmail = `testowner_${Math.floor(1000 + Math.random() * 9000)}`;
+    const mockToken = `mock-google-token-${mockEmail}`;
+    handleGoogleCredentialResponse({ credential: mockToken });
+  };
+
+  const handleGoogleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!fullName.trim() || !email.trim() || !phone.trim() || !username.trim() || !password || !confirmPassword) {
+      setError('Vui lòng điền đầy đủ tất cả các trường.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('Định dạng email không hợp lệ.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Mật khẩu cần tối thiểu 6 ký tự.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Mật khẩu xác nhận không khớp.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await authService.googleRegister({
+        googleToken,
+        fullName: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        username: username.trim(),
+        password,
+        confirmPassword
+      });
+      
+      toast.success('Đăng ký chủ nhà hàng bằng Google thành công! Vui lòng đăng nhập.');
+      navigate('/login', { state: { username: username.trim() } });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Cooldown timer for OTP Resend
   useEffect(() => {
@@ -170,186 +289,251 @@ export const RegisterOwner: React.FC = () => {
 
       <AnimatePresence mode="wait">
         {step === 1 ? (
-          <motion.form
+          <motion.div
             key="step1"
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 10 }}
             transition={{ duration: 0.2 }}
-            onSubmit={handleRequestOTP}
             className="space-y-4"
           >
-            {/* FullName field */}
-            <div className="space-y-1.5">
-              <Label htmlFor="fullName" className="text-[13px] font-semibold text-slate-600">
-                Họ tên chủ nhà hàng *
-              </Label>
-              <div className="relative group">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
-                  <UserCheck className="w-4.5 h-4.5" />
+            {/* Google Sign-in Option */}
+            {!isGoogle && (
+              <div className="space-y-4 mb-5">
+                <div className="flex flex-col gap-2.5">
+                  <div id="google-signin-button" className="w-full flex justify-center min-h-[40px]" />
+                  
+                  {/* Mock Google Signup button for development */}
+                  {(!import.meta.env.VITE_GOOGLE_CLIENT_ID) && (
+                    <button
+                      type="button"
+                      onClick={handleMockGoogleSignup}
+                      className="w-full h-11 bg-slate-50 hover:bg-slate-100 active:scale-[0.99] border border-slate-200 text-slate-700 font-semibold rounded-full transition-all duration-200 flex items-center justify-center gap-2 text-sm cursor-pointer shadow-sm"
+                    >
+                      <svg className="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12.24 10.285V13.4h6.887c-.648 2.41-2.519 4.19-5.136 4.19A5.69 5.69 0 0 1 8.24 12a5.69 5.69 0 0 1 5.75-5.59c1.47 0 2.82.52 3.89 1.52l2.46-2.46C18.83 4.03 16.54 3 13.99 3 9.02 3 5 7.03 5 12s4.02 9 8.99 9c4.97 0 8.25-3.46 8.25-8.4 0-.58-.06-1.12-.17-1.615H12.24Z" />
+                      </svg>
+                      Đăng ký nhanh bằng Google (Mock)
+                    </button>
+                  )}
                 </div>
-                <Input 
-                  id="fullName" 
-                  type="text" 
-                  placeholder="Nhập họ và tên của bạn" 
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
-                />
-              </div>
-            </div>
-
-            {/* Email and Phone Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Email field */}
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-[13px] font-semibold text-slate-600">
-                  Email liên hệ *
-                </Label>
-                <div className="relative group">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
-                    <Mail className="w-4.5 h-4.5" />
+                
+                <div className="relative flex items-center justify-center py-1">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-slate-100" />
                   </div>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="name@restaurant.com" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
-                  />
+                  <span className="relative px-3 bg-white text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                    Hoặc đăng ký bằng tài khoản mới
+                  </span>
                 </div>
               </div>
+            )}
 
-              {/* Phone field */}
-              <div className="space-y-1.5">
-                <Label htmlFor="phone" className="text-[13px] font-semibold text-slate-600">
-                  Số điện thoại *
-                </Label>
-                <div className="relative group">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
-                    <Phone className="w-4.5 h-4.5" />
-                  </div>
-                  <Input 
-                    id="phone" 
-                    type="text" 
-                    placeholder="09xxxxxxxx" 
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
-                  />
+            {isGoogle && (
+              <div className="mb-4 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl flex items-center gap-3.5 animate-fade-in">
+                <div className="w-10 h-10 rounded-full bg-emerald-100/80 flex items-center justify-center text-emerald-600 shrink-0 shadow-inner">
+                  <Sparkles className="w-5 h-5 animate-pulse" />
                 </div>
-              </div>
-            </div>
-
-            {/* Username field */}
-            <div className="space-y-1.5">
-              <Label htmlFor="username" className="text-[13px] font-semibold text-slate-600">
-                Tên đăng nhập *
-              </Label>
-              <div className="relative group">
-                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
-                  <User className="w-4.5 h-4.5" />
+                <div className="text-left">
+                  <div className="text-xs font-bold text-emerald-800">Đã liên kết Google</div>
+                  <div className="text-[11px] text-slate-500 font-medium">Hoàn tất biểu mẫu để tạo tài khoản.</div>
                 </div>
-                <Input 
-                  id="username" 
-                  type="text" 
-                  placeholder="Chọn tên đăng nhập viết liền không dấu" 
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
-                />
-              </div>
-            </div>
-
-            {/* Passwords grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Password field */}
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-[13px] font-semibold text-slate-600">
-                  Mật khẩu *
-                </Label>
-                <div className="relative group">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
-                    <Lock className="w-4.5 h-4.5" />
-                  </div>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    placeholder="Tối thiểu 6 ký tự" 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
-                  />
-                </div>
-              </div>
-
-              {/* Confirm Password field */}
-              <div className="space-y-1.5">
-                <Label htmlFor="confirmPassword" className="text-[13px] font-semibold text-slate-600">
-                  Xác nhận mật khẩu *
-                </Label>
-                <div className="relative group">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
-                    <Lock className="w-4.5 h-4.5" />
-                  </div>
-                  <Input 
-                    id="confirmPassword" 
-                    type="password" 
-                    placeholder="Nhập lại mật khẩu" 
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Error Alert Display */}
-            <AnimatePresence mode="wait">
-              {error && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="overflow-hidden"
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsGoogle(false);
+                    setGoogleToken('');
+                    setFullName('');
+                    setEmail('');
+                  }}
+                  className="ml-auto text-xs font-bold text-rose-500 hover:text-rose-600 cursor-pointer transition-colors"
                 >
-                  <div className="bg-rose-50/80 border border-rose-100/70 text-rose-700 p-3.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 shadow-sm shadow-rose-900/5">
-                    <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5" />
-                    <span className="leading-relaxed">{error}</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  Hủy
+                </button>
+              </div>
+            )}
 
-            {/* Submit button */}
-            <div className="pt-2">
-              <Button 
-                type="submit" 
-                disabled={isLoading}
-                className="w-full h-11 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm"
-              >
-                {isLoading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Đang gửi mã xác nhận...
-                  </>
-                ) : (
-                  'Gửi mã xác nhận qua Email'
+            <form
+              onSubmit={isGoogle ? handleGoogleRegister : handleRequestOTP}
+              className="space-y-4"
+            >
+              {/* FullName field */}
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName" className="text-[13px] font-semibold text-slate-600">
+                  Họ tên chủ nhà hàng *
+                </Label>
+                <div className="relative group">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
+                    <UserCheck className="w-4.5 h-4.5" />
+                  </div>
+                  <Input 
+                    id="fullName" 
+                    type="text" 
+                    placeholder="Nhập họ và tên của bạn" 
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required
+                    className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
+                  />
+                </div>
+              </div>
+
+              {/* Email and Phone Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Email field */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-[13px] font-semibold text-slate-600">
+                    Email liên hệ *
+                  </Label>
+                  <div className="relative group">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
+                      <Mail className="w-4.5 h-4.5" />
+                    </div>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="name@restaurant." 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      readOnly={isGoogle}
+                      className={`pl-11 h-11 border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px] ${
+                        isGoogle 
+                          ? 'bg-slate-100/70 text-slate-400 cursor-not-allowed border-emerald-100' 
+                          : 'bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white'
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                {/* Phone field */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone" className="text-[13px] font-semibold text-slate-600">
+                    Số điện thoại *
+                  </Label>
+                  <div className="relative group">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
+                      <Phone className="w-4.5 h-4.5" />
+                    </div>
+                    <Input 
+                      id="phone" 
+                      type="text" 
+                      placeholder="09xxxxxxxx" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                      className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Username field */}
+              <div className="space-y-1.5">
+                <Label htmlFor="username" className="text-[13px] font-semibold text-slate-600">
+                  Tên đăng nhập *
+                </Label>
+                <div className="relative group">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
+                    <User className="w-4.5 h-4.5" />
+                  </div>
+                  <Input 
+                    id="username" 
+                    type="text" 
+                    placeholder="Chọn tên đăng nhập viết liền không dấu" 
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
+                  />
+                </div>
+              </div>
+
+              {/* Passwords grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Password field */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="password" className="text-[13px] font-semibold text-slate-600">
+                    Mật khẩu *
+                  </Label>
+                  <div className="relative group">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
+                      <Lock className="w-4.5 h-4.5" />
+                    </div>
+                    <Input 
+                      id="password" 
+                      type="password" 
+                      placeholder="Tối thiều 6 ký tự" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
+                    />
+                  </div>
+                </div>
+
+                {/* Confirm Password field */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="confirmPassword" className="text-[13px] font-semibold text-slate-600">
+                    Xác nhận mật khẩu *
+                  </Label>
+                  <div className="relative group">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200 z-10">
+                      <Lock className="w-4.5 h-4.5" />
+                    </div>
+                    <Input 
+                      id="confirmPassword" 
+                      type="password" 
+                      placeholder="Nhập lại mật khẩu" 
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      className="pl-11 h-11 bg-slate-50/50 hover:bg-slate-50/80 focus:bg-white border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded-xl focus:ring-emerald-500/20 shadow-sm transition-all duration-200 text-[14px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Alert Display */}
+              <AnimatePresence mode="wait">
+                {error && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="bg-rose-50/80 border border-rose-100/70 text-rose-700 p-3.5 rounded-xl text-xs font-semibold flex items-start gap-2.5 shadow-sm shadow-rose-900/5">
+                      <AlertCircle className="w-4.5 h-4.5 shrink-0 mt-0.5" />
+                      <span className="leading-relaxed">{error}</span>
+                    </div>
+                  </motion.div>
                 )}
-              </Button>
-            </div>
-          </motion.form>
+              </AnimatePresence>
+
+              {/* Submit button */}
+              <div className="pt-2">
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full h-11 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer text-sm"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {isGoogle ? 'Đang tạo tài khoản...' : 'Đang gửi mã xác nhận...'}
+                    </>
+                  ) : (
+                    isGoogle ? 'Hoàn tất đăng ký bằng Google' : 'Gửi mã xác nhận qua Email'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </motion.div>
         ) : (
           <motion.form
             key="step2"
