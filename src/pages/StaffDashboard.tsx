@@ -236,8 +236,8 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId }) => {
             </CardDescription>
           </div>
           {order.customerName && (
-            <Badge variant="outline" className="text-[10px] font-semibold bg-white text-gray-700 max-w-[120px] truncate">
-              {order.customerName}
+            <Badge variant="outline" className="text-[10px] font-bold bg-blue-50 text-blue-700 border-blue-100/50 max-w-[120px] truncate flex items-center gap-1">
+              👤 {order.customerName}
             </Badge>
           )}
         </CardHeader>

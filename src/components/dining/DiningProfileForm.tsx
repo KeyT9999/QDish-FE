@@ -22,12 +22,12 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
   const [preferences, setPreferences] = useState<DiningPreference[]>(initialProfile.preferences || []);
 
   const goalsList = [
-    { value: 'MUSCLE_GAIN', label: '💪 Tăng cơ', emoji: '💪' },
-    { value: 'ENERGY_BOOST', label: '⚡ Tăng năng lượng', emoji: '⚡' },
-    { value: 'LIGHT_MEAL', label: '🥗 Ăn nhẹ', emoji: '🥗' },
-    { value: 'COMFORT', label: '🫶 Comfort Food', emoji: '🫶' },
-    { value: 'BALANCED', label: '⚖️ Cân bằng', emoji: '⚖️' },
-    { value: 'WEIGHT_LOSS', label: '🎯 Giảm cân', emoji: '🎯' },
+    { value: 'MUSCLE_GAIN', label: '💪 Ăn tăng cơ', emoji: '💪' },
+    { value: 'ENERGY_BOOST', label: '⚡ Ăn lấy năng lượng', emoji: '⚡' },
+    { value: 'LIGHT_MEAL', label: '🥗 Ăn rau củ / Ít calo', emoji: '🥗' },
+    { value: 'COMFORT', label: '🫶 Ăn thưởng thức', emoji: '🫶' },
+    { value: 'BALANCED', label: '⚖️ Ăn cân bằng', emoji: '⚖️' },
+    { value: 'WEIGHT_LOSS', label: '🎯 Ăn giảm béo', emoji: '🎯' },
     { value: 'MAINTENANCE', label: '✅ Giữ cân', emoji: '✅' },
     { value: 'GENERAL_HEALTH', label: '🌿 Sức khỏe tổng quát', emoji: '🌿' },
   ] as const;

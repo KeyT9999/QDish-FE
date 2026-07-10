@@ -36,6 +36,8 @@ export interface Restaurant {
     advancedAnalyticsEnabled?: boolean;
     customerInsightsEnabled?: boolean;
   };
+  revenue?: number;
+  orderCount?: number;
 }
 
 export interface NewRestaurantPayload {
