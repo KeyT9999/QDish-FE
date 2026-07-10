@@ -26,12 +26,12 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
   if (!open) return null;
 
   const goalsList = [
-    { value: 'MUSCLE_GAIN', label: '💪 Tăng cơ', desc: 'Protein dồi dào phục hồi cơ bắp' },
-    { value: 'ENERGY_BOOST', label: '⚡ Năng lượng', desc: 'Carb phức hợp dẻo dai cả ngày' },
-    { value: 'LIGHT_MEAL', label: '🥗 Ăn nhẹ nhàng', desc: 'Ít calo, dồi dào xơ & thanh mát' },
-    { value: 'COMFORT', label: '🫶 Thưởng thức', desc: 'Trải nghiệm hương vị đậm đà, ngon miệng' },
-    { value: 'BALANCED', label: '⚖️ Cân bằng', desc: 'Đầy đủ dinh dưỡng cân đối hoàn hảo' },
-    { value: 'WEIGHT_LOSS', label: '🎯 Giảm cân', desc: 'Thực đơn thâm hụt calo lành mạnh' }
+    { value: 'MUSCLE_GAIN', label: '💪 Ăn tăng cơ', desc: 'Protein dồi dào phục hồi cơ bắp' },
+    { value: 'ENERGY_BOOST', label: '⚡ Ăn lấy năng lượng', desc: 'Carb phức hợp dẻo dai cả ngày' },
+    { value: 'LIGHT_MEAL', label: '🥗 Ăn rau củ / Ít calo', desc: 'Lành mạnh, dồi dào chất xơ & vitamin' },
+    { value: 'COMFORT', label: '🫶 Ăn thưởng thức', desc: 'Trải nghiệm hương vị đậm đà, ngon miệng' },
+    { value: 'BALANCED', label: '⚖️ Ăn cân bằng', desc: 'Đầy đủ dinh dưỡng cân đối hoàn hảo' },
+    { value: 'WEIGHT_LOSS', label: '🎯 Ăn giảm béo', desc: 'Thực đơn thâm hụt calo lành mạnh' }
   ] as const;
 
   const allergensList = [

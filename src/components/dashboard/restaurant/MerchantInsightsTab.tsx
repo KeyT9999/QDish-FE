@@ -13,7 +13,8 @@ import {
   DollarSign,
   Info,
   RefreshCw,
-  Check
+  Check,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -37,12 +38,37 @@ interface InsightsPayload {
     label: string;
   }>;
   gapAnalysis: string[];
+  peakHours: {
+    periods: Array<{
+      period: string;
+      count: number;
+      percentage: number;
+    }>;
+    hourly: number[];
+  };
 }
+
+const attributeLabels: Record<string, { label: string; description: string; color: string; countColor: string }> = {
+  LIGHT_MEAL: { label: 'Ăn nhẹ', description: 'Món ăn thanh đạm, ít calo', color: 'bg-teal-50 text-teal-700 border-teal-200/40', countColor: 'bg-teal-100/80 text-teal-800' },
+  LOW_SUGAR: { label: 'Ít đường', description: 'Hàm lượng đường thấp, phù hợp ăn kiêng', color: 'bg-sky-50 text-sky-700 border-sky-200/40', countColor: 'bg-sky-100/80 text-sky-800' },
+  LOW_CALORIE: { label: 'Ít Calo', description: 'Lượng calo thấp, tốt cho giảm cân', color: 'bg-emerald-50 text-emerald-700 border-emerald-200/40', countColor: 'bg-emerald-100/80 text-emerald-800' },
+  LOW_FAT: { label: 'Ít béo', description: 'Hàm lượng chất béo thấp', color: 'bg-blue-50 text-blue-700 border-blue-200/40', countColor: 'bg-blue-100/80 text-blue-800' },
+  VEGETARIAN: { label: 'Món chay', description: 'Không chứa thịt, cá', color: 'bg-green-50 text-green-700 border-green-200/40', countColor: 'bg-green-100/80 text-green-800' },
+  VEGAN: { label: 'Thuần chay', description: 'Hoàn toàn từ thực vật, không bơ sữa trứng', color: 'bg-emerald-50 text-emerald-700 border-emerald-200/40', countColor: 'bg-emerald-100/80 text-emerald-800' },
+  GLUTEN_FREE: { label: 'Không Gluten', description: 'Không chứa bột mì hoặc gluten', color: 'bg-amber-50 text-amber-700 border-amber-200/40', countColor: 'bg-amber-100/80 text-amber-800' },
+  DAIRY_FREE: { label: 'Không bơ sữa', description: 'Không chứa sữa hoặc chế phẩm từ sữa', color: 'bg-pink-50 text-pink-700 border-pink-200/40', countColor: 'bg-pink-100/80 text-pink-800' },
+  QUICK_BITE: { label: 'Ăn nhanh', description: 'Tiện lợi, ăn nhanh gọn', color: 'bg-purple-50 text-purple-700 border-purple-200/40', countColor: 'bg-purple-100/80 text-purple-800' },
+  HIGH_PROTEIN: { label: 'Giàu đạm', description: 'Hàm lượng protein cao, tốt cho cơ bắp', color: 'bg-orange-50 text-orange-700 border-orange-200/40', countColor: 'bg-orange-100/80 text-orange-800' },
+  VERY_HIGH_PROTEIN: { label: 'Cực giàu đạm', description: 'Hàm lượng protein rất cao', color: 'bg-red-50 text-red-700 border-red-200/40', countColor: 'bg-red-100/80 text-red-800' },
+  POST_WORKOUT: { label: 'Sau tập luyện', description: 'Phục hồi thể lực và cơ bắp sau tập thể thao', color: 'bg-indigo-50 text-indigo-700 border-indigo-200/40', countColor: 'bg-indigo-100/80 text-indigo-800' },
+  OFFICE_LUNCH: { label: 'Trưa văn phòng', description: 'Bữa trưa đầy đủ dinh dưỡng, nhanh gọn cho dân công sở', color: 'bg-slate-50 text-slate-700 border-slate-200/40', countColor: 'bg-slate-200 text-slate-800' },
+};
 
 export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = ({ restaurant }) => {
   const [insights, setInsights] = useState<InsightsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshingAI, setRefreshingAI] = useState(false);
+  const [period, setPeriod] = useState<string>('all');
 
   const features = restaurant?.features || {
     fitScoreEnabled: false,
@@ -61,7 +87,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     if (!restId) return;
     setLoading(true);
     try {
-      const data = await apiFetch<InsightsPayload>(`/api/restaurants/insights?restaurantId=${restId}`, {
+      const data = await apiFetch<InsightsPayload>(`/api/restaurants/insights?restaurantId=${restId}&period=${period}`, {
         requireAuth: true
       });
       setInsights(data);
@@ -79,7 +105,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     setRefreshingAI(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1200));
-      const data = await apiFetch<InsightsPayload>(`/api/restaurants/insights?restaurantId=${restId}`, {
+      const data = await apiFetch<InsightsPayload>(`/api/restaurants/insights?restaurantId=${restId}&period=${period}`, {
         requireAuth: true
       });
       setInsights(data);
@@ -98,7 +124,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     } else {
       setLoading(false);
     }
-  }, [isFree]);
+  }, [isFree, period]);
 
   if (loading) {
     return (
@@ -185,97 +211,80 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     <div className="space-y-6">
       
       {/* Top Welcome Title */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent p-5 rounded-2xl border border-emerald-100">
-        <div>
-          <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
-            QDish Intelligence Advisor
-          </h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            Phân tích thói quen ăn uống của thực khách quét QR & tối ưu hóa thực đơn tăng trưởng doanh thu.
-          </p>
+      <div className="flex flex-col gap-4 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent p-5 rounded-2xl border border-emerald-100/80 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
+              QDish Intelligence Advisor
+            </h2>
+            <p className="text-xs text-neutral-500 mt-0.5">
+              Phân tích thói quen ăn uống của thực khách quét QR & tối ưu hóa thực đơn tăng trưởng doanh thu.
+            </p>
+          </div>
         </div>
-        <Button onClick={fetchInsights} variant="outline" className="rounded-xl border-emerald-200 text-emerald-700 text-xs px-3.5 h-9 shrink-0">
-          Làm mới báo cáo
-        </Button>
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t border-emerald-100/50">
+          <div className="flex bg-slate-100/80 p-1 rounded-xl gap-1 border border-slate-200/40 w-fit shrink-0">
+            {[
+              { id: 'all', label: 'Tất cả' },
+              { id: 'today', label: 'Hôm nay' },
+              { id: 'week', label: 'Tuần này' },
+              { id: 'month', label: 'Tháng này' },
+              { id: 'year', label: 'Năm nay' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setPeriod(item.id)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all active:scale-95 cursor-pointer
+                  ${period === item.id
+                    ? 'bg-white text-slate-800 shadow-[0_1.5px_4px_rgba(0,0,0,0.06)] border border-slate-200/30'
+                    : 'text-slate-500 hover:text-slate-800'
+                  }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          
+          <Button onClick={fetchInsights} variant="outline" className="rounded-xl border-slate-200 hover:bg-slate-50 text-slate-700 text-xs px-3.5 h-9 shrink-0 flex items-center gap-1.5 font-bold transition-all active:scale-95 shadow-sm">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin-hover" />
+            Làm mới báo cáo
+          </Button>
+        </div>
       </div>
 
-      {/* Grid: 2 Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        
-        {/* Card 1: Recipe Coverage Progress */}
-        <div className="bg-white rounded-2xl border border-neutral-100 p-5 shadow-sm space-y-4 flex flex-col justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Thiết lập Menu</span>
-              <ChefHat className="w-4 h-4 text-green-600" />
-            </div>
-            <h3 className="text-2xl font-black text-neutral-900">{menuCoverage.coveragePct}%</h3>
-            <p className="text-xs text-neutral-500 font-medium">
-              Độ phủ công thức dinh dưỡng trên thực đơn của bạn.
-            </p>
+      {/* Revenue Impact Banner */}
+      <div className="bg-white rounded-3xl border border-neutral-100 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2.5 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100/50">
+              Doanh thu Smart-Menu
+            </span>
           </div>
-          
-          <div className="space-y-2 pt-2">
-            <div className="h-2.5 w-full bg-neutral-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-green-600 rounded-full transition-all duration-500"
-                style={{ width: `${menuCoverage.coveragePct}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-[10px] text-neutral-400 font-semibold">
-              <span>Đã cấu hình: {menuCoverage.itemsWithRecipe} món</span>
-              <span>Tổng số: {menuCoverage.totalItems} món</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Revenue Impact */}
-        <div className="bg-white rounded-2xl border border-neutral-100 p-5 shadow-sm space-y-4 flex flex-col justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Doanh thu Smart-Menu</span>
-              <DollarSign className="w-4 h-4 text-amber-500" />
-            </div>
-            <h3 className="text-2xl font-black text-neutral-900">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <h3 className="text-3xl font-black text-neutral-900 tracking-tight">
               {formatVND(topDishes.reduce((sum, d) => sum + d.revenue, 0))}
             </h3>
-            <p className="text-xs text-neutral-500 font-medium">
-              Tổng giá trị đơn hàng được tạo bởi các món ăn phổ biến có cấu hình dinh dưỡng.
-            </p>
+            <span className="text-[11px] text-neutral-400 font-semibold">
+              từ các món ăn có công thức dinh dưỡng
+            </span>
           </div>
-          
-          <div className="rounded-xl bg-amber-50 p-2.5 border border-amber-100 text-[10px] text-amber-800 font-medium flex items-start gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-            <span>Món ăn có thông tin dinh dưỡng rõ ràng có tỷ lệ gọi món cao hơn 24% so với thông thường!</span>
-          </div>
+          <p className="text-xs text-neutral-500 max-w-[65ch]">
+            Tổng giá trị đơn hàng được tạo bởi các món ăn phổ biến có cấu hình dinh dưỡng ngữ cảnh.
+          </p>
         </div>
-
-        {/* Card 3: Top Recommended dish */}
-        <div className="bg-white rounded-2xl border border-neutral-100 p-5 shadow-sm space-y-4 flex flex-col justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-400">Món ăn bán chạy nhất</span>
-              <ShieldCheck className="w-4 h-4 text-indigo-600" />
-            </div>
-            <h3 className="text-base font-bold text-neutral-800 truncate">
-              {topDishes[0]?.name || 'Chưa có dữ liệu giao dịch'}
-            </h3>
-            <p className="text-xs text-neutral-500 font-medium">
-              Món ăn được thực khách lựa chọn đặt nhiều nhất từ mã QR bàn ăn.
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between text-[11px] text-neutral-400 pt-2 border-t border-neutral-50 font-semibold">
-            <span>Số lượt bán: {topDishes[0]?.orderCount || 0} lần</span>
-            <span>Doanh thu: {formatVND(topDishes[0]?.revenue || 0)}</span>
-          </div>
+        
+        <div className="rounded-2xl bg-amber-50/70 p-4 border border-amber-100/50 text-xs text-amber-800 font-medium flex items-start gap-3 max-w-sm shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]">
+          <TrendingUp className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            Món ăn có thông tin dinh dưỡng rõ ràng có tỷ lệ gọi món <strong>cao hơn 24%</strong> so với thông thường!
+          </p>
         </div>
-
       </div>
 
       {/* Grid: AI advisor & distribution charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
         {/* Left: AI advisor gap analysis (Redesigned with Glassmorphism Premium style) */}
         <div
@@ -475,7 +484,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                         <div className="space-y-0.5">
                           <h4 className="text-xs font-bold text-neutral-800">Healthy đang tăng trưởng</h4>
                           <p className="text-[11px] text-neutral-500 leading-relaxed">
-                            Phân khúc khách hàng ăn uống Healthy chiếm tỷ trọng <strong>{healthyCount} lượt quét</strong>. Hãy tối ưu các tag Calo.
+                            Phân khúc khách hàng ăn uống Healthy chiếm tỷ trọng <strong>{healthyCount} Order</strong>. Hãy tối ưu các tag Calo.
                           </p>
                         </div>
                       </div>
@@ -571,7 +580,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                   <div key={seg.segment} className="space-y-1">
                     <div className="flex justify-between text-xs font-semibold text-neutral-700">
                       <span>{seg.label}</span>
-                      <span className="text-green-600 font-bold">{seg.count} lượt quét</span>
+                      <span className="text-green-600 font-bold">{seg.count} Order</span>
                     </div>
                     <div className="h-3 w-full bg-neutral-50 rounded-full overflow-hidden border border-neutral-100/50">
                       <div
@@ -606,6 +615,76 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
           )}
         </div>
 
+        {/* Right: Peak Ordering Hours & Meal Periods */}
+        <div className="bg-white rounded-3xl border border-neutral-100 p-6 shadow-sm space-y-4 relative overflow-hidden flex flex-col justify-between">
+          <div className={isPlus ? "blur-[3px] select-none pointer-events-none flex-1 flex flex-col space-y-4" : "flex-1 flex flex-col space-y-4"}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-sm font-bold text-neutral-800">Khung giờ đặt món (Peak Hours)</h3>
+              </div>
+              <span className="text-[10px] text-neutral-400 font-medium">Báo cáo khung giờ</span>
+            </div>
+
+            <div className="space-y-3.5 max-h-[350px] overflow-y-auto pr-1">
+              {insights.peakHours?.periods.map((p) => {
+                const maxCount = Math.max(...(insights.peakHours?.periods.map(x => x.count) || [1])) || 1;
+                const widthPct = Math.max(15, Math.round((p.count / maxCount) * 100));
+
+                return (
+                  <div key={p.period} className="space-y-1">
+                    <div className="flex justify-between text-xs font-semibold text-neutral-700">
+                      <span>{p.period}</span>
+                      <span className="text-indigo-600 font-bold">{p.count} đơn ({p.percentage}%)</span>
+                    </div>
+                    <div className="h-3 w-full bg-neutral-50 rounded-full overflow-hidden border border-neutral-100/50">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 rounded-full"
+                        style={{ width: `${widthPct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-2 p-3 bg-indigo-50/50 border border-indigo-100/50 rounded-2xl flex items-center justify-between text-[11px] text-indigo-800 font-medium">
+              <span className="flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Khung giờ cao điểm:</span>
+              </span>
+              <strong className="text-xs text-indigo-900 bg-white px-2 py-0.5 rounded-lg border border-indigo-200/30 shadow-sm">
+                {(() => {
+                  if (!insights.peakHours?.hourly) return 'Chưa có';
+                  const hourly = insights.peakHours.hourly;
+                  const maxHour = hourly.indexOf(Math.max(...hourly));
+                  return `${maxHour}:00 - ${maxHour + 1}:00`;
+                })()}
+              </strong>
+            </div>
+          </div>
+
+          {isPlus && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/70 backdrop-blur-[1.5px] p-6 text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/20 animate-pulse">
+                🔒
+              </div>
+              <div className="space-y-1.5 max-w-[280px]">
+                <h4 className="text-sm font-bold text-neutral-900">Tính năng Phân tích giờ vàng bị khóa</h4>
+                <p className="text-xs text-neutral-500 leading-normal">
+                  Biểu đồ phân tích khung giờ đặt món và mật độ gọi món cao điểm chỉ dành cho khách hàng đăng ký gói <strong>PRO</strong>.
+                </p>
+              </div>
+              <Button
+                onClick={() => window.location.href = '/owner?tab=billing'}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold px-4 h-9 shadow-md shadow-indigo-500/20 transition-transform active:scale-95"
+              >
+                Nâng cấp gói PRO ngay ✨
+              </Button>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Attributes and Top ordered list */}
@@ -622,17 +701,26 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
           </p>
 
           <div className="flex flex-wrap gap-2 pt-2">
-            {Object.entries(attributeDistribution).map(([attr, count]) => (
-              <span
-                key={attr}
-                className="text-xs bg-neutral-50 border border-neutral-200/80 rounded-2xl px-3 py-1.5 font-bold text-neutral-700 flex items-center gap-1.5"
-              >
-                <span className="bg-green-100 text-green-800 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black">
-                  {count}
+            {Object.entries(attributeDistribution).map(([attr, count]) => {
+              const meta = attributeLabels[attr] || {
+                label: attr,
+                description: 'Thuộc tính dinh dưỡng của món ăn',
+                color: 'bg-neutral-50 text-neutral-700 border-neutral-200/80',
+                countColor: 'bg-neutral-200 text-neutral-800'
+              };
+              return (
+                <span
+                  key={attr}
+                  title={meta.description}
+                  className={`text-xs border rounded-2xl px-3 py-1.5 font-bold flex items-center gap-1.5 cursor-help transition-all hover:scale-[1.03] active:scale-95 duration-150 shadow-sm shadow-black/5 ${meta.color}`}
+                >
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${meta.countColor}`}>
+                    {count}
+                  </span>
+                  {meta.label}
                 </span>
-                {attr}
-              </span>
-            ))}
+              );
+            })}
             
             {Object.keys(attributeDistribution).length === 0 && (
               <div className="text-xs text-neutral-400 italic py-6 text-center w-full">

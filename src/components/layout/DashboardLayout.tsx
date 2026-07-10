@@ -96,7 +96,6 @@ export const DashboardLayout: React.FC = () => {
         { id: 'orders', label: 'Đơn hàng', icon: ClipboardList },
         { id: 'bills', label: 'Hóa đơn', icon: FileText },
         { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
-        { id: 'categories', label: 'Danh mục', icon: FileText },
         { id: 'ingredients', label: 'Nguyên liệu', icon: Apple },
         { id: 'tables', label: 'Bàn & QR', icon: QrCode },
         { id: 'staff', label: 'Nhân viên', icon: Users },
@@ -128,7 +127,6 @@ export const DashboardLayout: React.FC = () => {
           { id: 'orders', label: 'Đơn hàng', icon: ClipboardList },
           { id: 'bills', label: 'Hóa đơn', icon: FileText },
           { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
-          { id: 'categories', label: 'Danh mục', icon: FileText },
           { id: 'ingredients', label: 'Nguyên liệu', icon: Apple },
           { id: 'tables', label: 'Bàn & QR', icon: QrCode },
           { id: 'staff', label: 'Nhân viên', icon: Users },
@@ -147,7 +145,14 @@ export const DashboardLayout: React.FC = () => {
   const menuItems = getMenuItems();
 
   const handleTabClick = (tabId: string) => {
-    if (currentTab !== tabId) {
+    let mainPath = '/dashboard';
+    if (user?.role === Role.SUPER_ADMIN) mainPath = '/super-admin';
+    else if (user?.role === Role.RESTAURANT_OWNER) mainPath = '/owner';
+    else if (user?.role === Role.STAFF) mainPath = '/staff';
+
+    if (location.pathname !== mainPath) {
+      navigate(`${mainPath}?tab=${tabId}`);
+    } else if (currentTab !== tabId) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.set('tab', tabId);
       setSearchParams(nextParams);
@@ -164,6 +169,7 @@ export const DashboardLayout: React.FC = () => {
     if (location.pathname === '/staff') return 'Đơn chế biến';
     if (location.pathname === '/super-admin') return 'Quản lý SaaS';
     if (location.pathname === '/owner') return 'Trang chủ Chủ nhà hàng';
+    if (location.pathname.startsWith('/owner/restaurant/')) return 'Chi tiết nhà hàng';
     return 'Tổng quan';
   };
 

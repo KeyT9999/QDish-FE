@@ -7,10 +7,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Camera, ChefHat, Info, Loader2 as UploadLoader } from 'lucide-react';
+import { Camera, ChefHat, Info, Loader2 as UploadLoader, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { RecipeBuilderTab } from './RecipeBuilderTab';
 
@@ -58,6 +58,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
   const [activeTab, setActiveTab] = useState<TabId>('info');
   const [menuForm, setMenuForm] = useState(getDefaultMenuForm());
   const [isUploadingMenuImage, setIsUploadingMenuImage] = useState(false);
+  const [isCreatingNewCategory, setIsCreatingNewCategory] = useState(false);
 
   // Recipe fields
   const [recipeIngredients, setRecipeIngredients] = useState<DishIngredient[]>([]);
@@ -91,6 +92,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
       setRecipeIngredients(editingItem.ingredients || []);
       setServingCount(editingItem.servingCount ?? 1);
       setCookingMethod(editingItem.cookingMethod ?? 'raw');
+      setIsCreatingNewCategory(false);
     } else {
       setMenuForm({
         ...getDefaultMenuForm(),
@@ -100,6 +102,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
       setRecipeIngredients([]);
       setServingCount(1);
       setCookingMethod('raw');
+      setIsCreatingNewCategory(categories.length === 0);
     }
   }, [open, editingItem, categories]);
 
@@ -125,6 +128,12 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
     if (!menuForm.name.trim()) { toast.error('Tên món ăn là bắt buộc'); return; }
     if (menuForm.price <= 0) { toast.error('Giá món ăn phải lớn hơn 0'); return; }
     if (!menuForm.category) { toast.error('Danh mục món ăn là bắt buộc'); return; }
+
+    if (recipeIngredients.length === 0) {
+      toast.error('Vui lòng nhập danh sách nguyên liệu trong tab Recipe Builder để hoàn tất tạo món ăn.');
+      setActiveTab('recipe');
+      return;
+    }
 
     // Build payload — include recipe fields if recipe tab has data
     const payload: Partial<MenuItem> = {
@@ -177,27 +186,33 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
         </DialogHeader>
 
         {/* Tab bar */}
-        <div className="flex px-6 pt-3 pb-0 shrink-0 gap-1 border-b border-gray-100">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 -mb-px
-                ${activeTab === tab.id
-                  ? 'border-green-600 text-green-700 bg-green-50/60'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                }`}
-            >
-              {tab.icon}
-              {tab.label}
-              {tab.id === 'recipe' && recipeIngredients.length > 0 && (
-                <span className="ml-1 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                  {recipeIngredients.length}
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="flex px-6 pt-4 pb-2 shrink-0 border-b border-slate-100 bg-slate-50/20">
+          <div className="flex bg-slate-100/80 p-1 rounded-xl gap-1 border border-slate-200/40 w-fit">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer select-none active:scale-[0.97]
+                  ${activeTab === tab.id
+                    ? 'bg-white text-slate-800 shadow-[0_2px_6px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] border border-slate-200/30'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-white/40'
+                  }`}
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+                {tab.id === 'recipe' && (
+                  recipeIngredients.length > 0 ? (
+                    <span className="ml-1 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                      {recipeIngredients.length}
+                    </span>
+                  ) : (
+                    <span className="ml-1.5 flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" title="Yêu cầu nhập nguyên liệu" />
+                  )
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Scrollable body */}
@@ -285,22 +300,71 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
 
                 {/* Danh mục */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-gray-600 font-semibold">Danh mục *</Label>
-                  {categories.length > 0 ? (
+                  <div className="flex justify-between items-center">
+                    <Label className="text-xs text-gray-600 font-semibold">Danh mục *</Label>
+                    {isCreatingNewCategory && categories.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCreatingNewCategory(false);
+                          if (categories.length > 0) {
+                            setMenuForm({
+                              ...menuForm,
+                              category: categories[0].name,
+                              categoryId: categories[0]._id || ''
+                            });
+                          }
+                        }}
+                        className="text-[10px] text-green-600 hover:text-green-700 font-bold transition-colors"
+                      >
+                        Chọn danh mục có sẵn
+                      </button>
+                    )}
+                  </div>
+                  
+                  {!isCreatingNewCategory && categories.length > 0 ? (
                     <Select
                       value={menuForm.category || undefined}
                       onValueChange={(value) => {
+                        if (value === '__CREATE_NEW__') {
+                          setIsCreatingNewCategory(true);
+                          setMenuForm({ ...menuForm, categoryId: '', category: '' });
+                          return;
+                        }
                         const selected = categories.find((cat) => cat.name === value);
                         setMenuForm({ ...menuForm, categoryId: selected?._id || '', category: value || '' });
                       }}
                     >
-                      <SelectTrigger className="rounded-xl"><SelectValue placeholder="Chọn danh mục" /></SelectTrigger>
-                      <SelectContent className="bg-white">
-                        {categories.map((cat) => <SelectItem key={cat._id} value={cat.name}>{cat.name}</SelectItem>)}
+                      <SelectTrigger className="rounded-xl border-slate-200 h-10 px-3 hover:bg-slate-50 transition-colors text-xs font-semibold text-slate-800 w-full">
+                        <SelectValue placeholder="Chọn danh mục" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border border-slate-150 rounded-2xl p-1.5 shadow-xl min-w-[200px] outline-none">
+                        {categories.map((cat) => (
+                          <SelectItem 
+                            key={cat._id} 
+                            value={cat.name}
+                            className="cursor-pointer py-2 px-3 pl-3 pr-8 text-xs font-medium text-slate-700 rounded-xl hover:bg-slate-50 focus:bg-slate-50 focus:text-slate-900 transition-colors duration-150 outline-none"
+                          >
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                        <SelectSeparator className="bg-slate-100 my-1.5" />
+                        <SelectItem 
+                          value="__CREATE_NEW__" 
+                          className="cursor-pointer py-2 px-3 pl-3 pr-8 text-xs font-bold text-emerald-600 rounded-xl hover:bg-emerald-50 focus:bg-emerald-50 focus:text-emerald-700 transition-colors duration-150 outline-none"
+                        >
+                          + Tạo danh mục mới...
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Input value={menuForm.category} onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value, categoryId: '' })} className="rounded-xl" placeholder="Nhập tên danh mục" />
+                    <Input
+                      value={menuForm.category}
+                      onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value, categoryId: '' })}
+                      className="rounded-xl"
+                      placeholder="Nhập tên danh mục mới (VD: Món khai vị)"
+                      autoFocus={isCreatingNewCategory}
+                    />
                   )}
                 </div>
 
@@ -328,8 +392,20 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                 )}
 
                 {recipeIngredients.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50/50 px-3 py-2.5 text-xs text-neutral-400 text-center">
-                    Chuyển sang tab <strong className="text-green-600">Recipe Builder</strong> để tính dinh dưỡng tự động.
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-xs text-amber-800 font-medium flex items-center justify-between gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]">
+                    <div className="flex gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="leading-relaxed">
+                        Bạn chưa nhập nguyên liệu. Hãy hoàn thiện <strong className="text-amber-900">Recipe Builder</strong> để tính toán dinh dưỡng AI và cho phép lưu món.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('recipe')}
+                      className="shrink-0 text-[10px] text-amber-900 bg-amber-100/80 hover:bg-amber-100 px-2 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 border border-amber-200/50"
+                    >
+                      Nhập ngay
+                    </button>
                   </div>
                 )}
               </div>
@@ -350,7 +426,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t border-gray-100 shrink-0">
+        <DialogFooter className="px-6 py-4 border-t border-gray-100 shrink-0 m-0 bg-white rounded-b-2xl">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Hủy</Button>
           <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-md shadow-green-600/10">
             {editingItem ? 'Lưu thay đổi' : 'Thêm món ăn'}

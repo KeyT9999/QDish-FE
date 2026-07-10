@@ -54,6 +54,7 @@ export const OwnerDashboard: React.FC = () => {
   const [billingError, setBillingError] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(BillingCycle.MONTHLY);
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
+  const [statsPeriod, setStatsPeriod] = useState<string>('all');
 
   const loadSubscription = async () => {
     setIsSubLoading(true);
@@ -128,10 +129,10 @@ export const OwnerDashboard: React.FC = () => {
     confirmRestaurantPassword: ''
   });
 
-  const loadRestaurants = async () => {
+  const loadRestaurants = async (period = 'all') => {
     setIsLoading(true);
     try {
-      const data = await ownerRestaurantService.getMyRestaurants();
+      const data = await ownerRestaurantService.getMyRestaurants(period);
       setRestaurants(data);
       
       // Auto select first branch if none selected yet
@@ -147,8 +148,8 @@ export const OwnerDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    loadRestaurants();
-  }, []);
+    loadRestaurants(statsPeriod);
+  }, [statsPeriod]);
 
   // Update default form email when user profile email is available
   useEffect(() => {
@@ -242,7 +243,7 @@ export const OwnerDashboard: React.FC = () => {
   };
 
   if (activeTab !== 'owner-home' && activeTab !== 'billing' && activeTab !== 'notifications' && selectedRestId) {
-    return <Dashboard />;
+    return <Dashboard ownerRestaurants={restaurants} onCopySuccess={() => loadRestaurants(statsPeriod)} />;
   }
 
   if (activeTab === 'notifications') {
@@ -718,6 +719,10 @@ export const OwnerDashboard: React.FC = () => {
     );
   }
 
+  const totalRevenue = restaurants.reduce((sum, r) => sum + (r.revenue || 0), 0);
+  const totalOrders = restaurants.reduce((sum, r) => sum + (r.orderCount || 0), 0);
+  const totalBranches = restaurants.length;
+
   return (
     <div className="space-y-8 px-4">
       {/* Welcome Banner */}
@@ -737,6 +742,112 @@ export const OwnerDashboard: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Combined Network Stats */}
+      {!isLoading && restaurants.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-col">
+              <h2 className="text-xl font-heading font-bold text-slate-800 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-emerald-600 animate-pulse" />
+                Hiệu suất kinh doanh toàn chuỗi
+              </h2>
+              <p className="text-slate-400 text-xs mt-0.5">
+                Số liệu tổng hợp cộng dồn từ tất cả {restaurants.length} chi nhánh nhà hàng thuộc sở hữu của bạn.
+              </p>
+            </div>
+            
+            {/* Period Switcher */}
+            <div className="inline-flex rounded-xl border border-slate-150 bg-slate-50 p-1 self-start sm:self-center shrink-0">
+              {[
+                { id: 'all', label: 'Tất cả' },
+                { id: 'today', label: 'Hôm nay' },
+                { id: 'week', label: 'Tuần này' },
+                { id: 'month', label: 'Tháng này' },
+                { id: 'year', label: 'Năm nay' }
+              ].map(item => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setStatsPeriod(item.id)}
+                  className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all duration-200 ${
+                    statsPeriod === item.id 
+                      ? 'bg-white text-emerald-700 shadow-sm border-slate-100' 
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Stat 1: Total Combined Revenue */}
+            <Card className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden relative group hover:shadow-md transition-all duration-300">
+              <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-emerald-500" />
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider block">
+                    Tổng doanh thu toàn chuỗi
+                  </span>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalRevenue)}
+                  </h3>
+                  <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+                    Doanh thu gộp (All branches)
+                  </span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-650 flex items-center justify-center font-bold shrink-0">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Stat 2: Total Combined Orders */}
+            <Card className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden relative group hover:shadow-md transition-all duration-300">
+              <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-blue-500" />
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider block">
+                    Tổng đơn hoàn thành
+                  </span>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    {totalOrders.toLocaleString('vi-VN')} đơn
+                  </h3>
+                  <span className="text-[9px] font-semibold text-blue-650 bg-blue-50 px-1.5 py-0.5 rounded">
+                    Số đơn phục vụ thành công
+                  </span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+                  <UtensilsCrossed className="w-4 h-4" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Stat 3: Total Branches */}
+            <Card className="rounded-2xl border border-slate-100 bg-white shadow-sm overflow-hidden relative group hover:shadow-md transition-all duration-300">
+              <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-purple-500" />
+              <CardContent className="p-5 flex items-center justify-between">
+                <div className="space-y-1">
+                  <span className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider block">
+                    Quy mô chi nhánh
+                  </span>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    {totalBranches} nhà hàng
+                  </h3>
+                  <span className="text-[9px] font-semibold text-purple-650 bg-purple-50 px-1.5 py-0.5 rounded">
+                    Tổng chi nhánh đăng ký
+                  </span>
+                </div>
+                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
+                  <Building2 className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center py-20">
@@ -831,6 +942,13 @@ export const OwnerDashboard: React.FC = () => {
                       <span className="truncate">{rest.email}</span>
                     </div>
 
+                    <div className="pt-2 mt-2 border-t border-slate-50 flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-bold text-slate-400">Doanh thu chi nhánh:</span>
+                      <strong className="text-slate-800 text-xs">
+                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(rest.revenue || 0)}
+                      </strong>
+                    </div>
+
                     <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         rest.status === 'ACTIVE'
@@ -840,14 +958,22 @@ export const OwnerDashboard: React.FC = () => {
                         {rest.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm khóa'}
                       </span>
                       
-                      {isSelected && (
+                      <div className="flex items-center gap-3">
                         <button 
-                          onClick={() => setSearchParams({ tab: 'overview' })}
-                          className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800"
+                          onClick={() => navigate(`/owner/restaurant/${rest.id || rest._id}`)}
+                          className="text-[11px] font-bold text-slate-550 hover:text-emerald-700 transition-colors"
                         >
-                          Vào Quản trị <ExternalLink className="w-3.5 h-3.5" />
+                          Xem chi tiết
                         </button>
-                      )}
+                        {isSelected && (
+                          <button 
+                            onClick={() => setSearchParams({ tab: 'overview' })}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
+                          >
+                            Vào Quản trị <ExternalLink className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

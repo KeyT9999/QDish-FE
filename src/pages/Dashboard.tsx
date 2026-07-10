@@ -46,6 +46,7 @@ import { StaffModal } from '@/components/dashboard/restaurant/modals/StaffModal'
 import { EmailChangeOtpModal } from '@/components/dashboard/restaurant/modals/EmailChangeOtpModal';
 import { BankChangeOtpModal } from '@/components/dashboard/restaurant/modals/BankChangeOtpModal';
 import { BillPaymentModal } from '@/components/dashboard/restaurant/modals/BillPaymentModal';
+import { CopyMenuModal } from '@/components/dashboard/restaurant/modals/CopyMenuModal';
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
 
@@ -60,8 +61,17 @@ const banksList = [
   { code: 'agribank', name: 'Agribank' }
 ];
 
-export const Dashboard: React.FC = () => {
+export interface DashboardProps {
+  ownerRestaurants?: any[];
+  onCopySuccess?: () => void;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({
+  ownerRestaurants = [],
+  onCopySuccess
+}) => {
   const { user } = useAuth();
+  const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
   
   // Resolve restaurantId dynamically for RESTAURANT_OWNER
   const selectedRestId = localStorage.getItem('selected_restaurant_id') || '';
@@ -657,18 +667,12 @@ export const Dashboard: React.FC = () => {
             onOpenMenuModal={handleOpenMenuModal}
             onDeleteMenuItem={handleDeleteMenuItem}
             onToggleAvailable={handleToggleAvailable}
+            showCopyButton={user?.role === 'RESTAURANT_OWNER' && ownerRestaurants.length > 1}
+            onCopyClick={() => setIsCopyModalOpen(true)}
           />
         </TabsContent>
 
-        <TabsContent value="categories" className="space-y-6">
-          <RestaurantCategoriesTab
-            categories={categories}
-            menuItems={menuItems}
-            isLoadingCategories={isLoadingCategories}
-            onOpenCategoryModal={handleOpenCategoryModal}
-            onDeleteCategory={handleDeleteCategory}
-          />
-        </TabsContent>
+
 
         <TabsContent value="ingredients" className="space-y-6">
           <RestaurantIngredientsTab restaurantId={restaurantId} />
@@ -727,12 +731,7 @@ export const Dashboard: React.FC = () => {
         onSave={handleSaveMenuItem}
       />
 
-      <CategoryModal
-        open={isCategoryModalOpen}
-        onOpenChange={setIsCategoryModalOpen}
-        editingCategory={editingCategory}
-        onSave={handleSaveCategory}
-      />
+
 
       <QRPreviewModal
         tableCode={selectedTableQR}
@@ -774,6 +773,19 @@ export const Dashboard: React.FC = () => {
           await Promise.all([loadOrderBillGroups(), loadTables()]);
         }}
       />
+
+      {user?.role === 'RESTAURANT_OWNER' && (
+        <CopyMenuModal
+          open={isCopyModalOpen}
+          onOpenChange={setIsCopyModalOpen}
+          targetRestaurant={restaurant}
+          restaurants={ownerRestaurants}
+          onSuccess={async () => {
+            if (onCopySuccess) onCopySuccess();
+            await Promise.all([loadMenu(), loadCategories()]);
+          }}
+        />
+      )}
     </div>
   );
 };

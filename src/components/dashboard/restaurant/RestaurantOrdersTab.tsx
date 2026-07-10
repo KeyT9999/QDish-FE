@@ -257,6 +257,11 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                         <div key={orderId} className="grid gap-3 px-4 py-3 md:grid-cols-[120px_1fr_120px_150px] md:items-center">
                           <div>
                             <span className="block font-mono text-xs font-bold text-neutral-500">#{orderIdShort}</span>
+                            {order.customerName && (
+                              <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100/50 px-2 py-0.5 rounded-md max-w-[110px] truncate" title={order.customerName}>
+                                👤 {order.customerName}
+                              </span>
+                            )}
                             <span className="mt-1 flex items-center gap-1 text-[11px] font-medium text-neutral-400">
                               <Clock className="h-3.5 w-3.5" />
                               {getOrderTime(order)}

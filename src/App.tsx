@@ -18,6 +18,7 @@ const StaffDashboard = lazy(() => import('@/pages/StaffDashboard').then((module)
 const SuperAdmin = lazy(() => import('@/pages/SuperAdmin').then((module) => ({ default: module.SuperAdmin })));
 const RegisterOwner = lazy(() => import('@/pages/RegisterOwner').then((module) => ({ default: module.RegisterOwner })));
 const OwnerDashboard = lazy(() => import('@/pages/OwnerDashboard').then((module) => ({ default: module.OwnerDashboard })));
+const RestaurantDetail = lazy(() => import('@/pages/RestaurantDetail').then((module) => ({ default: module.RestaurantDetail })));
 const Pricing = lazy(() => import('@/pages/Pricing').then((module) => ({ default: module.Pricing })));
 const PaymentSuccess = lazy(() => import('@/pages/PaymentSuccess').then((module) => ({ default: module.PaymentSuccess })));
 const PaymentCancel = lazy(() => import('@/pages/PaymentCancel').then((module) => ({ default: module.PaymentCancel })));
@@ -98,6 +99,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={[Role.RESTAURANT_OWNER]}>
                     <OwnerDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/owner/restaurant/:id"
+                element={
+                  <ProtectedRoute allowedRoles={[Role.RESTAURANT_OWNER]}>
+                    <RestaurantDetail />
                   </ProtectedRoute>
                 }
               />

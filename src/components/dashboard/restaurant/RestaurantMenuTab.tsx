@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
-import { Plus, Edit2, Trash2, ClipboardList, MoreHorizontal } from 'lucide-react';
+import { Plus, Edit2, Trash2, ClipboardList, MoreHorizontal, Copy } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
@@ -21,6 +21,8 @@ export interface RestaurantMenuTabProps {
   onOpenMenuModal: (item?: MenuItem) => void;
   onDeleteMenuItem: (id: string) => Promise<void>;
   onToggleAvailable: (id: string, currentAvailable: boolean) => Promise<void>;
+  showCopyButton?: boolean;
+  onCopyClick?: () => void;
 }
 
 export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
@@ -28,7 +30,9 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
   isLoadingMenu,
   onOpenMenuModal,
   onDeleteMenuItem,
-  onToggleAvailable
+  onToggleAvailable,
+  showCopyButton,
+  onCopyClick
 }) => {
   const isMobile = useIsMobile(640);
   return (
@@ -38,9 +42,21 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
           <h2 className="text-xl font-bold tracking-tight text-neutral-900">Quản lý Món ăn (Menu)</h2>
           <p className="text-neutral-500 text-xs mt-0.5">Quản lý danh sách món ăn, giá bán và thông tin dinh dưỡng.</p>
         </div>
-        <Button onClick={() => onOpenMenuModal()} className="rounded-xl bg-neutral-900 hover:bg-black text-white font-semibold shadow-sm gap-1.5 h-9 self-start sm:self-auto">
-          <Plus className="w-4 h-4" /> Thêm món mới
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          {showCopyButton && (
+            <Button
+              onClick={onCopyClick}
+              variant="outline"
+              className="rounded-xl border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-semibold gap-1.5 h-9"
+            >
+              <Copy className="w-4 h-4 text-neutral-500" />
+              Sao chép thực đơn
+            </Button>
+          )}
+          <Button onClick={() => onOpenMenuModal()} className="rounded-xl bg-neutral-900 hover:bg-black text-white font-semibold shadow-sm gap-1.5 h-9">
+            <Plus className="w-4 h-4" /> Thêm món mới
+          </Button>
+        </div>
       </div>
 
       {isMobile ? (

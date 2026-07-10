@@ -201,14 +201,14 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
             <CardTitle className="text-sm font-bold text-neutral-800">Danh sách bàn & Preview mã QR dẫn bàn</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow className="border-neutral-100 hover:bg-transparent">
-                  <TableHead className="text-xs font-bold text-neutral-400 pl-6 w-[120px]">Mã bàn</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400">Trạng thái</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400">Phiên hiện tại</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400 pl-6 w-[90px]">Mã bàn</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400 w-[130px]">Trạng thái</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400 w-[150px]">Phiên hiện tại</TableHead>
                   <TableHead className="text-xs font-bold text-neutral-400">Đường dẫn đặt món tại bàn</TableHead>
-                  <TableHead className="text-right text-xs font-bold text-neutral-400 w-[240px] pr-6">Thao tác</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400 w-[340px] pl-4">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -222,34 +222,36 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                       <TableCell className="font-mono text-xs text-neutral-500">
                         {tbl.currentSessionCode || '-'}
                       </TableCell>
-                      <TableCell className="text-xs text-emerald-600 underline font-semibold select-all max-w-xs truncate" title={orderUrl}>
-                        {orderUrl}
+                      <TableCell className="text-xs text-emerald-600 underline font-semibold select-all truncate overflow-hidden" title={orderUrl}>
+                        <span className="block truncate">{orderUrl}</span>
                       </TableCell>
-                      <TableCell className="text-right pr-6 space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => onSelectTableQR(tbl.code)} className="rounded-lg text-xs font-semibold border-neutral-200 hover:bg-neutral-50 gap-1.5 h-8">
-                          <QrCode className="w-3.5 h-3.5 text-neutral-500" /> QR Code
-                        </Button>
-                        {hasSession && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewBill(tbl)}
-                              disabled={loadingBillTable === tbl.code}
-                              className="rounded-lg text-xs font-semibold border-neutral-200 hover:bg-neutral-50 gap-1.5 h-8"
-                            >
-                              <Eye className="w-3.5 h-3.5 text-neutral-500" /> Xem bill
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handlePayBill(tbl)}
-                              disabled={loadingBillTable === tbl.code}
-                              className="rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 h-8"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Thanh toán bill
-                            </Button>
-                          </>
-                        )}
+                      <TableCell className="pl-4">
+                        <div className="flex items-center justify-start gap-2">
+                          <Button size="sm" variant="outline" onClick={() => onSelectTableQR(tbl.code)} className="rounded-lg text-xs font-semibold border-neutral-200 hover:bg-neutral-50 gap-1.5 h-8">
+                            <QrCode className="w-3.5 h-3.5 text-neutral-500" /> QR Code
+                          </Button>
+                          {hasSession && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleViewBill(tbl)}
+                                disabled={loadingBillTable === tbl.code}
+                                className="rounded-lg text-xs font-semibold border-neutral-200 hover:bg-neutral-50 gap-1.5 h-8"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-neutral-500" /> Xem bill
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handlePayBill(tbl)}
+                                disabled={loadingBillTable === tbl.code}
+                                className="rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 h-8 px-4"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Thanh toán bill
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
