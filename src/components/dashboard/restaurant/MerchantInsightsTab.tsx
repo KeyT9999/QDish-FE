@@ -37,7 +37,7 @@ interface InsightsPayload {
     count: number;
     label: string;
   }>;
-  surveyResponseCount: number;
+  surveyResponseCount?: number;
   gapAnalysis: string[];
   peakHours: {
     periods: Array<{
@@ -201,7 +201,15 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     );
   }
 
-  const { menuCoverage, attributeDistribution, topDishes, customerSegments, surveyResponseCount, gapAnalysis } = insights;
+  const {
+    menuCoverage,
+    attributeDistribution,
+    topDishes,
+    customerSegments,
+    surveyResponseCount: rawSurveyResponseCount,
+    gapAnalysis
+  } = insights;
+  const surveyResponseCount = rawSurveyResponseCount ?? 0;
 
   // Format currency
   const formatVND = (num: number) => {
@@ -342,7 +350,9 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
               </div>
             ) : (() => {
               const totalOrders = topDishes.reduce((sum, d) => sum + d.orderCount, 0);
-              const healthyCount = customerSegments.find(s => s.segment === 'LIGHT_MEAL' || s.segment === 'BALANCED' || s.segment === 'WEIGHT_LOSS')?.count || 0;
+              const healthyCount = customerSegments
+                .filter(s => ['LIGHT_MEAL', 'BALANCED', 'WEIGHT_LOSS'].includes(s.segment))
+                .reduce((sum, segment) => sum + segment.count, 0);
               const gapCount = gapAnalysis.filter(g => !g.includes('Thực đơn của bạn')).length;
 
               if (surveyResponseCount < 20 || totalOrders < 10) {
@@ -580,7 +590,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                   <div key={seg.segment} className="space-y-1">
                     <div className="flex justify-between text-xs font-semibold text-neutral-700">
                       <span>{seg.label}</span>
-                      <span className="text-green-600 font-bold">{seg.count} Order</span>
+                      <span className="text-green-600 font-bold">{seg.count} lượt lựa chọn</span>
                     </div>
                     <div className="h-3 w-full bg-neutral-50 rounded-full overflow-hidden border border-neutral-100/50">
                       <div
