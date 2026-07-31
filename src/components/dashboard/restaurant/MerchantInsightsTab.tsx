@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '@/services/api';
+import {
+  loadMerchantInsights,
+  MerchantInsightsPayload
+} from '@/services/merchantInsightLoader';
 import { Restaurant } from '@/types';
 import {
   Sparkles,
@@ -19,36 +23,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-interface InsightsPayload {
-  menuCoverage: {
-    totalItems: number;
-    itemsWithRecipe: number;
-    coveragePct: number;
-  };
-  attributeDistribution: Record<string, number>;
-  topDishes: Array<{
-    dishId: string;
-    name: string;
-    orderCount: number;
-    revenue: number;
-  }>;
-  customerSegments: Array<{
-    segment: string;
-    count: number;
-    label: string;
-  }>;
-  surveyResponseCount?: number;
-  gapAnalysis: string[];
-  peakHours: {
-    periods: Array<{
-      period: string;
-      count: number;
-      percentage: number;
-    }>;
-    hourly: number[];
-  };
-}
-
 const attributeLabels: Record<string, { label: string; description: string; color: string; countColor: string }> = {
   LIGHT_MEAL: { label: 'Ăn nhẹ', description: 'Món ăn thanh đạm, ít calo', color: 'bg-teal-50 text-teal-700 border-teal-200/40', countColor: 'bg-teal-100/80 text-teal-800' },
   LOW_SUGAR: { label: 'Ít đường', description: 'Hàm lượng đường thấp, phù hợp ăn kiêng', color: 'bg-sky-50 text-sky-700 border-sky-200/40', countColor: 'bg-sky-100/80 text-sky-800' },
@@ -66,7 +40,7 @@ const attributeLabels: Record<string, { label: string; description: string; colo
 };
 
 export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = ({ restaurant }) => {
-  const [insights, setInsights] = useState<InsightsPayload | null>(null);
+  const [insights, setInsights] = useState<MerchantInsightsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshingAI, setRefreshingAI] = useState(false);
   const [period, setPeriod] = useState<string>('all');
@@ -81,15 +55,18 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
   };
 
   const isFree = !features.personalizedMenuEnabled;
-  const isPlus = features.personalizedMenuEnabled && !features.advancedAnalyticsEnabled;
+  const isPlus = features.personalizedMenuEnabled && !features.customerInsightsEnabled;
 
   const fetchInsights = async () => {
     const restId = restaurant?.id || (restaurant as any)?._id;
     if (!restId) return;
     setLoading(true);
     try {
-      const data = await apiFetch<InsightsPayload>(`/api/restaurants/insights?restaurantId=${restId}&period=${period}`, {
-        requireAuth: true
+      const data = await loadMerchantInsights({
+        restaurantId: restId,
+        period,
+        customerInsightsEnabled: features.customerInsightsEnabled === true,
+        fetcher: apiFetch
       });
       setInsights(data);
     } catch (err: any) {
@@ -106,8 +83,11 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     setRefreshingAI(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1200));
-      const data = await apiFetch<InsightsPayload>(`/api/restaurants/insights?restaurantId=${restId}&period=${period}`, {
-        requireAuth: true
+      const data = await loadMerchantInsights({
+        restaurantId: restId,
+        period,
+        customerInsightsEnabled: features.customerInsightsEnabled === true,
+        fetcher: apiFetch
       });
       setInsights(data);
       toast.success('Đã cập nhật phân tích AI mới nhất!');
