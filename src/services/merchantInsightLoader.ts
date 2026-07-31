@@ -62,28 +62,19 @@ export async function loadMerchantInsights({
   fetcher
 }: LoadMerchantInsightsInput): Promise<MerchantInsightsPayload> {
   const query = `restaurantId=${encodeURIComponent(restaurantId)}&period=${encodeURIComponent(period)}`;
-  const menuRequest = fetcher<MenuInsightsPayload>(
-    `/api/restaurants/menu-insights?${query}`,
-    { requireAuth: true }
-  );
 
-  if (!customerInsightsEnabled) {
-    return {
-      ...(await menuRequest),
-      ...emptyCustomerInsights()
-    };
-  }
-
-  const [menuInsights, customerInsights] = await Promise.all([
-    menuRequest,
-    fetcher<CustomerInsightsPayload>(
+  if (customerInsightsEnabled) {
+    return fetcher<MerchantInsightsPayload>(
       `/api/restaurants/customer-insights?${query}`,
       { requireAuth: true }
-    )
-  ]);
+    );
+  }
 
   return {
-    ...menuInsights,
-    ...customerInsights
+    ...(await fetcher<MenuInsightsPayload>(
+      `/api/restaurants/menu-insights?${query}`,
+      { requireAuth: true }
+    )),
+    ...emptyCustomerInsights()
   };
 }

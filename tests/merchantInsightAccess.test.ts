@@ -38,25 +38,25 @@ async function testPlusOnlyRequestsMenuInsights() {
   assert.deepEqual(result.peakHours.hourly, Array(24).fill(0));
 }
 
-async function testProRequestsAndMergesBothInsightScopes() {
+async function testProRequestsTheCompleteCustomerInsightDashboardOnce() {
   const requests: string[] = [];
+  const completePayload = { ...menuPayload, ...customerPayload };
   const result = await loadMerchantInsights({
     restaurantId: 'restaurant-1',
     period: 'week',
     customerInsightsEnabled: true,
     fetcher: async (path) => {
       requests.push(path);
-      return (path.includes('customer-insights') ? customerPayload : menuPayload) as any;
+      return completePayload as any;
     }
   });
 
   assert.deepEqual(requests, [
-    '/api/restaurants/menu-insights?restaurantId=restaurant-1&period=week',
     '/api/restaurants/customer-insights?restaurantId=restaurant-1&period=week'
   ]);
-  assert.deepEqual(result, { ...menuPayload, ...customerPayload });
+  assert.deepEqual(result, completePayload);
 }
 
 await testPlusOnlyRequestsMenuInsights();
-await testProRequestsAndMergesBothInsightScopes();
+await testProRequestsTheCompleteCustomerInsightDashboardOnce();
 console.log('merchant insight access tests passed');
