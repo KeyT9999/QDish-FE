@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   getFitScoreTone,
   hasFitScoreProfile,
+  shouldLoadFitScores,
   type FitScoreSummary
 } from '../src/services/fitScorePresentation.ts';
 import { loadBatchFitScores } from '../src/services/fitScoreService.ts';
@@ -60,6 +61,29 @@ async function testProfileEligibilityAndRequestPayload() {
   assert.deepEqual(result, scores);
 }
 
+function testFitScoreRequestGate() {
+  assert.equal(shouldLoadFitScores({
+    fitScoreEnabled: false,
+    restaurantId: 'restaurant-1',
+    profile: { ...emptyProfile, goals: ['MUSCLE_GAIN'] }
+  }), false);
+  assert.equal(shouldLoadFitScores({
+    fitScoreEnabled: true,
+    restaurantId: '',
+    profile: { ...emptyProfile, goals: ['MUSCLE_GAIN'] }
+  }), false);
+  assert.equal(shouldLoadFitScores({
+    fitScoreEnabled: true,
+    restaurantId: 'restaurant-1',
+    profile: emptyProfile
+  }), false);
+  assert.equal(shouldLoadFitScores({
+    fitScoreEnabled: true,
+    restaurantId: 'restaurant-1',
+    profile: { ...emptyProfile, preferences: ['HIGH_PROTEIN'] }
+  }), true);
+}
+
 function testFitScoreTones() {
   const summary = (overrides: Partial<FitScoreSummary>): FitScoreSummary => ({
     score: 0,
@@ -85,5 +109,6 @@ function testFitScoreTones() {
 }
 
 await testProfileEligibilityAndRequestPayload();
+testFitScoreRequestGate();
 testFitScoreTones();
 console.log('fit score client tests passed');

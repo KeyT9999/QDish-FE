@@ -20,6 +20,14 @@ export function hasFitScoreProfile(profile: DiningProfile): boolean {
   return profile.goals.length > 0 || profile.preferences.length > 0;
 }
 
+export function shouldLoadFitScores(input: {
+  fitScoreEnabled?: boolean;
+  restaurantId?: string;
+  profile: DiningProfile;
+}): boolean {
+  return Boolean(input.fitScoreEnabled && input.restaurantId && hasFitScoreProfile(input.profile));
+}
+
 export function getFitScoreTone(summary: FitScoreSummary): FitScoreTone {
   if (summary.blocked) return { name: 'blocked', className: 'bg-red-600 text-white' };
   if (summary.score >= 80) return { name: 'high', className: 'bg-emerald-600 text-white' };

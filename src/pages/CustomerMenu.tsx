@@ -10,6 +10,9 @@ import { menuService } from '@/services/menuService';
 import { orderService } from '@/services/orderService';
 import { restaurantService } from '@/services/restaurantService';
 import { categoryService } from '@/services/categoryService';
+import { apiFetch } from '@/services/api';
+import { loadBatchFitScores } from '@/services/fitScoreService';
+import { shouldLoadFitScores, type FitScoreMap } from '@/services/fitScorePresentation';
 import { RestaurantHeader } from '@/components/menu/RestaurantHeader';
 import { CategoryFilter } from '@/components/menu/CategoryFilter';
 import { MenuItemCard } from '@/components/menu/MenuItemCard';
@@ -49,12 +52,15 @@ export const CustomerMenu: React.FC = () => {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [pairingSuggestions, setPairingSuggestions] = useState<any[]>([]);
   const [isRecLoading, setIsRecLoading] = useState(false);
+  const [fitScores, setFitScores] = useState<FitScoreMap>({});
+  const [isFitScoreLoading, setIsFitScoreLoading] = useState(false);
 
   const sessionId = session?.id || session?._id || '';
   const cart = useCart(restaurantId, tableNumber, sessionId || undefined);
   const { addToCart } = cart;
   const { profile, saveProfile } = useDiningProfile();
   const { execute: submitOrder, isLoading: isSubmitting } = useApi(orderService.createOrder);
+  const fitScoreEnabled = restaurant?.features?.fitScoreEnabled;
 
   // Generate or retrieve persistent guest userId
   const guestUserId = useMemo(() => {
@@ -81,6 +87,53 @@ export const CustomerMenu: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [isLoading, profile, restaurant]);
+
+  useEffect(() => {
+    if (!shouldLoadFitScores({ fitScoreEnabled, restaurantId, profile })) {
+      setFitScores({});
+      setIsFitScoreLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 11 ? 'breakfast' : hour < 15 ? 'lunch' : hour < 21 ? 'dinner' : 'late_night';
+
+    const fetchFitScores = async () => {
+      setFitScores({});
+      setIsFitScoreLoading(true);
+
+      try {
+        const scores = await loadBatchFitScores({
+          restaurantId,
+          profile,
+          context: {
+            timeOfDay,
+            postWorkout: profile.goals.includes('MUSCLE_GAIN')
+          },
+          fetcher: apiFetch
+        });
+
+        if (isMounted) {
+          setFitScores(scores);
+        }
+      } catch {
+        console.error('Failed to load Fit Scores');
+        if (isMounted) {
+          setFitScores({});
+        }
+      } finally {
+        if (isMounted) {
+          setIsFitScoreLoading(false);
+        }
+      }
+    };
+
+    void fetchFitScores();
+    return () => {
+      isMounted = false;
+    };
+  }, [fitScoreEnabled, profile, restaurantId]);
 
   // Fetch smart dining recommendations
   useEffect(() => {
@@ -368,6 +421,8 @@ export const CustomerMenu: React.FC = () => {
     }
   }, [cart, restaurantId, submitOrder, tableNumber, session]);
 
+  const selectedItemId = selectedItem?.id || selectedItem?._id;
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -454,7 +509,8 @@ export const CustomerMenu: React.FC = () => {
           <div className="overflow-x-auto flex gap-4 scrollbar-none pb-3 -mx-4 px-4">
             {recommendations.map((rec) => {
               const dishItem = rec.dish;
-              const itemId = dishItem._id || dishItem.id;
+              const itemId = dishItem.id || dishItem._id;
+              const fitScore = itemId ? fitScores[itemId] : undefined;
               
               return (
                 <div 
@@ -481,10 +537,12 @@ export const CustomerMenu: React.FC = () => {
                     )}
                     
                     {/* Fit Score Badge overlay */}
-                    <div className="absolute top-2.5 right-2.5 bg-green-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-full shadow-md border border-green-500 flex items-center gap-1">
-                      <span>{rec.fitScore}%</span>
-                      <span className="text-[9px] font-medium opacity-90">Fit</span>
-                    </div>
+                    {fitScore && (
+                      <div className="absolute top-2.5 right-2.5 bg-green-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-full shadow-md border border-green-500 flex items-center gap-1">
+                        <span>{fitScore.score}%</span>
+                        <span className="text-[9px] font-medium opacity-90">Fit</span>
+                      </div>
+                    )}
 
                     <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
                       {rec.bestContextLabel}
@@ -592,19 +650,24 @@ export const CustomerMenu: React.FC = () => {
       {/* Menu Grid */}
       <div className="py-4">
         <div className="grid grid-cols-1 gap-4">
-          {filteredItems.map(item => (
-            <MenuItemCard 
-              key={item.id || (item as any)._id} 
-              item={item} 
-              cartItem={cart.cart.find(c => c.menuItemId === (item.id || (item as any)._id))}
-              onAdd={handleAddToCart}
-              onUpdateQuantity={cart.updateQuantity}
-              onRemove={cart.removeFromCart}
-              onClick={handleItemClick}
-              userAllergies={userAllergies}
-              isRecommended={checkIsRecommended(item)}
-            />
-          ))}
+          {filteredItems.map(item => {
+            const itemId = item.id || item._id;
+            return (
+              <MenuItemCard
+                key={itemId}
+                item={item}
+                cartItem={cart.cart.find(c => c.menuItemId === itemId)}
+                onAdd={handleAddToCart}
+                onUpdateQuantity={cart.updateQuantity}
+                onRemove={cart.removeFromCart}
+                onClick={handleItemClick}
+                userAllergies={userAllergies}
+                isRecommended={checkIsRecommended(item)}
+                fitScore={itemId ? fitScores[itemId] : undefined}
+                isFitScoreLoading={isFitScoreLoading}
+              />
+            );
+          })}
           
           {filteredItems.length === 0 && (
             <div className="py-12 text-center text-gray-400 text-sm">
@@ -653,6 +716,11 @@ export const CustomerMenu: React.FC = () => {
         onClose={() => setIsDetailOpen(false)} 
         onAdd={handleAddToCart}
         userAllergies={userAllergies}
+        fitScore={selectedItemId ? fitScores[selectedItemId] : undefined}
+        onEditProfile={() => {
+          setIsDetailOpen(false);
+          setIsHealthOpen(true);
+        }}
       />
       
       <CartDrawer 
