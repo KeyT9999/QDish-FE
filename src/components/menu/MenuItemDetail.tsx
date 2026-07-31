@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatCurrency } from '@/lib/utils';
 import { AllergenWarning } from './AllergenWarning';
+import { FitScorePanel } from './FitScorePanel';
 import { ShoppingBag, ChevronLeft, ShieldAlert, Flame, Dumbbell, Wheat, Droplet } from 'lucide-react';
+import type { FitScoreSummary } from '@/services/fitScorePresentation';
 
 interface MenuItemDetailProps {
   item: MenuItem | null;
@@ -13,6 +15,8 @@ interface MenuItemDetailProps {
   onClose: () => void;
   onAdd: (item: MenuItem) => void;
   userAllergies?: Allergen[];
+  fitScore?: FitScoreSummary;
+  onEditProfile?: () => void;
 }
 
 // ─── Macro Calorie Ratio ─────────────────────────────────────────────────────
@@ -47,7 +51,9 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
   isOpen,
   onClose,
   onAdd,
-  userAllergies = []
+  userAllergies = [],
+  fitScore,
+  onEditProfile,
 }) => {
   const macroWidths = useMacroWidths(item);
 
@@ -145,6 +151,10 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
             )}
 
             {/* ── Nutrition panel ───────────────────────────────────────── */}
+            {fitScore && onEditProfile && (
+              <FitScorePanel summary={fitScore} onEditProfile={onEditProfile} />
+            )}
+
             {hasNutrition && item.nutrition && (
               <section>
                 <h3 className="text-[11px] font-bold text-gray-400 mb-3 uppercase tracking-widest">Giá trị dinh dưỡng / khẩu phần</h3>
