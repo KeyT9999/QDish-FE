@@ -3,19 +3,25 @@ import { DiningProfile, Allergen, DiningPreference } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Sparkles, ShieldAlert, ArrowLeft, ArrowRight, X, Heart, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { recordDiningVisit } from '@/services/diningVisitService';
+import { getOrCreateDiningVisitToken } from '@/services/diningVisitToken';
 
 interface DiningOnboardingProps {
   open: boolean;
   onClose: () => void;
   onComplete: (profile: DiningProfile) => void;
   userId: string;
+  restaurantId: string;
+  tableSessionId?: string;
 }
 
 export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
   open,
   onClose,
   onComplete,
-  userId
+  userId,
+  restaurantId,
+  tableSessionId
 }) => {
   const [step, setStep] = useState(1);
   const [goals, setGoals] = useState<DiningProfile['goals']>([]);
@@ -115,6 +121,21 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
       
       // 2. Trigger callback to update local state/storage
       onComplete(profileData);
+
+      // Analytics is scoped to this restaurant visit and must not block onboarding.
+      if (tableSessionId) {
+        try {
+          await recordDiningVisit({
+            restaurantId,
+            tableSessionId,
+            visitToken: getOrCreateDiningVisitToken(restaurantId, tableSessionId),
+            goals,
+            dietaryPreferences: preferences
+          });
+        } catch (error) {
+          console.error('Failed to record anonymous dining visit', error);
+        }
+      }
       
       // 3. Show fun toast message
       let personality = 'Exploring Foodie 🍽️';
