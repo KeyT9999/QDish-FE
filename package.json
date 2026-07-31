@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "check:encoding": "node scripts/check-encoding.mjs",
     "test:fit-score-client": "node --experimental-strip-types tests/fitScoreClient.test.ts",
+    "test:e2e:fit-score": "playwright test --config playwright.fit-score.config.ts",
     "test:dining-visit-token": "node --experimental-strip-types tests/diningVisitToken.test.ts",
     "test:merchant-insight-access": "node --experimental-strip-types tests/merchantInsightAccess.test.ts",
     "test:e2e:encoding": "playwright test tests/encoding-dashboard.spec.ts",

@@ -12,11 +12,19 @@ import { restaurantService } from '@/services/restaurantService';
 import { categoryService } from '@/services/categoryService';
 import { apiFetch } from '@/services/api';
 import { loadBatchFitScores } from '@/services/fitScoreService';
-import { shouldLoadFitScores, type FitScoreMap } from '@/services/fitScorePresentation';
+import {
+  getMenuItemIdentity,
+  getMillisecondsUntilNextTimeBucket,
+  getTimeOfDayBucket,
+  selectRecommendationFitScore,
+  shouldLoadFitScores,
+  type FitScoreMap
+} from '@/services/fitScorePresentation';
 import { RestaurantHeader } from '@/components/menu/RestaurantHeader';
 import { CategoryFilter } from '@/components/menu/CategoryFilter';
 import { MenuItemCard } from '@/components/menu/MenuItemCard';
 import { MenuItemDetail } from '@/components/menu/MenuItemDetail';
+import { FitScoreBadge } from '@/components/menu/FitScoreBadge';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { DiningProfileForm } from '@/components/dining/DiningProfileForm';
 import { DiningOnboarding } from '@/components/dining/DiningOnboarding';
@@ -54,6 +62,7 @@ export const CustomerMenu: React.FC = () => {
   const [isRecLoading, setIsRecLoading] = useState(false);
   const [fitScores, setFitScores] = useState<FitScoreMap>({});
   const [isFitScoreLoading, setIsFitScoreLoading] = useState(false);
+  const [timeOfDayBucket, setTimeOfDayBucket] = useState(() => getTimeOfDayBucket(new Date()));
 
   const sessionId = session?.id || session?._id || '';
   const cart = useCart(restaurantId, tableNumber, sessionId || undefined);
@@ -89,6 +98,25 @@ export const CustomerMenu: React.FC = () => {
   }, [isLoading, profile, restaurant]);
 
   useEffect(() => {
+    let timeoutId: number | undefined;
+
+    const scheduleNextBoundary = () => {
+      const now = new Date();
+      timeoutId = window.setTimeout(() => {
+        setTimeOfDayBucket(getTimeOfDayBucket(new Date()));
+        scheduleNextBoundary();
+      }, getMillisecondsUntilNextTimeBucket(now) + 1);
+    };
+
+    scheduleNextBoundary();
+    return () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!shouldLoadFitScores({ fitScoreEnabled, restaurantId, profile })) {
       setFitScores({});
       setIsFitScoreLoading(false);
@@ -96,9 +124,6 @@ export const CustomerMenu: React.FC = () => {
     }
 
     let isMounted = true;
-    const hour = new Date().getHours();
-    const timeOfDay = hour < 11 ? 'breakfast' : hour < 15 ? 'lunch' : hour < 21 ? 'dinner' : 'late_night';
-
     const fetchFitScores = async () => {
       setFitScores({});
       setIsFitScoreLoading(true);
@@ -108,7 +133,7 @@ export const CustomerMenu: React.FC = () => {
           restaurantId,
           profile,
           context: {
-            timeOfDay,
+            timeOfDay: timeOfDayBucket,
             postWorkout: profile.goals.includes('MUSCLE_GAIN')
           },
           fetcher: apiFetch
@@ -133,7 +158,7 @@ export const CustomerMenu: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [fitScoreEnabled, profile, restaurantId]);
+  }, [fitScoreEnabled, profile, restaurantId, timeOfDayBucket]);
 
   // Fetch smart dining recommendations
   useEffect(() => {
@@ -421,7 +446,7 @@ export const CustomerMenu: React.FC = () => {
     }
   }, [cart, restaurantId, submitOrder, tableNumber, session]);
 
-  const selectedItemId = selectedItem?.id || selectedItem?._id;
+  const selectedItemId = getMenuItemIdentity(selectedItem ?? undefined);
 
   if (isLoading) {
     return (
@@ -509,8 +534,14 @@ export const CustomerMenu: React.FC = () => {
           <div className="overflow-x-auto flex gap-4 scrollbar-none pb-3 -mx-4 px-4">
             {recommendations.map((rec) => {
               const dishItem = rec.dish;
-              const itemId = dishItem.id || dishItem._id;
-              const fitScore = itemId ? fitScores[itemId] : undefined;
+              const itemId = getMenuItemIdentity(dishItem);
+              const fitScore = selectRecommendationFitScore({
+                fitScoreEnabled,
+                recommendationEnabled: restaurant?.features?.recommendationEnabled,
+                profile,
+                independentSummary: itemId ? fitScores[itemId] : undefined,
+                legacyScore: rec.fitScore
+              });
               
               return (
                 <div 
@@ -538,9 +569,8 @@ export const CustomerMenu: React.FC = () => {
                     
                     {/* Fit Score Badge overlay */}
                     {fitScore && (
-                      <div className="absolute top-2.5 right-2.5 bg-green-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-full shadow-md border border-green-500 flex items-center gap-1">
-                        <span>{fitScore.score}%</span>
-                        <span className="text-[9px] font-medium opacity-90">Fit</span>
+                      <div className="absolute top-2.5 right-2.5 shadow-md">
+                        <FitScoreBadge summary={fitScore} />
                       </div>
                     )}
 
@@ -651,7 +681,7 @@ export const CustomerMenu: React.FC = () => {
       <div className="py-4">
         <div className="grid grid-cols-1 gap-4">
           {filteredItems.map(item => {
-            const itemId = item.id || item._id;
+            const itemId = getMenuItemIdentity(item);
             return (
               <MenuItemCard
                 key={itemId}

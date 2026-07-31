@@ -1,4 +1,5 @@
 import type { FitScoreSummary } from '@/services/fitScorePresentation';
+import { getFitScoreContextLabel } from '@/services/fitScorePresentation';
 
 export function FitScorePanel({
   summary,
@@ -25,6 +26,9 @@ export function FitScorePanel({
         <strong className="text-2xl text-emerald-700">{summary.score}%</strong>
         <span className="text-xs font-bold text-emerald-800">{summary.label}</span>
       </div>
+      <p className="mt-1 text-xs font-semibold text-emerald-800/80">
+        {'Ng\u1eef c\u1ea3nh: '}{getFitScoreContextLabel(summary.contextType)}
+      </p>
       <ul className="mt-3 space-y-1 text-xs text-neutral-600">
         {summary.reasons.slice(0, 3).map((reason) => <li key={reason}>• {reason}</li>)}
       </ul>
