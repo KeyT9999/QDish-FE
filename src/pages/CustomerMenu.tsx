@@ -695,6 +695,8 @@ export const CustomerMenu: React.FC = () => {
         onClose={() => setIsOnboardingOpen(false)}
         onComplete={saveProfile}
         userId={guestUserId}
+        restaurantId={restaurantId}
+        tableSessionId={sessionId || undefined}
       />
     </div>
   );

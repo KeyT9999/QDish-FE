@@ -37,6 +37,7 @@ interface InsightsPayload {
     count: number;
     label: string;
   }>;
+  surveyResponseCount?: number;
   gapAnalysis: string[];
   peakHours: {
     periods: Array<{
@@ -200,7 +201,15 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     );
   }
 
-  const { menuCoverage, attributeDistribution, topDishes, customerSegments, gapAnalysis } = insights;
+  const {
+    menuCoverage,
+    attributeDistribution,
+    topDishes,
+    customerSegments,
+    surveyResponseCount: rawSurveyResponseCount,
+    gapAnalysis
+  } = insights;
+  const surveyResponseCount = rawSurveyResponseCount ?? 0;
 
   // Format currency
   const formatVND = (num: number) => {
@@ -340,12 +349,13 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                 </div>
               </div>
             ) : (() => {
-              const totalScans = customerSegments.reduce((sum, s) => sum + s.count, 0);
               const totalOrders = topDishes.reduce((sum, d) => sum + d.orderCount, 0);
-              const healthyCount = customerSegments.find(s => s.segment === 'LIGHT_MEAL' || s.segment === 'BALANCED' || s.segment === 'WEIGHT_LOSS')?.count || 0;
+              const healthyCount = customerSegments
+                .filter(s => ['LIGHT_MEAL', 'BALANCED', 'WEIGHT_LOSS'].includes(s.segment))
+                .reduce((sum, segment) => sum + segment.count, 0);
               const gapCount = gapAnalysis.filter(g => !g.includes('Thực đơn của bạn')).length;
 
-              if (totalScans < 20 || totalOrders < 10) {
+              if (surveyResponseCount < 20 || totalOrders < 10) {
                 return (
                   <div className="flex flex-col items-center justify-center py-10 px-4 text-center space-y-4">
                     <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-4xl animate-bounce">
@@ -354,10 +364,10 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                     <div className="space-y-2 max-w-sm">
                       <h4 className="text-xs font-bold text-neutral-800">Cần thêm dữ liệu hoạt động</h4>
                       <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Để AI phân tích chính xác nhất hành vi thực khách, nhà hàng cần tích lũy tối thiểu <strong>20 lượt quét QR</strong> và <strong>10 đơn hàng đặt món thành công</strong>.
+                        Để phân tích xu hướng chính xác hơn, nhà hàng cần tích lũy tối thiểu <strong>20 lượt khảo sát QR</strong> và <strong>10 đơn hàng đặt món thành công</strong>.
                       </p>
                       <div className="flex justify-center gap-4 text-[10px] text-neutral-400 font-bold bg-neutral-50/50 p-2 rounded-xl border border-neutral-100">
-                        <span>Quét QR: {totalScans}/20</span>
+                        <span>Lượt khảo sát: {surveyResponseCount}/20</span>
                         <span>Đơn hàng: {totalOrders}/10</span>
                       </div>
                     </div>
@@ -439,7 +449,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                         <span className="text-[9px] text-neutral-400 font-medium">Vừa phân tích xong</span>
                       </div>
                       <p className="text-[11px] text-neutral-600 leading-relaxed">
-                        Xin chào! Hệ thống ghi nhận <strong>{totalScans} lượt quét QR</strong> từ khách hàng và <strong>{totalOrders} đơn đặt món</strong> thành công. Nhóm thực khách quan tâm tới lối sống lành mạnh đang chiếm tỷ trọng cao (<strong>{healthyCount} lượt tìm kiếm</strong>). QDish phát hiện thực đơn của bạn có <strong>{gapCount} điểm khuyết thiếu</strong>. Khắc phục các điểm này dự kiến mang lại <strong>+18% cơ hội tăng trưởng doanh thu</strong>.
+                        Xin chào! Hệ thống ghi nhận <strong>{surveyResponseCount} lượt khảo sát QR</strong> và <strong>{totalOrders} đơn đặt món</strong> thành công. Nhóm mục tiêu ăn uống lành mạnh có <strong>{healthyCount} lượt lựa chọn</strong>. QDish phát hiện thực đơn của bạn có <strong>{gapCount} điểm khuyết thiếu</strong>. Khắc phục các điểm này dự kiến mang lại <strong>+18% cơ hội tăng trưởng doanh thu</strong>.
                       </p>
                     </div>
                   </div>
@@ -484,7 +494,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                         <div className="space-y-0.5">
                           <h4 className="text-xs font-bold text-neutral-800">Healthy đang tăng trưởng</h4>
                           <p className="text-[11px] text-neutral-500 leading-relaxed">
-                            Phân khúc khách hàng ăn uống Healthy chiếm tỷ trọng <strong>{healthyCount} Order</strong>. Hãy tối ưu các tag Calo.
+                            Mục tiêu ăn uống Healthy được chọn <strong>{healthyCount} lượt</strong> trong khảo sát. Hãy tối ưu các tag Calo.
                           </p>
                         </div>
                       </div>
@@ -530,7 +540,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
             })()}
 
             {/* Footer info (only if above threshold) */}
-            {(!refreshingAI && (customerSegments.reduce((sum, s) => sum + s.count, 0) >= 20 && topDishes.reduce((sum, d) => sum + d.orderCount, 0) >= 10)) && (
+            {(!refreshingAI && (surveyResponseCount >= 20 && topDishes.reduce((sum, d) => sum + d.orderCount, 0) >= 10)) && (
               <div className="text-[10px] text-neutral-400 italic pt-2 border-t border-green-600/10 flex items-center gap-1.5">
                 <Info className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
                 <span>Dữ liệu đề xuất được cập nhật tự động dựa trên thói quen ăn uống của các lượt quét QR gần nhất.</span>
@@ -565,7 +575,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-green-600" />
-                <h3 className="text-sm font-bold text-neutral-800">Thị hiếu của Thực khách quét QR</h3>
+                <h3 className="text-sm font-bold text-neutral-800">Xu hướng từ lượt khảo sát QR</h3>
               </div>
               <span className="text-[10px] text-neutral-400 font-medium">Xu hướng ăn uống</span>
             </div>
@@ -580,7 +590,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                   <div key={seg.segment} className="space-y-1">
                     <div className="flex justify-between text-xs font-semibold text-neutral-700">
                       <span>{seg.label}</span>
-                      <span className="text-green-600 font-bold">{seg.count} Order</span>
+                      <span className="text-green-600 font-bold">{seg.count} lượt lựa chọn</span>
                     </div>
                     <div className="h-3 w-full bg-neutral-50 rounded-full overflow-hidden border border-neutral-100/50">
                       <div
@@ -600,9 +610,9 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                 🔒
               </div>
               <div className="space-y-1.5 max-w-[280px]">
-                <h4 className="text-sm font-bold text-neutral-900">Thị hiếu Thực khách bị khóa</h4>
+                <h4 className="text-sm font-bold text-neutral-900">Xu hướng khảo sát chuyên sâu bị khóa</h4>
                 <p className="text-xs text-neutral-500 leading-normal">
-                  Biểu đồ phân tích sâu xu hướng và nhu cầu dinh dưỡng của khách hàng quét QR chỉ khả dụng cho gói <strong>PRO</strong>. Nâng cấp để nắm bắt trọn vẹn thị hiếu ăn uống lành mạnh của khách hàng!
+                  Biểu đồ phân tích sâu các lựa chọn trong khảo sát QR chỉ khả dụng cho gói <strong>PRO</strong>. Nâng cấp để theo dõi xu hướng ăn uống tại nhà hàng!
                 </p>
               </div>
               <Button
