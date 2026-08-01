@@ -51,17 +51,80 @@ function isRecommendationEmptyReason(value: unknown): value is RecommendationEmp
   return value === 'NO_AVAILABLE_DISHES' || value === 'NO_ALLERGEN_SAFE_DISHES';
 }
 
-function isRecommendationResponse(value: unknown): value is RecommendationResponse {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function isRecommendationDish(value: unknown): value is MenuItem {
+  if (!isRecord(value)) {
     return false;
   }
 
-  const response = value as Record<string, unknown>;
-  return isRecommendationMode(response.mode)
-    && (response.emptyReason === undefined || isRecommendationEmptyReason(response.emptyReason))
-    && Array.isArray(response.bestForYou)
-    && Array.isArray(response.fullMenu)
-    && Array.isArray(response.pairingSuggestions);
+  const hasIdentity = (typeof value.id === 'string' && value.id.length > 0)
+    || (typeof value._id === 'string' && value._id.length > 0);
+
+  return hasIdentity
+    && typeof value.name === 'string'
+    && isFiniteNumber(value.price);
+}
+
+function isRecommendedDish(value: unknown): value is RecommendedDish {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return isRecommendationDish(value.dish)
+    && isFiniteNumber(value.fitScore)
+    && typeof value.bestContext === 'string'
+    && typeof value.bestContextLabel === 'string'
+    && typeof value.reason === 'string'
+    && isStringArray(value.allergenWarnings);
+}
+
+function isScoredDish(value: unknown): value is ScoredDish {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return isRecommendationDish(value.dish)
+    && isFiniteNumber(value.fitScore)
+    && typeof value.bestContext === 'string'
+    && typeof value.bestContextLabel === 'string'
+    && isStringArray(value.allergenWarnings);
+}
+
+function isPairingSuggestion(value: unknown): value is PairingSuggestion {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return typeof value.mainDishId === 'string'
+    && typeof value.mainDishName === 'string'
+    && isRecommendationDish(value.pairedDish)
+    && typeof value.reason === 'string';
+}
+
+function isRecommendationResponse(value: unknown): value is RecommendationResponse {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return isRecommendationMode(value.mode)
+    && (value.emptyReason === undefined || isRecommendationEmptyReason(value.emptyReason))
+    && Array.isArray(value.bestForYou)
+    && value.bestForYou.every(isRecommendedDish)
+    && Array.isArray(value.fullMenu)
+    && value.fullMenu.every(isScoredDish)
+    && Array.isArray(value.pairingSuggestions)
+    && value.pairingSuggestions.every(isPairingSuggestion);
 }
 
 export async function loadRecommendations(input: {
