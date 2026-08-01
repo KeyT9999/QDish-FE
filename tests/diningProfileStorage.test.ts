@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict';
 
 import {
+  DINING_ONBOARDING_HANDLED_STORAGE_KEY,
   EMPTY_DINING_PROFILE,
   clearDiningProfile,
+  hasDiningProfileSelections,
+  loadDiningOnboardingHandled,
   loadDiningProfile,
+  markDiningOnboardingHandled,
   saveDiningProfile
 } from '../src/services/diningProfileStorage.ts';
 
@@ -147,10 +151,68 @@ function testUsesFreshEmptyProfilesAndClearsStorage() {
   saveDiningProfile(storage, {
     goals: ['BALANCED'], preferences: [], allergies: [], conditions: []
   });
+  storage.setItem('qdish_health_profile', JSON.stringify({
+    goals: ['MUSCLE_GAIN'], preferences: [], allergies: [], conditions: []
+  }));
+  markDiningOnboardingHandled(storage);
   clearDiningProfile(storage);
 
   assert.equal(storage.getItem('qdish_dining_profile'), null);
+  assert.equal(storage.getItem('qdish_health_profile'), null);
+  assert.equal(storage.getItem(DINING_ONBOARDING_HANDLED_STORAGE_KEY), '1');
+  assert.equal(loadDiningOnboardingHandled(storage), true);
   assert.deepEqual(loadDiningProfile(storage).profile, EMPTY_DINING_PROFILE);
+}
+
+function testKeepsLegacyProfileWhenCurrentPlainProfileRewriteFails() {
+  const values = new Map<string, string>([
+    ['qdish_dining_profile', JSON.stringify({
+      goals: ['BALANCED'], preferences: [], allergies: [], conditions: []
+    })],
+    ['qdish_health_profile', JSON.stringify({
+      goals: ['MUSCLE_GAIN'], preferences: [], allergies: [], conditions: []
+    })],
+  ]);
+  const storage = {
+    getItem(key: string) {
+      return values.get(key) ?? null;
+    },
+    setItem() {
+      throw new Error('storage quota exceeded');
+    },
+    removeItem(key: string) {
+      values.delete(key);
+    },
+  };
+
+  const loaded = loadDiningProfile(storage);
+
+  assert.deepEqual(loaded.profile, {
+    goals: ['BALANCED'], preferences: [], allergies: [], conditions: []
+  });
+  assert.notEqual(storage.getItem('qdish_health_profile'), null);
+}
+
+function testSelectionDetectionIncludesAllergiesAndConditions() {
+  assert.equal(hasDiningProfileSelections({
+    goals: [], preferences: [], allergies: ['SOY'], conditions: []
+  }), true);
+  assert.equal(hasDiningProfileSelections({
+    goals: [], preferences: [], allergies: [], conditions: ['DIABETES']
+  }), true);
+  assert.equal(hasDiningProfileSelections({
+    goals: [], preferences: [], allergies: [], conditions: []
+  }), false);
+}
+
+function testOnboardingHandledMarkerFailsClosedWithoutThrowing() {
+  const storage = createMemoryStorage();
+  assert.equal(loadDiningOnboardingHandled(storage), false);
+
+  markDiningOnboardingHandled(storage);
+
+  assert.equal(loadDiningOnboardingHandled(storage), true);
+  assert.equal(storage.getItem(DINING_ONBOARDING_HANDLED_STORAGE_KEY), '1');
 }
 
 testMigratesPlainProfileAndNormalizesValues();
@@ -160,4 +222,7 @@ testDoesNotMigrateLegacyProfileWhenCurrentJsonIsMalformed();
 testLoadsAValidVersionOneEnvelope();
 testSavesCanonicalEnvelopeWithIsoTimestamp();
 testUsesFreshEmptyProfilesAndClearsStorage();
+testKeepsLegacyProfileWhenCurrentPlainProfileRewriteFails();
+testSelectionDetectionIncludesAllergiesAndConditions();
+testOnboardingHandledMarkerFailsClosedWithoutThrowing();
 console.log('dining profile storage tests passed');

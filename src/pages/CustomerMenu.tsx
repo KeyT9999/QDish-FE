@@ -12,6 +12,7 @@ import { restaurantService } from '@/services/restaurantService';
 import { categoryService } from '@/services/categoryService';
 import { apiFetch } from '@/services/api';
 import { loadBatchFitScores } from '@/services/fitScoreService';
+import { hasDiningProfileSelections } from '@/services/diningProfileStorage';
 import {
   getRecommendationEmptyMessage,
   getRecommendationHeading,
@@ -72,7 +73,13 @@ export const CustomerMenu: React.FC = () => {
   const sessionId = session?.id || session?._id || '';
   const cart = useCart(restaurantId, tableNumber, sessionId || undefined);
   const { addToCart } = cart;
-  const { profile, saveProfile, clearProfile } = useDiningProfile();
+  const {
+    profile,
+    onboardingHandled,
+    saveProfile,
+    clearProfile,
+    markOnboardingHandled
+  } = useDiningProfile();
   const { execute: submitOrder, isLoading: isSubmitting } = useApi(orderService.createOrder);
   const fitScoreEnabled = restaurant?.features?.fitScoreEnabled;
 
@@ -82,15 +89,13 @@ export const CustomerMenu: React.FC = () => {
     // Chỉ tự động hiển thị bảng khảo sát khi gói dịch vụ nhà hàng cho phép cá nhân hóa thực đơn
     if (!restaurant.features?.personalizedMenuEnabled) return;
 
-    const hasGoals = profile?.goals && profile.goals.length > 0;
-    const hasPrefs = profile?.preferences && profile.preferences.length > 0;
-    if (!hasGoals && !hasPrefs) {
+    if (!onboardingHandled && !hasDiningProfileSelections(profile)) {
       const timer = setTimeout(() => {
         setIsOnboardingOpen(true);
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, profile, restaurant]);
+  }, [isLoading, onboardingHandled, profile, restaurant]);
 
   useEffect(() => {
     let timeoutId: number | undefined;
@@ -797,8 +802,14 @@ export const CustomerMenu: React.FC = () => {
       {/* Onboarding Dialog Wizard */}
       <DiningOnboarding
         open={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-        onComplete={saveProfile}
+        onClose={() => {
+          markOnboardingHandled();
+          setIsOnboardingOpen(false);
+        }}
+        onComplete={(newProfile) => {
+          saveProfile(newProfile);
+          markOnboardingHandled();
+        }}
         restaurantId={restaurantId}
         tableSessionId={sessionId || undefined}
       />

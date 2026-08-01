@@ -2,6 +2,7 @@ import type { Allergen, DiningPreference, DiningProfile } from '../types/index.t
 
 const STORAGE_KEY = 'qdish_dining_profile';
 const LEGACY_STORAGE_KEY = 'qdish_health_profile';
+export const DINING_ONBOARDING_HANDLED_STORAGE_KEY = 'qdish_dining_onboarding_handled';
 
 const GOALS = new Set<DiningProfile['goals'][number]>([
   'MUSCLE_GAIN', 'ENERGY_BOOST', 'LIGHT_MEAL', 'COMFORT',
@@ -146,6 +147,14 @@ function removeLegacyProfile(storage: ProfileStorage | undefined): void {
   }
 }
 
+function safeRemove(storage: ProfileStorage | undefined, key: string): void {
+  try {
+    storage?.removeItem(key);
+  } catch {
+    // Storage access is optional and can be blocked by browser privacy settings.
+  }
+}
+
 function emptyStoredProfile(): { profile: DiningProfile; updatedAt: undefined } {
   return { profile: createEmptyProfile(), updatedAt: undefined };
 }
@@ -169,7 +178,7 @@ export function loadDiningProfile(storage?: ProfileStorage): StoredDiningProfile
     if (legacyProfile === undefined) return emptyStoredProfile();
 
     const migrated = saveDiningProfile(storage, legacyProfile);
-    removeLegacyProfile(storage);
+    if (persistedCurrentProfile(storage, migrated)) removeLegacyProfile(storage);
     return migrated;
   }
 
@@ -206,10 +215,27 @@ export function saveDiningProfile(
   return { ...stored, profile: cloneProfile(stored.profile) };
 }
 
-export function clearDiningProfile(storage?: ProfileStorage): void {
+export function hasDiningProfileSelections(profile: DiningProfile): boolean {
+  return profile.goals.length > 0
+    || profile.preferences.length > 0
+    || profile.allergies.length > 0
+    || profile.conditions.length > 0;
+}
+
+export function loadDiningOnboardingHandled(storage?: ProfileStorage): boolean {
+  return safeRead(storage, DINING_ONBOARDING_HANDLED_STORAGE_KEY) === '1';
+}
+
+export function markDiningOnboardingHandled(storage?: ProfileStorage): void {
   try {
-    storage?.removeItem(STORAGE_KEY);
+    storage?.setItem(DINING_ONBOARDING_HANDLED_STORAGE_KEY, '1');
   } catch {
     // Storage access is optional and can be blocked by browser privacy settings.
   }
+}
+
+export function clearDiningProfile(storage?: ProfileStorage): void {
+  markDiningOnboardingHandled(storage);
+  safeRemove(storage, STORAGE_KEY);
+  safeRemove(storage, LEGACY_STORAGE_KEY);
 }

@@ -95,7 +95,7 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setIsSaving(true);
     const profileData: DiningProfile = {
       goals,
@@ -109,17 +109,15 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
 
     // Analytics is scoped to this restaurant visit and must never block onboarding.
     if (tableSessionId) {
-      try {
-        await recordDiningVisit({
-          restaurantId,
-          tableSessionId,
-          visitToken: getOrCreateDiningVisitToken(restaurantId, tableSessionId),
-          goals,
-          dietaryPreferences: preferences
-        });
-      } catch (error) {
+      void recordDiningVisit({
+        restaurantId,
+        tableSessionId,
+        visitToken: getOrCreateDiningVisitToken(restaurantId, tableSessionId),
+        goals,
+        dietaryPreferences: preferences
+      }).catch((error) => {
         console.error('Failed to record anonymous dining visit', error);
-      }
+      });
     }
 
     let personality = 'Exploring Foodie 🍽️';
@@ -133,8 +131,8 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
       position: 'top-center'
     });
 
-    onClose();
     setIsSaving(false);
+    onClose();
   };
 
   return (

@@ -2,6 +2,8 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 
 const restaurantId = '507f1f77bcf86cd799439011';
 const diningProfileStorageKey = 'qdish_dining_profile';
+const legacyDiningProfileStorageKey = 'qdish_health_profile';
+const onboardingHandledStorageKey = 'qdish_dining_onboarding_handled';
 
 const generalHeading = 'G\u1ee3i \u00fd ph\u00f9 h\u1ee3p l\u00fac n\u00e0y';
 const personalizedHeading = 'G\u1ee3i \u00fd d\u00e0nh cho b\u1ea1n';
@@ -56,6 +58,8 @@ interface MockScenario {
   fitScoreEnabled?: boolean;
   recommendationStatus?: number;
   recommendationResponse?: (profile: InlineProfile) => RecommendationPayload;
+  diningVisitDelayMs?: number;
+  diningVisitStatus?: number;
 }
 
 function recommendationFor(dish: Record<string, unknown>, fitScore = 91) {
@@ -110,14 +114,17 @@ function recommendationSection(page: Page) {
     .locator('..');
 }
 
-async function seedDiningProfile(page: Page, profile: InlineProfile) {
+async function seedDiningProfile(page: Page, profile: InlineProfile & { conditions?: string[] }) {
   await page.addInitScript(({ key, profile: profileToStore }) => {
+    const seedMarker = 'qdish_test_profile_seeded';
+    if (window.sessionStorage.getItem(seedMarker) === '1') return;
+    window.sessionStorage.setItem(seedMarker, '1');
     window.localStorage.setItem(key, JSON.stringify({
       schemaVersion: 1,
       updatedAt: '2026-08-01T12:00:00.000Z',
       profile: {
         ...profileToStore,
-        conditions: [],
+        conditions: profileToStore.conditions ?? [],
       },
     }));
   }, { key: diningProfileStorageKey, profile });
@@ -171,6 +178,32 @@ async function mockCustomerMenu(page: Page, scenario: MockScenario = {}) {
 
     if (pathname === '/api/categories') {
       return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    }
+
+    if (pathname === '/api/table-sessions/resolve') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          session: {
+            _id: '507f1f77bcf86cd799439099',
+            restaurantId,
+            tableNumber: '1',
+            status: 'ACTIVE',
+          },
+        }),
+      });
+    }
+
+    if (pathname === `/api/restaurants/${restaurantId}/dining-visits`) {
+      if (scenario.diningVisitDelayMs) {
+        await new Promise((resolve) => setTimeout(resolve, scenario.diningVisitDelayMs));
+      }
+      return route.fulfill({
+        status: scenario.diningVisitStatus ?? 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'visit-1', recordedAt: new Date().toISOString(), created: true }),
+      });
     }
 
     if (pathname === '/api/recommendations') {
@@ -231,7 +264,43 @@ test('onboarding stores a version-one local profile and never calls the guest pr
       conditions: [],
     },
   });
+  expect(await page.evaluate((key) => window.localStorage.getItem(key), onboardingHandledStorageKey)).toBe('1');
   expect(requests.profileCalls).toEqual([]);
+});
+
+test('dismissing onboarding persists handled state and does not reopen it after reload', async ({ page }) => {
+  await mockCustomerMenu(page, { personalizedMenuEnabled: true });
+
+  await page.goto(`/order?r=${restaurantId}`);
+  await page.getByRole('button', { name: 'B\u1ecf qua c\u00e2u h\u1ecfi' }).click();
+
+  expect(await page.evaluate((key) => window.localStorage.getItem(key), onboardingHandledStorageKey)).toBe('1');
+  await page.reload();
+  await page.waitForTimeout(1700);
+  await expect(page.getByRole('heading', { name: /H\u00f4m nay b\u1ea1n mu\u1ed1n g\u00ec/ })).toHaveCount(0);
+});
+
+test('onboarding completion is local-first while analytics is pending and later rejects safely', async ({ page }) => {
+  const pageErrors: Error[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+  await mockCustomerMenu(page, {
+    personalizedMenuEnabled: true,
+    diningVisitDelayMs: 1200,
+    diningVisitStatus: 500,
+  });
+
+  await page.goto(`/order?r=${restaurantId}&t=1`);
+  await page.getByRole('button', { name: /Ti\u1ebfp theo/ }).click();
+  await page.getByRole('button', { name: /Ti\u1ebfp theo/ }).click();
+  const completionStartedAt = Date.now();
+  await page.getByRole('button', { name: /Ho\u00e0n t\u1ea5t h\u1ed3 s\u01a1/ }).click();
+
+  await expect(page.getByRole('heading', { name: /Phong c\u00e1ch \u1ea9m th\u1ef1c c\u1ee7a b\u1ea1n/ })).toHaveCount(0, { timeout: 500 });
+  expect(Date.now() - completionStartedAt).toBeLessThan(800);
+  await expect.poll(async () => page.evaluate((key) => window.localStorage.getItem(key), diningProfileStorageKey))
+    .not.toBeNull();
+  await page.waitForTimeout(1400);
+  expect(pageErrors).toEqual([]);
 });
 
 test('GENERAL recommendations render the exact heading without a legacy personalized Fit Score badge', async ({ page }) => {
@@ -285,7 +354,20 @@ test('an allergies-only profile stays GENERAL, sends inline allergies, and omits
   await expect(recommendationSection(page).getByRole('heading', { name: blockedDish.name })).toHaveCount(0);
   await expect.poll(() => requests.recommendationProfiles.length).toBe(1);
   expect(requests.recommendationProfiles[0]).toEqual({ goals: [], preferences: [], allergies: ['SOY'] });
+  await page.waitForTimeout(1700);
+  await expect(page.getByRole('heading', { name: /H\u00f4m nay b\u1ea1n mu\u1ed1n g\u00ec/ })).toHaveCount(0);
   expect(requests.profileCalls).toEqual([]);
+});
+
+test('a conditions-only stored profile is an existing diner and does not reopen onboarding', async ({ page }) => {
+  await seedDiningProfile(page, { goals: [], preferences: [], allergies: [], conditions: ['DIABETES'] });
+  const requests = await mockCustomerMenu(page, { personalizedMenuEnabled: true });
+
+  await page.goto(`/order?r=${restaurantId}`);
+  await expect(page.getByRole('heading', { name: generalHeading, exact: true })).toBeVisible();
+  await page.waitForTimeout(1700);
+  await expect(page.getByRole('heading', { name: /H\u00f4m nay b\u1ea1n mu\u1ed1n g\u00ec/ })).toHaveCount(0);
+  expect(requests.recommendationProfiles[0]).toEqual(emptyProfile);
 });
 
 test('NO_ALLERGEN_SAFE_DISHES renders the approved safety copy', async ({ page }) => {
@@ -306,8 +388,10 @@ test('NO_ALLERGEN_SAFE_DISHES renders the approved safety copy', async ({ page }
   expect(requests.profileCalls).toEqual([]);
 });
 
-test('editing a profile sends updated goals, preferences, and allergies to both request families', async ({ page }) => {
-  await seedDiningProfile(page, { goals: ['MUSCLE_GAIN'], preferences: ['HIGH_PROTEIN'], allergies: [] });
+test('editing a profile preserves local conditions and sends only updated recommendation fields', async ({ page }) => {
+  await seedDiningProfile(page, {
+    goals: ['MUSCLE_GAIN'], preferences: ['HIGH_PROTEIN'], allergies: [], conditions: ['DIABETES']
+  });
   const requests = await mockCustomerMenu(page, { personalizedMenuEnabled: true, fitScoreEnabled: true });
 
   await page.goto(`/order?r=${restaurantId}`);
@@ -329,11 +413,21 @@ test('editing a profile sends updated goals, preferences, and allergies to both 
     .toBe(true);
   await expect.poll(() => requests.fitScoreProfiles.some((profile) => JSON.stringify(profile) === JSON.stringify(updatedProfile)))
     .toBe(true);
+  const storedAfterEdit = await page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) ?? 'null'), diningProfileStorageKey);
+  expect(storedAfterEdit.profile.conditions).toEqual(['DIABETES']);
   expect(requests.profileCalls).toEqual([]);
 });
 
 test('clearing requires confirmation: cancel preserves local storage and confirm resets recommendations to GENERAL', async ({ page }) => {
   await seedDiningProfile(page, { goals: ['MUSCLE_GAIN'], preferences: ['HIGH_PROTEIN'], allergies: ['SOY'] });
+  await page.addInitScript(({ legacyKey }) => {
+    const seedMarker = 'qdish_test_legacy_profile_seeded';
+    if (window.sessionStorage.getItem(seedMarker) === '1') return;
+    window.sessionStorage.setItem(seedMarker, '1');
+    window.localStorage.setItem(legacyKey, JSON.stringify({
+      goals: ['COMFORT'], preferences: [], allergies: [], conditions: ['HYPERTENSION']
+    }));
+  }, { legacyKey: legacyDiningProfileStorageKey });
   const requests = await mockCustomerMenu(page, { personalizedMenuEnabled: true });
 
   await page.goto(`/order?r=${restaurantId}`);
@@ -352,11 +446,22 @@ test('clearing requires confirmation: cancel preserves local storage and confirm
   await page.getByRole('button', { name: 'X\u00f3a h\u1ed3 s\u01a1 \u0103n u\u1ed1ng' }).click();
   await expect.poll(async () => page.evaluate((key) => window.localStorage.getItem(key), diningProfileStorageKey))
     .toBeNull();
+  expect(await page.evaluate((key) => window.localStorage.getItem(key), legacyDiningProfileStorageKey)).toBeNull();
+  expect(await page.evaluate((key) => window.localStorage.getItem(key), onboardingHandledStorageKey)).toBe('1');
   await expect.poll(() => requests.recommendationProfiles.length)
     .toBeGreaterThan(recommendationCountBeforeClear);
   expect(requests.recommendationProfiles.slice(recommendationCountBeforeClear)).toEqual([emptyProfile]);
   await expect(page.getByRole('heading', { name: generalHeading, exact: true })).toBeVisible();
   await expect(recommendationSection(page).getByText('91% ph\u00f9 h\u1ee3p', { exact: true })).toHaveCount(0);
+  await page.waitForTimeout(1700);
+  await expect(page.getByRole('heading', { name: /H\u00f4m nay b\u1ea1n mu\u1ed1n g\u00ec/ })).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: generalHeading, exact: true })).toBeVisible();
+  await page.waitForTimeout(1700);
+  await expect(page.getByRole('heading', { name: /H\u00f4m nay b\u1ea1n mu\u1ed1n g\u00ec/ })).toHaveCount(0);
+  expect(await page.evaluate((key) => window.localStorage.getItem(key), diningProfileStorageKey)).toBeNull();
+  expect(await page.evaluate((key) => window.localStorage.getItem(key), legacyDiningProfileStorageKey)).toBeNull();
   expect(requests.profileCalls).toEqual([]);
 });
 

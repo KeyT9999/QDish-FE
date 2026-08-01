@@ -89,7 +89,7 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
     const updatedProfile: DiningProfile = {
       goals,
       allergies,
-      conditions: [],
+      conditions: initialProfile.conditions,
       preferences
     };
     onSave(updatedProfile);
