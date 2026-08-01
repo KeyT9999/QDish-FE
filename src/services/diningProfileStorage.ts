@@ -152,9 +152,12 @@ function emptyStoredProfile(): { profile: DiningProfile; updatedAt: undefined } 
 
 /** Loads the current envelope, migrating pre-versioned and legacy local profiles when possible. */
 export function loadDiningProfile(storage?: ProfileStorage): StoredDiningProfile | { profile: DiningProfile; updatedAt: undefined } {
-  const storedValue = safeParse(safeRead(storage, STORAGE_KEY));
+  const currentValue = safeRead(storage, STORAGE_KEY);
 
-  if (storedValue !== undefined) {
+  if (typeof currentValue === 'string') {
+    const storedValue = safeParse(currentValue);
+    if (storedValue === undefined) return emptyStoredProfile();
+
     if (isRecord(storedValue) && 'schemaVersion' in storedValue) {
       const stored = parseStoredProfile(storedValue);
       return stored === undefined
@@ -169,6 +172,8 @@ export function loadDiningProfile(storage?: ProfileStorage): StoredDiningProfile
     removeLegacyProfile(storage);
     return migrated;
   }
+
+  if (currentValue !== null) return emptyStoredProfile();
 
   const legacyProfile = normalizeProfile(safeParse(safeRead(storage, LEGACY_STORAGE_KEY)));
   if (legacyProfile === undefined) return emptyStoredProfile();

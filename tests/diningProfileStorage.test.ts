@@ -82,6 +82,19 @@ function testRejectsUnknownVersionsAndMalformedValues() {
   assert.deepEqual(loadDiningProfile(storage).profile, EMPTY_DINING_PROFILE);
 }
 
+function testDoesNotMigrateLegacyProfileWhenCurrentJsonIsMalformed() {
+  const storage = createMemoryStorage();
+  storage.setItem('qdish_dining_profile', '{not json');
+  storage.setItem('qdish_health_profile', JSON.stringify({
+    goals: ['MUSCLE_GAIN'], preferences: [], allergies: [], conditions: []
+  }));
+
+  const loaded = loadDiningProfile(storage);
+
+  assert.deepEqual(loaded.profile, EMPTY_DINING_PROFILE);
+  assert.equal(storage.getItem('qdish_health_profile') !== null, true);
+}
+
 function testLoadsAValidVersionOneEnvelope() {
   const storage = createMemoryStorage();
   storage.setItem('qdish_dining_profile', JSON.stringify({
@@ -143,6 +156,7 @@ function testUsesFreshEmptyProfilesAndClearsStorage() {
 testMigratesPlainProfileAndNormalizesValues();
 testMigratesAndRemovesLegacyHealthProfile();
 testRejectsUnknownVersionsAndMalformedValues();
+testDoesNotMigrateLegacyProfileWhenCurrentJsonIsMalformed();
 testLoadsAValidVersionOneEnvelope();
 testSavesCanonicalEnvelopeWithIsoTimestamp();
 testUsesFreshEmptyProfilesAndClearsStorage();
