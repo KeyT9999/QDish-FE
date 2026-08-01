@@ -10,16 +10,24 @@ interface DiningProfileFormProps {
   initialProfile: DiningProfile;
   onSave: (profile: DiningProfile) => void;
   onClose: () => void;
+  onClearProfile?: () => void;
 }
 
 export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
   initialProfile,
   onSave,
-  onClose
+  onClose,
+  onClearProfile
 }) => {
   const [goals, setGoals] = useState<DiningProfile['goals']>(initialProfile.goals || []);
   const [allergies, setAllergies] = useState<Allergen[]>(initialProfile.allergies || []);
   const [preferences, setPreferences] = useState<DiningPreference[]>(initialProfile.preferences || []);
+  const hasStoredSelections = [
+    ...initialProfile.goals,
+    ...initialProfile.preferences,
+    ...initialProfile.allergies,
+    ...initialProfile.conditions,
+  ].length > 0;
 
   const goalsList = [
     { value: 'MUSCLE_GAIN', label: '💪 Ăn tăng cơ', emoji: '💪' },
@@ -98,6 +106,12 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
     setPreferences([]);
   };
 
+  const handleClearProfile = () => {
+    if (!window.confirm('Xóa mục tiêu, sở thích, dị ứng và tình trạng đã lưu trên thiết bị này?')) return;
+    onClearProfile?.();
+    onClose();
+  };
+
   return (
     <div className="flex flex-col h-full bg-surface">
       <SheetHeader className="px-5 pt-2 pb-3 border-b border-gray-100">
@@ -110,7 +124,7 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
         </SheetDescription>
       </SheetHeader>
 
-      <ScrollArea className="flex-1 px-5 py-4 pb-28">
+      <ScrollArea className="flex-1 px-5 py-4 pb-36">
         <div className="space-y-6">
           
           {/* Section 1: Goals — non-judgmental */}
@@ -200,24 +214,35 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
       </ScrollArea>
 
       {/* Sticky Bottom Actions */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur border-t border-gray-100 flex gap-3 z-10">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleReset}
-          className="rounded-xl px-4"
-        >
-          <RefreshCw className="w-4 h-4 mr-1.5" />
-          Đặt lại
-        </Button>
-        <Button
-          type="button"
-          onClick={handleSave}
-          className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-md shadow-green-600/20"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          Lưu hồ sơ
-        </Button>
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur border-t border-gray-100 space-y-3 z-10">
+        {onClearProfile && hasStoredSelections && (
+          <button
+            type="button"
+            onClick={handleClearProfile}
+            className="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
+          >
+            Xóa hồ sơ ăn uống
+          </button>
+        )}
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleReset}
+            className="rounded-xl px-4"
+          >
+            <RefreshCw className="w-4 h-4 mr-1.5" />
+            Đặt lại
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSave}
+            className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-md shadow-green-600/20"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Lưu hồ sơ
+          </Button>
+        </div>
       </div>
     </div>
   );

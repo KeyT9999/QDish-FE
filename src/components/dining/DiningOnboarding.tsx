@@ -10,7 +10,6 @@ interface DiningOnboardingProps {
   open: boolean;
   onClose: () => void;
   onComplete: (profile: DiningProfile) => void;
-  userId: string;
   restaurantId: string;
   tableSessionId?: string;
 }
@@ -19,7 +18,6 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
   open,
   onClose,
   onComplete,
-  userId,
   restaurantId,
   tableSessionId
 }) => {
@@ -106,58 +104,37 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
       preferences
     };
 
-    try {
-      // 1. Save to backend API (onboarding endpoint)
-      const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-      await fetch(`${baseUrl}/api/users/profile/${userId}/onboarding`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    // Local storage is the only profile persistence boundary for anonymous diners.
+    onComplete(profileData);
+
+    // Analytics is scoped to this restaurant visit and must never block onboarding.
+    if (tableSessionId) {
+      try {
+        await recordDiningVisit({
+          restaurantId,
+          tableSessionId,
+          visitToken: getOrCreateDiningVisitToken(restaurantId, tableSessionId),
           goals,
-          allergies,
           dietaryPreferences: preferences
-        })
-      });
-      
-      // 2. Trigger callback to update local state/storage
-      onComplete(profileData);
-
-      // Analytics is scoped to this restaurant visit and must not block onboarding.
-      if (tableSessionId) {
-        try {
-          await recordDiningVisit({
-            restaurantId,
-            tableSessionId,
-            visitToken: getOrCreateDiningVisitToken(restaurantId, tableSessionId),
-            goals,
-            dietaryPreferences: preferences
-          });
-        } catch (error) {
-          console.error('Failed to record anonymous dining visit', error);
-        }
+        });
+      } catch (error) {
+        console.error('Failed to record anonymous dining visit', error);
       }
-      
-      // 3. Show fun toast message
-      let personality = 'Exploring Foodie 🍽️';
-      if (goals.includes('MUSCLE_GAIN')) personality = 'Protein Hunter 💪';
-      else if (preferences.includes('VEGAN') || preferences.includes('VEGETARIAN')) personality = 'Green Plant Eater 🌱';
-      else if (goals.includes('LIGHT_MEAL')) personality = 'Mindful Eater 🧘';
-      else if (goals.includes('ENERGY_BOOST')) personality = 'Power Charger ⚡';
-
-      toast.success(`Hồ sơ ẩm thực đã sẵn sàng! Bạn thuộc nhóm: ${personality}`, {
-        duration: 4000,
-        position: 'top-center'
-      });
-      
-      onClose();
-    } catch (error) {
-      console.error('Error saving onboarding profile:', error);
-      // Fallback: save locally anyway to ensure smooth user experience
-      onComplete(profileData);
-      onClose();
-    } finally {
-      setIsSaving(false);
     }
+
+    let personality = 'Exploring Foodie 🍽️';
+    if (goals.includes('MUSCLE_GAIN')) personality = 'Protein Hunter 💪';
+    else if (preferences.includes('VEGAN') || preferences.includes('VEGETARIAN')) personality = 'Green Plant Eater 🌱';
+    else if (goals.includes('LIGHT_MEAL')) personality = 'Mindful Eater 🧘';
+    else if (goals.includes('ENERGY_BOOST')) personality = 'Power Charger ⚡';
+
+    toast.success(`Hồ sơ ẩm thực đã sẵn sàng! Bạn thuộc nhóm: ${personality}`, {
+      duration: 4000,
+      position: 'top-center'
+    });
+
+    onClose();
+    setIsSaving(false);
   };
 
   return (
