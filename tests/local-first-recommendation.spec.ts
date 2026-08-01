@@ -338,17 +338,23 @@ test('clearing requires confirmation: cancel preserves local storage and confirm
 
   await page.goto(`/order?r=${restaurantId}`);
   await expect(page.getByRole('heading', { name: personalizedHeading, exact: true })).toBeVisible();
+  const serializedEnvelopeBeforeCancel = await page.evaluate((key) => window.localStorage.getItem(key), diningProfileStorageKey);
+  const recommendationCountBeforeClear = requests.recommendationProfiles.length;
+  expect(serializedEnvelopeBeforeCancel).not.toBeNull();
   await page.getByRole('button', { name: 'H\u1ed3 s\u01a1 \u1ea9m th\u1ef1c' }).click();
 
   page.once('dialog', (dialog) => dialog.dismiss());
   await page.getByRole('button', { name: 'X\u00f3a h\u1ed3 s\u01a1 \u0103n u\u1ed1ng' }).click();
   await expect.poll(async () => page.evaluate((key) => window.localStorage.getItem(key), diningProfileStorageKey))
-    .not.toBeNull();
+    .toBe(serializedEnvelopeBeforeCancel);
 
   page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'X\u00f3a h\u1ed3 s\u01a1 \u0103n u\u1ed1ng' }).click();
   await expect.poll(async () => page.evaluate((key) => window.localStorage.getItem(key), diningProfileStorageKey))
     .toBeNull();
+  await expect.poll(() => requests.recommendationProfiles.length)
+    .toBeGreaterThan(recommendationCountBeforeClear);
+  expect(requests.recommendationProfiles.slice(recommendationCountBeforeClear)).toEqual([emptyProfile]);
   await expect(page.getByRole('heading', { name: generalHeading, exact: true })).toBeVisible();
   await expect(recommendationSection(page).getByText('91% ph\u00f9 h\u1ee3p', { exact: true })).toHaveCount(0);
   expect(requests.profileCalls).toEqual([]);
