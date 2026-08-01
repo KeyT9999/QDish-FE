@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   getRecommendationEmptyMessage,
@@ -188,8 +189,19 @@ async function testMinimalCustomerMenuDishDataRemainsAccepted() {
   assert.equal(result.pairingSuggestions[0].pairedDish.price, 100_000);
 }
 
+function testCustomerMenuUsesTheTypedRecommendationFlow() {
+  const customerMenu = readFileSync('src/pages/CustomerMenu.tsx', 'utf8');
+
+  assert.equal(customerMenu.includes('qdish_guest_user_id'), false);
+  assert.equal(customerMenu.includes('guestUserId'), false);
+  assert.equal(customerMenu.includes('loadRecommendations'), true);
+  assert.equal(customerMenu.includes('timeOfDay: timeOfDayBucket'), true);
+  assert.equal(customerMenu.includes('onClearProfile={clearProfile}'), true);
+}
+
 await testRecommendationRequestPayloadAndPresentationCopy();
 await testMalformedResponsesAreRejectedBeforeUiConsumption();
 await testMalformedRecommendationEntriesAreRejectedBeforeUiConsumption();
 await testMinimalCustomerMenuDishDataRemainsAccepted();
+testCustomerMenuUsesTheTypedRecommendationFlow();
 console.log('recommendation service tests passed');

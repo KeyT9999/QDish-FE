@@ -13,6 +13,12 @@ import { categoryService } from '@/services/categoryService';
 import { apiFetch } from '@/services/api';
 import { loadBatchFitScores } from '@/services/fitScoreService';
 import {
+  getRecommendationEmptyMessage,
+  getRecommendationHeading,
+  loadRecommendations,
+  type RecommendationResponse
+} from '@/services/recommendationService';
+import {
   getMenuItemIdentity,
   getMillisecondsUntilNextTimeBucket,
   getTimeOfDayBucket,
@@ -57,8 +63,7 @@ export const CustomerMenu: React.FC = () => {
   const [isHealthOpen, setIsHealthOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [pairingSuggestions, setPairingSuggestions] = useState<any[]>([]);
+  const [recommendationResult, setRecommendationResult] = useState<RecommendationResponse | null>(null);
   const [isRecLoading, setIsRecLoading] = useState(false);
   const [fitScores, setFitScores] = useState<FitScoreMap>({});
   const [isFitScoreLoading, setIsFitScoreLoading] = useState(false);
@@ -70,16 +75,6 @@ export const CustomerMenu: React.FC = () => {
   const { profile, saveProfile, clearProfile } = useDiningProfile();
   const { execute: submitOrder, isLoading: isSubmitting } = useApi(orderService.createOrder);
   const fitScoreEnabled = restaurant?.features?.fitScoreEnabled;
-
-  // Generate or retrieve persistent guest userId
-  const guestUserId = useMemo(() => {
-    let id = localStorage.getItem('qdish_guest_user_id');
-    if (!id) {
-      id = 'guest_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
-      localStorage.setItem('qdish_guest_user_id', id);
-    }
-    return id;
-  }, []);
 
   // Automatically trigger premium onboarding for new guest diners
   useEffect(() => {
@@ -158,40 +153,40 @@ export const CustomerMenu: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [fitScoreEnabled, profile, restaurantId, timeOfDayBucket]);
+  }, [fitScoreEnabled, restaurant, restaurantId, profile, isLoading, timeOfDayBucket]);
 
   // Fetch smart dining recommendations
   useEffect(() => {
-    if (isLoading || !restaurantId || !restaurant) return;
-    if (!restaurant.features?.recommendationEnabled) return;
+    if (isLoading || !restaurantId || !restaurant || !restaurant.features?.recommendationEnabled) {
+      setRecommendationResult(null);
+      setIsRecLoading(false);
+      return;
+    }
 
     let isMounted = true;
     const fetchRecs = async () => {
+      setRecommendationResult(null);
       setIsRecLoading(true);
+
       try {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-        const res = await fetch(`${baseUrl}/api/recommendations`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            restaurantId,
-            userId: guestUserId,
-            context: {
-              timeOfDay: new Date().getHours() < 11 ? 'breakfast' : new Date().getHours() < 15 ? 'lunch' : new Date().getHours() < 21 ? 'dinner' : 'late_night',
-              postWorkout: profile?.goals?.includes('MUSCLE_GAIN')
-            }
-          })
+        const data = await loadRecommendations({
+          restaurantId,
+          profile,
+          context: {
+            timeOfDay: timeOfDayBucket,
+            postWorkout: profile.goals.includes('MUSCLE_GAIN')
+          },
+          fetcher: apiFetch
         });
-        
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        
+
         if (isMounted) {
-          setRecommendations(data.bestForYou || []);
-          setPairingSuggestions(data.pairingSuggestions || []);
+          setRecommendationResult(data);
         }
-      } catch (err) {
+      } catch {
         console.error('Failed to load recommendations');
+        if (isMounted) {
+          setRecommendationResult(null);
+        }
       } finally {
         if (isMounted) {
           setIsRecLoading(false);
@@ -199,11 +194,14 @@ export const CustomerMenu: React.FC = () => {
       }
     };
 
-    fetchRecs();
+    void fetchRecs();
     return () => {
       isMounted = false;
     };
-  }, [restaurantId, profile, isLoading, guestUserId]);
+  }, [restaurant, restaurantId, profile, isLoading, timeOfDayBucket]);
+
+  const recommendations = recommendationResult?.bestForYou ?? [];
+  const pairingSuggestions = recommendationResult?.pairingSuggestions ?? [];
   const userAllergies = profile?.allergies || EMPTY_ALLERGIES;
 
   // Fetch initial data
@@ -519,19 +517,26 @@ export const CustomerMenu: React.FC = () => {
       </div>
 
       {/* ── Best For You (Smart Recommendations Section) ── */}
-      {restaurant?.features?.recommendationEnabled && recommendations.length > 0 && (
+      {restaurant?.features?.recommendationEnabled && recommendationResult && (
         <div className="mb-6 pt-2">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
             <h3 className="text-xs font-heading font-black text-neutral-900 uppercase tracking-wider flex items-center gap-1.5">
-              Dành riêng cho bạn
+              {getRecommendationHeading(recommendationResult.mode)}
             </h3>
             <span className="text-[9px] bg-green-50 text-green-700 font-extrabold px-2 py-0.5 rounded-full border border-green-200">
               QDish Match
             </span>
           </div>
 
-          <div className="overflow-x-auto flex gap-4 scrollbar-none pb-3 -mx-4 px-4">
+          {recommendationResult.emptyReason === 'NO_ALLERGEN_SAFE_DISHES' && (
+            <p role="status" className="mb-3 px-1 text-xs font-medium text-amber-800">
+              {getRecommendationEmptyMessage(recommendationResult.emptyReason)}
+            </p>
+          )}
+
+          {recommendations.length > 0 && (
+            <div className="overflow-x-auto flex gap-4 scrollbar-none pb-3 -mx-4 px-4">
             {recommendations.map((rec) => {
               const dishItem = rec.dish;
               const itemId = getMenuItemIdentity(dishItem);
@@ -540,7 +545,7 @@ export const CustomerMenu: React.FC = () => {
                 recommendationEnabled: restaurant?.features?.recommendationEnabled,
                 profile,
                 independentSummary: itemId ? fitScores[itemId] : undefined,
-                legacyScore: rec.fitScore
+                legacyScore: recommendationResult.mode === 'PERSONALIZED' ? rec.fitScore : undefined
               });
               
               return (
@@ -609,7 +614,8 @@ export const CustomerMenu: React.FC = () => {
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
