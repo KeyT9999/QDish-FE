@@ -10,4 +10,8 @@ const form = readFileSync('src/components/dining/DiningProfileForm.tsx', 'utf8')
 assert.equal(form.includes('Xóa hồ sơ ăn uống'), true);
 assert.equal(form.includes('window.confirm'), true);
 
+const customerMenu = readFileSync('src/pages/CustomerMenu.tsx', 'utf8');
+assert.equal(customerMenu.includes('const { profile, saveProfile, clearProfile } = useDiningProfile();'), true);
+assert.equal(customerMenu.includes('onClearProfile={clearProfile}'), true);
+
 console.log('dining profile UI policy tests passed');

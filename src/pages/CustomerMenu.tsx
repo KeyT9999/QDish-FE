@@ -67,7 +67,7 @@ export const CustomerMenu: React.FC = () => {
   const sessionId = session?.id || session?._id || '';
   const cart = useCart(restaurantId, tableNumber, sessionId || undefined);
   const { addToCart } = cart;
-  const { profile, saveProfile } = useDiningProfile();
+  const { profile, saveProfile, clearProfile } = useDiningProfile();
   const { execute: submitOrder, isLoading: isSubmitting } = useApi(orderService.createOrder);
   const fitScoreEnabled = restaurant?.features?.fitScoreEnabled;
 
@@ -772,6 +772,7 @@ export const CustomerMenu: React.FC = () => {
           <DiningProfileForm
             initialProfile={profile}
             onSave={saveProfile}
+            onClearProfile={clearProfile}
             onClose={() => setIsHealthOpen(false)}
           />
         </SheetContent>
