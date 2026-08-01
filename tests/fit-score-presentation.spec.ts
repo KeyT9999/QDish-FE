@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { RecommendationResponse } from '../src/services/recommendationService';
 
 const restaurantId = '507f1f77bcf86cd799439011';
 const dishId = '507f1f77bcf86cd799439012';
@@ -11,6 +12,7 @@ interface FitScoreScenario {
 }
 
 const dish = {
+  id: dishId,
   _id: dishId,
   restaurantId,
   name: 'Protein Bowl',
@@ -79,18 +81,24 @@ async function mockCustomerMenu(page: Page, scenario: FitScoreScenario) {
     }
 
     if (requestUrl.pathname === '/api/recommendations') {
+      const response = {
+        mode: 'PERSONALIZED',
+        bestForYou: [{
+          dish,
+          fitScore: scenario.legacyScore,
+          bestContext: 'gym_fit',
+          bestContextLabel: 'Gym Fit',
+          reason: 'High protein',
+          allergenWarnings: []
+        }],
+        fullMenu: [],
+        pairingSuggestions: []
+      } satisfies RecommendationResponse;
+
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          bestForYou: [{
-            dish,
-            fitScore: scenario.legacyScore,
-            bestContextLabel: 'Gym Fit',
-            reason: 'High protein'
-          }],
-          pairingSuggestions: []
-        })
+        body: JSON.stringify(response)
       });
     }
 
@@ -110,7 +118,7 @@ async function mockCustomerMenu(page: Page, scenario: FitScoreScenario) {
 }
 
 function recommendationSection(page: Page) {
-  return page.getByRole('heading', { name: 'D\u00e0nh ri\u00eang cho b\u1ea1n' }).locator('..').locator('..');
+  return page.getByRole('heading', { name: 'G\u1ee3i \u00fd d\u00e0nh cho b\u1ea1n' }).locator('..').locator('..');
 }
 
 test('blocked independent score renders the red allergen badge in recommendations', async ({ page }) => {
