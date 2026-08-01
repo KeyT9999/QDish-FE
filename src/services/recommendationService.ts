@@ -1,4 +1,4 @@
-import type { DiningProfile, MenuItem } from '@/types';
+import type { DiningProfile, MenuItem, NutritionInfo } from '@/types';
 import type { apiFetch } from './api';
 
 export type RecommendationMode = 'GENERAL' | 'PERSONALIZED';
@@ -63,68 +63,177 @@ function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string');
 }
 
-function isRecommendationDish(value: unknown): value is MenuItem {
+function normalizeNutrition(value: unknown): NutritionInfo | undefined {
+  if (!isRecord(value)
+    || !isFiniteNumber(value.calories)
+    || !isFiniteNumber(value.protein)
+    || !isFiniteNumber(value.carbs)
+    || !isFiniteNumber(value.fat)
+    || (value.fiber !== undefined && !isFiniteNumber(value.fiber))
+    || (value.sugar !== undefined && !isFiniteNumber(value.sugar))
+    || (value.sodium !== undefined && !isFiniteNumber(value.sodium))
+    || (value.confidenceScore !== undefined && !isFiniteNumber(value.confidenceScore))) {
+    return undefined;
+  }
+
+  return {
+    calories: value.calories,
+    protein: value.protein,
+    carbs: value.carbs,
+    fat: value.fat,
+    ...(isFiniteNumber(value.fiber) ? { fiber: value.fiber } : {}),
+    ...(isFiniteNumber(value.sugar) ? { sugar: value.sugar } : {}),
+    ...(isFiniteNumber(value.sodium) ? { sodium: value.sodium } : {}),
+    ...(isFiniteNumber(value.confidenceScore) ? { confidenceScore: value.confidenceScore } : {}),
+  };
+}
+
+function normalizeRecommendationDish(value: unknown): MenuItem | undefined {
   if (!isRecord(value)) {
-    return false;
+    return undefined;
   }
 
   const hasIdentity = (typeof value.id === 'string' && value.id.length > 0)
     || (typeof value._id === 'string' && value._id.length > 0);
 
-  return hasIdentity
-    && typeof value.name === 'string'
-    && isFiniteNumber(value.price);
-}
-
-function isRecommendedDish(value: unknown): value is RecommendedDish {
-  if (!isRecord(value)) {
-    return false;
+  if (!hasIdentity || typeof value.name !== 'string' || !isFiniteNumber(value.price)) {
+    return undefined;
   }
 
-  return isRecommendationDish(value.dish)
-    && isFiniteNumber(value.fitScore)
-    && typeof value.bestContext === 'string'
-    && typeof value.bestContextLabel === 'string'
-    && typeof value.reason === 'string'
-    && isStringArray(value.allergenWarnings);
-}
-
-function isScoredDish(value: unknown): value is ScoredDish {
-  if (!isRecord(value)) {
-    return false;
+  if ((value.description !== undefined && typeof value.description !== 'string')
+    || (value.imageUrl !== undefined && typeof value.imageUrl !== 'string')
+    || (value.available !== undefined && typeof value.available !== 'boolean')
+    || (value.allergens !== undefined && !isStringArray(value.allergens))
+    || (value.foodAttributes !== undefined && !isStringArray(value.foodAttributes))) {
+    return undefined;
   }
 
-  return isRecommendationDish(value.dish)
-    && isFiniteNumber(value.fitScore)
-    && typeof value.bestContext === 'string'
-    && typeof value.bestContextLabel === 'string'
-    && isStringArray(value.allergenWarnings);
-}
-
-function isPairingSuggestion(value: unknown): value is PairingSuggestion {
-  if (!isRecord(value)) {
-    return false;
+  const nutrition = value.nutrition === undefined ? undefined : normalizeNutrition(value.nutrition);
+  if (value.nutrition !== undefined && nutrition === undefined) {
+    return undefined;
   }
 
-  return typeof value.mainDishId === 'string'
-    && typeof value.mainDishName === 'string'
-    && isRecommendationDish(value.pairedDish)
-    && typeof value.reason === 'string';
+  return {
+    ...value,
+    id: typeof value.id === 'string' ? value.id : '',
+    _id: typeof value._id === 'string' ? value._id : undefined,
+    restaurantId: typeof value.restaurantId === 'string' ? value.restaurantId : '',
+    name: value.name,
+    description: typeof value.description === 'string' ? value.description : '',
+    price: value.price,
+    category: typeof value.category === 'string' ? value.category : '',
+    imageUrl: typeof value.imageUrl === 'string' ? value.imageUrl : '',
+    available: typeof value.available === 'boolean' ? value.available : true,
+    allergens: isStringArray(value.allergens) ? [...value.allergens] : [],
+    foodAttributes: isStringArray(value.foodAttributes) ? [...value.foodAttributes] : [],
+    nutrition,
+  } as MenuItem;
 }
 
-function isRecommendationResponse(value: unknown): value is RecommendationResponse {
+function normalizeRecommendedDish(value: unknown): RecommendedDish | undefined {
   if (!isRecord(value)) {
-    return false;
+    return undefined;
   }
 
-  return isRecommendationMode(value.mode)
-    && (value.emptyReason === undefined || isRecommendationEmptyReason(value.emptyReason))
-    && Array.isArray(value.bestForYou)
-    && value.bestForYou.every(isRecommendedDish)
-    && Array.isArray(value.fullMenu)
-    && value.fullMenu.every(isScoredDish)
-    && Array.isArray(value.pairingSuggestions)
-    && value.pairingSuggestions.every(isPairingSuggestion);
+  const dish = normalizeRecommendationDish(value.dish);
+  if (!dish
+    || !isFiniteNumber(value.fitScore)
+    || typeof value.bestContext !== 'string'
+    || typeof value.bestContextLabel !== 'string'
+    || typeof value.reason !== 'string'
+    || !isStringArray(value.allergenWarnings)) {
+    return undefined;
+  }
+
+  return {
+    dish,
+    fitScore: value.fitScore,
+    bestContext: value.bestContext,
+    bestContextLabel: value.bestContextLabel,
+    reason: value.reason,
+    allergenWarnings: [...value.allergenWarnings],
+  };
+}
+
+function normalizeScoredDish(value: unknown): ScoredDish | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const dish = normalizeRecommendationDish(value.dish);
+  if (!dish
+    || !isFiniteNumber(value.fitScore)
+    || typeof value.bestContext !== 'string'
+    || typeof value.bestContextLabel !== 'string'
+    || !isStringArray(value.allergenWarnings)) {
+    return undefined;
+  }
+
+  return {
+    dish,
+    fitScore: value.fitScore,
+    bestContext: value.bestContext,
+    bestContextLabel: value.bestContextLabel,
+    allergenWarnings: [...value.allergenWarnings],
+  };
+}
+
+function normalizePairingSuggestion(value: unknown): PairingSuggestion | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const pairedDish = normalizeRecommendationDish(value.pairedDish);
+  if (typeof value.mainDishId !== 'string'
+    || typeof value.mainDishName !== 'string'
+    || !pairedDish
+    || typeof value.reason !== 'string') {
+    return undefined;
+  }
+
+  return {
+    mainDishId: value.mainDishId,
+    mainDishName: value.mainDishName,
+    pairedDish,
+    reason: value.reason,
+  };
+}
+
+function normalizeArray<T>(value: unknown, normalize: (entry: unknown) => T | undefined): T[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+
+  const normalized: T[] = [];
+  for (const entry of value) {
+    const result = normalize(entry);
+    if (result === undefined) return undefined;
+    normalized.push(result);
+  }
+  return normalized;
+}
+
+function normalizeRecommendationResponse(value: unknown): RecommendationResponse | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const bestForYou = normalizeArray(value.bestForYou, normalizeRecommendedDish);
+  const fullMenu = normalizeArray(value.fullMenu, normalizeScoredDish);
+  const pairingSuggestions = normalizeArray(value.pairingSuggestions, normalizePairingSuggestion);
+  if (!isRecommendationMode(value.mode)
+    || (value.emptyReason !== undefined && !isRecommendationEmptyReason(value.emptyReason))
+    || !bestForYou
+    || !fullMenu
+    || !pairingSuggestions) {
+    return undefined;
+  }
+
+  return {
+    mode: value.mode,
+    ...(value.emptyReason ? { emptyReason: value.emptyReason } : {}),
+    bestForYou,
+    fullMenu,
+    pairingSuggestions,
+  };
 }
 
 export async function loadRecommendations(input: {
@@ -147,11 +256,12 @@ export async function loadRecommendations(input: {
     }),
   });
 
-  if (!isRecommendationResponse(response)) {
+  const normalized = normalizeRecommendationResponse(response);
+  if (!normalized) {
     throw new Error('Malformed recommendation response');
   }
 
-  return response;
+  return normalized;
 }
 
 export function getRecommendationHeading(mode: RecommendationMode): string {

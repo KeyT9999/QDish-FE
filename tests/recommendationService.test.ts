@@ -189,6 +189,77 @@ async function testMinimalCustomerMenuDishDataRemainsAccepted() {
   assert.equal(result.pairingSuggestions[0].pairedDish.price, 100_000);
 }
 
+async function testConsumedOptionalDishFieldsAreNormalizedWithoutConstrainingUnrelatedFields() {
+  const result = await loadRecommendations({
+    restaurantId,
+    profile: { goals: [], preferences: [], allergies: [], conditions: [] },
+    context: { timeOfDay: 'lunch', postWorkout: false },
+    fetcher: async <T>() => ({
+      mode: 'GENERAL',
+      bestForYou: [{
+        dish: {
+          _id: 'dish-1',
+          name: 'Dish',
+          price: 100_000,
+          ingredients: { unrelatedMongoShape: true },
+        },
+        fitScore: 80,
+        bestContext: 'general',
+        bestContextLabel: 'General',
+        reason: 'Recommended',
+        allergenWarnings: [],
+      }],
+      fullMenu: [],
+      pairingSuggestions: [],
+    }) as T,
+  });
+
+  const dish = result.bestForYou[0].dish;
+  assert.equal(dish.imageUrl, '');
+  assert.equal(dish.description, '');
+  assert.equal(dish.available, true);
+  assert.deepEqual(dish.allergens, []);
+  assert.deepEqual(dish.foodAttributes, []);
+  assert.equal(dish.nutrition, undefined);
+  assert.deepEqual((dish as unknown as Record<string, unknown>).ingredients, { unrelatedMongoShape: true });
+}
+
+async function testMalformedConsumedOptionalDishFieldsAreRejected() {
+  const malformedFields: Array<Record<string, unknown>> = [
+    { imageUrl: { unsafe: true } },
+    { description: { unsafe: true } },
+    { available: 'yes' },
+    { allergens: {} },
+    { foodAttributes: {} },
+    { nutrition: {} },
+    { nutrition: { calories: 100, protein: 10, carbs: 20, fat: 5, fiber: {} } },
+  ];
+
+  for (const malformedField of malformedFields) {
+    await assert.rejects(
+      loadRecommendations({
+        restaurantId,
+        profile: { goals: [], preferences: [], allergies: [], conditions: [] },
+        context: { timeOfDay: 'lunch', postWorkout: false },
+        fetcher: async <T>() => ({
+          mode: 'GENERAL',
+          bestForYou: [{
+            dish: { _id: 'dish-1', name: 'Dish', price: 100_000, ...malformedField },
+            fitScore: 80,
+            bestContext: 'general',
+            bestContextLabel: 'General',
+            reason: 'Recommended',
+            allergenWarnings: [],
+          }],
+          fullMenu: [],
+          pairingSuggestions: [],
+        }) as T,
+      }),
+      /Malformed recommendation response/,
+    );
+  }
+}
+
 function testCustomerMenuUsesTheTypedRecommendationFlow() {
   const customerMenu = readFileSync('src/pages/CustomerMenu.tsx', 'utf8');
 
@@ -203,5 +274,7 @@ await testRecommendationRequestPayloadAndPresentationCopy();
 await testMalformedResponsesAreRejectedBeforeUiConsumption();
 await testMalformedRecommendationEntriesAreRejectedBeforeUiConsumption();
 await testMinimalCustomerMenuDishDataRemainsAccepted();
+await testConsumedOptionalDishFieldsAreNormalizedWithoutConstrainingUnrelatedFields();
+await testMalformedConsumedOptionalDishFieldsAreRejected();
 testCustomerMenuUsesTheTypedRecommendationFlow();
 console.log('recommendation service tests passed');
