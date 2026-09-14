@@ -31,6 +31,33 @@ export const RegisterOwner: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  async function handleGoogleCredentialResponse(response: any) {
+    const token = response.credential;
+    if (!token) return;
+
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const checkRes = await authService.googleCheckEmail({ googleToken: token });
+
+      if (checkRes.exists) {
+        setError('Email tài khoản Google này đã được đăng ký làm chủ nhà hàng. Vui lòng chuyển sang trang Đăng nhập.');
+        toast.error('Email Google đã tồn tại trong hệ thống.');
+      } else {
+        setFullName(checkRes.name || '');
+        setEmail(checkRes.email || '');
+        setIsGoogle(true);
+        setGoogleToken(token);
+        toast.success('Xác thực Google thành công! Vui lòng hoàn thành các thông tin còn lại.');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Xác thực Google thất bại.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   // Load/initialize Google Sign-in
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -65,33 +92,6 @@ export const RegisterOwner: React.FC = () => {
 
     return () => clearInterval(interval);
   }, []);
-
-  const handleGoogleCredentialResponse = async (response: any) => {
-    const token = response.credential;
-    if (!token) return;
-
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      const checkRes = await authService.googleCheckEmail({ googleToken: token });
-      
-      if (checkRes.exists) {
-        setError('Email tài khoản Google này đã được đăng ký làm chủ nhà hàng. Vui lòng chuyển sang trang Đăng nhập.');
-        toast.error('Email Google đã tồn tại trong hệ thống.');
-      } else {
-        setFullName(checkRes.name || '');
-        setEmail(checkRes.email || '');
-        setIsGoogle(true);
-        setGoogleToken(token);
-        toast.success('Xác thực Google thành công! Vui lòng hoàn thành các thông tin còn lại.');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Xác thực Google thất bại.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleMockGoogleSignup = () => {
     const mockEmail = `testowner_${Math.floor(1000 + Math.random() * 9000)}`;

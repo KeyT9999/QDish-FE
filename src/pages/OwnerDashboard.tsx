@@ -632,7 +632,7 @@ export const OwnerDashboard: React.FC = () => {
                         const price = billingCycle === BillingCycle.YEARLY ? plan.priceYearly : plan.priceMonthly;
                         
                         let cardBorderClass = 'border-slate-150';
-                        let cardBgClass = 'bg-slate-50/50';
+                        const cardBgClass = 'bg-slate-50/50';
                         let btnClass = isCurrent ? 'bg-slate-200 text-slate-500' : 'bg-emerald-600 hover:bg-emerald-500 text-white';
                         
                         if (plan.code === 'FREE') {
