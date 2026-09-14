@@ -62,7 +62,7 @@ export const Login: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleGoogleLoginResponse = async (response: any) => {
+  async function handleGoogleLoginResponse(response: any) {
     const token = response.credential;
     if (!token) return;
 
@@ -90,7 +90,7 @@ export const Login: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   const handleMockGoogleLogin = () => {
     const mockEmailInput = prompt("Nhập email Google của tài khoản đã đăng ký (Ví dụ: testowner_1234):");
