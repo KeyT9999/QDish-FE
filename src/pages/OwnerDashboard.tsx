@@ -574,7 +574,8 @@ export const OwnerDashboard: React.FC = () => {
                         { label: 'Gợi ý món ăn AI (AI Recommendation)', enabled: subDetails.limits.recommendationEnabled || false },
                         { label: 'Cá nhân hóa thực đơn (Personalized Menu)', enabled: subDetails.limits.personalizedMenuEnabled || false },
                         { label: 'Báo cáo phân tích chuyên sâu', enabled: subDetails.limits.advancedAnalyticsEnabled || false },
-                        { label: 'Phân tích hành vi khách hàng', enabled: subDetails.limits.customerInsightsEnabled || false }
+                        { label: 'Phân tích hành vi khách hàng', enabled: subDetails.limits.customerInsightsEnabled || false },
+                        { label: 'CRM khách hàng & lịch sử gọi món', enabled: subDetails.limits.customerCrmEnabled || false }
                       ].map((item, idx) => (
                         <div key={idx} className="flex items-center gap-2.5 text-xs">
                           <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${

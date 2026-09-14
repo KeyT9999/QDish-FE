@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { CartItem } from './CartItem';
 import { formatCurrency } from '@/lib/utils';
 import { ShoppingBag, Loader2, ArrowRight } from 'lucide-react';
+import { buildCustomerContactPayload, isOptionalVietnamesePhoneValid } from '@/services/customerContact';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -17,7 +18,13 @@ interface CartDrawerProps {
   cartTotal: number;
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
-  onSubmitOrder: (details: { customerName?: string; note?: string }) => Promise<void>;
+  onSubmitOrder: (details: {
+    customerName?: string;
+    customerPhone?: string;
+    marketingConsent?: boolean;
+    consentVersion?: string;
+    note?: string;
+  }) => Promise<void>;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -30,24 +37,29 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onSubmitOrder
 }) => {
   const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState<1 | 2>(1); // 1: Cart review, 2: Checkout details
   const isCustomerNameValid = customerName.trim().length === 0 || customerName.trim().length >= 2;
+  const isCustomerPhoneValid = isOptionalVietnamesePhoneValid(customerPhone);
 
   const handleSubmit = async () => {
-    if (!isCustomerNameValid) {
+    if (!isCustomerNameValid || !isCustomerPhoneValid) {
       return;
     }
 
     try {
       setIsSubmitting(true);
       await onSubmitOrder({
-        customerName: customerName.trim() || undefined,
+        ...buildCustomerContactPayload({ customerName, customerPhone, marketingConsent }),
         note: note.trim() || undefined
       });
       // Reset form on success
       setCustomerName('');
+      setCustomerPhone('');
+      setMarketingConsent(false);
       setNote('');
       setStep(1);
       onClose();
@@ -154,6 +166,44 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="customerPhone" className="font-semibold text-gray-700">
+                      Số điện thoại (Tùy chọn)
+                    </Label>
+                    <Input
+                      id="customerPhone"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      maxLength={20}
+                      placeholder="VD: 0912 345 678"
+                      value={customerPhone}
+                      onChange={(event) => setCustomerPhone(event.target.value)}
+                      aria-invalid={!isCustomerPhoneValid}
+                      aria-describedby="customerPhoneHelp"
+                      className="bg-white"
+                    />
+                    <p id="customerPhoneHelp" className={`text-xs ${isCustomerPhoneValid ? 'text-gray-500' : 'font-medium text-red-600'}`}>
+                      {isCustomerPhoneValid
+                        ? 'Nếu nhập, số sẽ được lưu vào hồ sơ khách hàng của quán. Bạn có thể bỏ trống và vẫn đặt món.'
+                        : 'Vui lòng nhập số điện thoại Việt Nam hợp lệ hoặc để trống.'}
+                    </p>
+                  </div>
+
+                  {customerPhone.trim() && isCustomerPhoneValid && (
+                    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white p-3 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={marketingConsent}
+                        onChange={(event) => setMarketingConsent(event.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-green-600"
+                      />
+                      <span>
+                        Tôi đồng ý nhận thông tin ưu đãi từ nhà hàng qua số điện thoại này.
+                      </span>
+                    </label>
+                  )}
+
+                  <div className="space-y-2">
                     <Label htmlFor="note" className="font-semibold text-gray-700">
                       Ghi chú cho quán (Tùy chọn)
                     </Label>
@@ -186,7 +236,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <Button 
                 className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl h-14 text-lg font-bold shadow-lg shadow-green-600/20"
                 onClick={handleSubmit}
-                disabled={isSubmitting || !isCustomerNameValid}
+                disabled={isSubmitting || !isCustomerNameValid || !isCustomerPhoneValid}
               >
                 {isSubmitting ? (
                   <>

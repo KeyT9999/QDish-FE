@@ -31,6 +31,7 @@ export interface OwnerSubscriptionDetails {
     personalizedMenuEnabled: boolean;
     advancedAnalyticsEnabled: boolean;
     customerInsightsEnabled: boolean;
+    customerCrmEnabled: boolean;
     features: string[];
   };
   usage: {

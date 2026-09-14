@@ -431,6 +431,9 @@ export const CustomerMenu: React.FC = () => {
         })),
         totalAmount: cart.cartTotal,
         customerName: details?.customerName?.trim() || undefined,
+        customerPhone: details?.customerPhone || undefined,
+        marketingConsent: details?.marketingConsent === true,
+        consentVersion: details?.consentVersion || undefined,
         note: details?.note?.trim() || undefined
       };
       

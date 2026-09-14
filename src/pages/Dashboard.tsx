@@ -37,6 +37,7 @@ import { RestaurantStaffTab } from '@/components/dashboard/restaurant/Restaurant
 import { RestaurantSettingsTab } from '@/components/dashboard/restaurant/RestaurantSettingsTab';
 import { RestaurantNotificationsTab } from '@/components/dashboard/restaurant/RestaurantNotificationsTab';
 import { RestaurantIngredientsTab } from '@/components/dashboard/restaurant/RestaurantIngredientsTab';
+import { RestaurantCustomersTab } from '@/components/dashboard/restaurant/RestaurantCustomersTab';
 
 // Modal Components
 import { MenuItemModal } from '@/components/dashboard/restaurant/modals/MenuItemModal';
@@ -642,6 +643,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         <TabsContent value="insights" className="space-y-6">
           <MerchantInsightsTab restaurant={restaurant} />
+        </TabsContent>
+
+        <TabsContent value="customers" className="space-y-6">
+          <RestaurantCustomersTab
+            restaurantId={restaurantId}
+            enabled={restaurant?.features?.customerCrmEnabled === true}
+          />
         </TabsContent>
 
         <TabsContent value="orders" className="space-y-6">
