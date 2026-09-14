@@ -35,6 +35,7 @@ export interface Restaurant {
     personalizedMenuEnabled: boolean;
     advancedAnalyticsEnabled?: boolean;
     customerInsightsEnabled?: boolean;
+    customerCrmEnabled?: boolean;
   };
   revenue?: number;
   orderCount?: number;
@@ -461,6 +462,7 @@ export interface Plan {
   personalizedMenuEnabled: boolean;
   advancedAnalyticsEnabled: boolean;
   customerInsightsEnabled: boolean;
+  customerCrmEnabled: boolean;
   features: string[];
   unavailableFeatures: string[];
   isPopular: boolean;
@@ -653,6 +655,9 @@ export interface TableSession {
   billId?: string;
   sessionCode: string;
   status: TableSessionStatus;
+  customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
   openedAt: string;
   paymentRequestedAt?: string;
   paidAt?: string;

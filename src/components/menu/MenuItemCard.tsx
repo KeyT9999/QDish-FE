@@ -2,7 +2,9 @@ import React from 'react';
 import { MenuItem, Allergen, CartItem, FoodAttribute, FOOD_ATTRIBUTE_LABELS, FOOD_ATTRIBUTE_COLORS } from '@/types';
 import { Minus, Plus, ShieldAlert, Award } from 'lucide-react';
 import { NutritionBadge } from './NutritionBadge';
+import { FitScoreBadge } from './FitScoreBadge';
 import { formatCurrency } from '@/lib/utils';
+import type { FitScoreSummary } from '@/services/fitScorePresentation';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -13,6 +15,8 @@ interface MenuItemCardProps {
   onClick?: (item: MenuItem) => void;
   userAllergies?: Allergen[];
   isRecommended?: boolean;
+  fitScore?: FitScoreSummary;
+  isFitScoreLoading?: boolean;
 }
 
 const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({ 
@@ -23,7 +27,9 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
   onRemove,
   onClick,
   userAllergies = [],
-  isRecommended = false
+  isRecommended = false,
+  fitScore,
+  isFitScoreLoading = false,
 }) => {
   const hasUserAllergen = item.allergens && item.allergens.some(a => userAllergies.includes(a as Allergen));
   const quantity = cartItem?.quantity || 0;
@@ -77,6 +83,12 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
         {isRecommended && item.available && (
           <div className="absolute top-2 left-2 bg-green-600 text-white p-1 rounded-full shadow-sm">
             <Award className="w-3 h-3" />
+          </div>
+        )}
+
+        {(isFitScoreLoading || fitScore) && (
+          <div className="absolute top-2 right-2">
+            <FitScoreBadge summary={fitScore} loading={isFitScoreLoading} />
           </div>
         )}
       </div>

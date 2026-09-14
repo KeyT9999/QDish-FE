@@ -195,7 +195,8 @@ export const RestaurantDetail: React.FC = () => {
                   { label: 'Gợi ý món ăn AI (AI Recommendation)', enabled: restaurant.features?.recommendationEnabled || false },
                   { label: 'Cá nhân hóa thực đơn (Personalized Menu)', enabled: restaurant.features?.personalizedMenuEnabled || false },
                   { label: 'Báo cáo phân tích chuyên sâu', enabled: restaurant.features?.advancedAnalyticsEnabled || false },
-                  { label: 'Phân tích hành vi khách hàng', enabled: restaurant.features?.customerInsightsEnabled || false }
+                  { label: 'Phân tích hành vi khách hàng', enabled: restaurant.features?.customerInsightsEnabled || false },
+                  { label: 'CRM khách hàng & lịch sử gọi món', enabled: restaurant.features?.customerCrmEnabled || false }
                 ].map((item, idx) => (
                   <div 
                     key={idx} 

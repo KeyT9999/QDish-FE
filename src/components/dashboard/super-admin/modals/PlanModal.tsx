@@ -30,6 +30,7 @@ const getDefaultPlanForm = () => ({
   personalizedMenuEnabled: false,
   advancedAnalyticsEnabled: false,
   customerInsightsEnabled: false,
+  customerCrmEnabled: false,
   featuresText: '',
   unavailableFeaturesText: '',
   isPopular: false,
@@ -71,6 +72,7 @@ export const PlanModal: React.FC<PlanModalProps> = ({
         personalizedMenuEnabled: editingPlan.personalizedMenuEnabled || false,
         advancedAnalyticsEnabled: editingPlan.advancedAnalyticsEnabled || false,
         customerInsightsEnabled: editingPlan.customerInsightsEnabled || false,
+        customerCrmEnabled: editingPlan.customerCrmEnabled || false,
         featuresText: editingPlan.features ? editingPlan.features.join(', ') : '',
         unavailableFeaturesText: editingPlan.unavailableFeatures ? editingPlan.unavailableFeatures.join(', ') : '',
         isPopular: editingPlan.isPopular || false,
@@ -126,6 +128,7 @@ export const PlanModal: React.FC<PlanModalProps> = ({
       personalizedMenuEnabled: planForm.personalizedMenuEnabled,
       advancedAnalyticsEnabled: planForm.advancedAnalyticsEnabled,
       customerInsightsEnabled: planForm.customerInsightsEnabled,
+      customerCrmEnabled: planForm.customerCrmEnabled,
       features,
       unavailableFeatures,
       isPopular: planForm.isPopular,
@@ -279,6 +282,7 @@ export const PlanModal: React.FC<PlanModalProps> = ({
                 />
               </div>
             </div>
+
           </div>
 
           <div className="border-t border-slate-100 my-4 pt-3 space-y-3">
@@ -341,6 +345,17 @@ export const PlanModal: React.FC<PlanModalProps> = ({
                   id="planCustInsights" 
                 />
                 <Label htmlFor="planCustInsights" className="text-xs text-gray-600 font-semibold">Phân tích hành vi khách hàng</Label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={planForm.customerCrmEnabled}
+                  onCheckedChange={(value) => setPlanForm({ ...planForm, customerCrmEnabled: value })}
+                  id="planCustomerCrm"
+                />
+                <Label htmlFor="planCustomerCrm" className="text-xs font-semibold text-gray-600">CRM khách hàng</Label>
               </div>
             </div>
           </div>

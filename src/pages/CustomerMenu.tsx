@@ -10,10 +10,28 @@ import { menuService } from '@/services/menuService';
 import { orderService } from '@/services/orderService';
 import { restaurantService } from '@/services/restaurantService';
 import { categoryService } from '@/services/categoryService';
+import { apiFetch } from '@/services/api';
+import { loadBatchFitScores } from '@/services/fitScoreService';
+import { hasDiningProfileSelections } from '@/services/diningProfileStorage';
+import {
+  getRecommendationEmptyMessage,
+  getRecommendationHeading,
+  loadRecommendations,
+  type RecommendationResponse
+} from '@/services/recommendationService';
+import {
+  getMenuItemIdentity,
+  getMillisecondsUntilNextTimeBucket,
+  getTimeOfDayBucket,
+  selectRecommendationFitScore,
+  shouldLoadFitScores,
+  type FitScoreMap
+} from '@/services/fitScorePresentation';
 import { RestaurantHeader } from '@/components/menu/RestaurantHeader';
 import { CategoryFilter } from '@/components/menu/CategoryFilter';
 import { MenuItemCard } from '@/components/menu/MenuItemCard';
 import { MenuItemDetail } from '@/components/menu/MenuItemDetail';
+import { FitScoreBadge } from '@/components/menu/FitScoreBadge';
 import { CartDrawer } from '@/components/cart/CartDrawer';
 import { DiningProfileForm } from '@/components/dining/DiningProfileForm';
 import { DiningOnboarding } from '@/components/dining/DiningOnboarding';
@@ -46,25 +64,24 @@ export const CustomerMenu: React.FC = () => {
   const [isHealthOpen, setIsHealthOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [pairingSuggestions, setPairingSuggestions] = useState<any[]>([]);
+  const [recommendationResult, setRecommendationResult] = useState<RecommendationResponse | null>(null);
   const [isRecLoading, setIsRecLoading] = useState(false);
+  const [fitScores, setFitScores] = useState<FitScoreMap>({});
+  const [isFitScoreLoading, setIsFitScoreLoading] = useState(false);
+  const [timeOfDayBucket, setTimeOfDayBucket] = useState(() => getTimeOfDayBucket(new Date()));
 
   const sessionId = session?.id || session?._id || '';
   const cart = useCart(restaurantId, tableNumber, sessionId || undefined);
   const { addToCart } = cart;
-  const { profile, saveProfile } = useDiningProfile();
+  const {
+    profile,
+    onboardingHandled,
+    saveProfile,
+    clearProfile,
+    markOnboardingHandled
+  } = useDiningProfile();
   const { execute: submitOrder, isLoading: isSubmitting } = useApi(orderService.createOrder);
-
-  // Generate or retrieve persistent guest userId
-  const guestUserId = useMemo(() => {
-    let id = localStorage.getItem('qdish_guest_user_id');
-    if (!id) {
-      id = 'guest_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
-      localStorage.setItem('qdish_guest_user_id', id);
-    }
-    return id;
-  }, []);
+  const fitScoreEnabled = restaurant?.features?.fitScoreEnabled;
 
   // Automatically trigger premium onboarding for new guest diners
   useEffect(() => {
@@ -72,48 +89,109 @@ export const CustomerMenu: React.FC = () => {
     // Chỉ tự động hiển thị bảng khảo sát khi gói dịch vụ nhà hàng cho phép cá nhân hóa thực đơn
     if (!restaurant.features?.personalizedMenuEnabled) return;
 
-    const hasGoals = profile?.goals && profile.goals.length > 0;
-    const hasPrefs = profile?.preferences && profile.preferences.length > 0;
-    if (!hasGoals && !hasPrefs) {
+    if (!onboardingHandled && !hasDiningProfileSelections(profile)) {
       const timer = setTimeout(() => {
         setIsOnboardingOpen(true);
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, profile, restaurant]);
+  }, [isLoading, onboardingHandled, profile, restaurant]);
+
+  useEffect(() => {
+    let timeoutId: number | undefined;
+
+    const scheduleNextBoundary = () => {
+      const now = new Date();
+      timeoutId = window.setTimeout(() => {
+        setTimeOfDayBucket(getTimeOfDayBucket(new Date()));
+        scheduleNextBoundary();
+      }, getMillisecondsUntilNextTimeBucket(now) + 1);
+    };
+
+    scheduleNextBoundary();
+    return () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoadFitScores({ fitScoreEnabled, restaurantId, profile })) {
+      setFitScores({});
+      setIsFitScoreLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchFitScores = async () => {
+      setFitScores({});
+      setIsFitScoreLoading(true);
+
+      try {
+        const scores = await loadBatchFitScores({
+          restaurantId,
+          profile,
+          context: {
+            timeOfDay: timeOfDayBucket,
+            postWorkout: profile.goals.includes('MUSCLE_GAIN')
+          },
+          fetcher: apiFetch
+        });
+
+        if (isMounted) {
+          setFitScores(scores);
+        }
+      } catch {
+        console.error('Failed to load Fit Scores');
+        if (isMounted) {
+          setFitScores({});
+        }
+      } finally {
+        if (isMounted) {
+          setIsFitScoreLoading(false);
+        }
+      }
+    };
+
+    void fetchFitScores();
+    return () => {
+      isMounted = false;
+    };
+  }, [fitScoreEnabled, restaurant, restaurantId, profile, isLoading, timeOfDayBucket]);
 
   // Fetch smart dining recommendations
   useEffect(() => {
-    if (isLoading || !restaurantId || !restaurant) return;
-    if (!restaurant.features?.recommendationEnabled) return;
+    if (isLoading || !restaurantId || !restaurant || !restaurant.features?.recommendationEnabled) {
+      setRecommendationResult(null);
+      setIsRecLoading(false);
+      return;
+    }
 
     let isMounted = true;
     const fetchRecs = async () => {
+      setRecommendationResult(null);
       setIsRecLoading(true);
+
       try {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-        const res = await fetch(`${baseUrl}/api/recommendations`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            restaurantId,
-            userId: guestUserId,
-            context: {
-              timeOfDay: new Date().getHours() < 11 ? 'breakfast' : new Date().getHours() < 15 ? 'lunch' : new Date().getHours() < 21 ? 'dinner' : 'late_night',
-              postWorkout: profile?.goals?.includes('MUSCLE_GAIN')
-            }
-          })
+        const data = await loadRecommendations({
+          restaurantId,
+          profile,
+          context: {
+            timeOfDay: timeOfDayBucket,
+            postWorkout: profile.goals.includes('MUSCLE_GAIN')
+          },
+          fetcher: apiFetch
         });
-        
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        
+
         if (isMounted) {
-          setRecommendations(data.bestForYou || []);
-          setPairingSuggestions(data.pairingSuggestions || []);
+          setRecommendationResult(data);
         }
-      } catch (err) {
+      } catch {
         console.error('Failed to load recommendations');
+        if (isMounted) {
+          setRecommendationResult(null);
+        }
       } finally {
         if (isMounted) {
           setIsRecLoading(false);
@@ -121,11 +199,14 @@ export const CustomerMenu: React.FC = () => {
       }
     };
 
-    fetchRecs();
+    void fetchRecs();
     return () => {
       isMounted = false;
     };
-  }, [restaurantId, profile, isLoading, guestUserId]);
+  }, [restaurant, restaurantId, profile, isLoading, timeOfDayBucket]);
+
+  const recommendations = recommendationResult?.bestForYou ?? [];
+  const pairingSuggestions = recommendationResult?.pairingSuggestions ?? [];
   const userAllergies = profile?.allergies || EMPTY_ALLERGIES;
 
   // Fetch initial data
@@ -350,6 +431,9 @@ export const CustomerMenu: React.FC = () => {
         })),
         totalAmount: cart.cartTotal,
         customerName: details?.customerName?.trim() || undefined,
+        customerPhone: details?.customerPhone || undefined,
+        marketingConsent: details?.marketingConsent === true,
+        consentVersion: details?.consentVersion || undefined,
         note: details?.note?.trim() || undefined
       };
       
@@ -367,6 +451,8 @@ export const CustomerMenu: React.FC = () => {
       throw error;
     }
   }, [cart, restaurantId, submitOrder, tableNumber, session]);
+
+  const selectedItemId = getMenuItemIdentity(selectedItem ?? undefined);
 
   if (isLoading) {
     return (
@@ -439,22 +525,36 @@ export const CustomerMenu: React.FC = () => {
       </div>
 
       {/* ── Best For You (Smart Recommendations Section) ── */}
-      {restaurant?.features?.recommendationEnabled && recommendations.length > 0 && (
+      {restaurant?.features?.recommendationEnabled && recommendationResult && (
         <div className="mb-6 pt-2">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
             <h3 className="text-xs font-heading font-black text-neutral-900 uppercase tracking-wider flex items-center gap-1.5">
-              Dành riêng cho bạn
+              {getRecommendationHeading(recommendationResult.mode)}
             </h3>
             <span className="text-[9px] bg-green-50 text-green-700 font-extrabold px-2 py-0.5 rounded-full border border-green-200">
               QDish Match
             </span>
           </div>
 
-          <div className="overflow-x-auto flex gap-4 scrollbar-none pb-3 -mx-4 px-4">
+          {recommendationResult.emptyReason === 'NO_ALLERGEN_SAFE_DISHES' && (
+            <p role="status" className="mb-3 px-1 text-xs font-medium text-amber-800">
+              {getRecommendationEmptyMessage(recommendationResult.emptyReason)}
+            </p>
+          )}
+
+          {recommendations.length > 0 && (
+            <div className="overflow-x-auto flex gap-4 scrollbar-none pb-3 -mx-4 px-4">
             {recommendations.map((rec) => {
               const dishItem = rec.dish;
-              const itemId = dishItem._id || dishItem.id;
+              const itemId = getMenuItemIdentity(dishItem);
+              const fitScore = selectRecommendationFitScore({
+                fitScoreEnabled,
+                recommendationEnabled: restaurant?.features?.recommendationEnabled,
+                profile,
+                independentSummary: itemId ? fitScores[itemId] : undefined,
+                legacyScore: recommendationResult.mode === 'PERSONALIZED' ? rec.fitScore : undefined
+              });
               
               return (
                 <div 
@@ -481,10 +581,11 @@ export const CustomerMenu: React.FC = () => {
                     )}
                     
                     {/* Fit Score Badge overlay */}
-                    <div className="absolute top-2.5 right-2.5 bg-green-600 text-white font-extrabold text-xs px-2.5 py-1 rounded-full shadow-md border border-green-500 flex items-center gap-1">
-                      <span>{rec.fitScore}%</span>
-                      <span className="text-[9px] font-medium opacity-90">Fit</span>
-                    </div>
+                    {fitScore && (
+                      <div className="absolute top-2.5 right-2.5 shadow-md">
+                        <FitScoreBadge summary={fitScore} />
+                      </div>
+                    )}
 
                     <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
                       {rec.bestContextLabel}
@@ -521,7 +622,8 @@ export const CustomerMenu: React.FC = () => {
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -592,19 +694,24 @@ export const CustomerMenu: React.FC = () => {
       {/* Menu Grid */}
       <div className="py-4">
         <div className="grid grid-cols-1 gap-4">
-          {filteredItems.map(item => (
-            <MenuItemCard 
-              key={item.id || (item as any)._id} 
-              item={item} 
-              cartItem={cart.cart.find(c => c.menuItemId === (item.id || (item as any)._id))}
-              onAdd={handleAddToCart}
-              onUpdateQuantity={cart.updateQuantity}
-              onRemove={cart.removeFromCart}
-              onClick={handleItemClick}
-              userAllergies={userAllergies}
-              isRecommended={checkIsRecommended(item)}
-            />
-          ))}
+          {filteredItems.map(item => {
+            const itemId = getMenuItemIdentity(item);
+            return (
+              <MenuItemCard
+                key={itemId}
+                item={item}
+                cartItem={cart.cart.find(c => c.menuItemId === itemId)}
+                onAdd={handleAddToCart}
+                onUpdateQuantity={cart.updateQuantity}
+                onRemove={cart.removeFromCart}
+                onClick={handleItemClick}
+                userAllergies={userAllergies}
+                isRecommended={checkIsRecommended(item)}
+                fitScore={itemId ? fitScores[itemId] : undefined}
+                isFitScoreLoading={isFitScoreLoading}
+              />
+            );
+          })}
           
           {filteredItems.length === 0 && (
             <div className="py-12 text-center text-gray-400 text-sm">
@@ -653,6 +760,11 @@ export const CustomerMenu: React.FC = () => {
         onClose={() => setIsDetailOpen(false)} 
         onAdd={handleAddToCart}
         userAllergies={userAllergies}
+        fitScore={selectedItemId ? fitScores[selectedItemId] : undefined}
+        onEditProfile={() => {
+          setIsDetailOpen(false);
+          setIsHealthOpen(true);
+        }}
       />
       
       <CartDrawer 
@@ -674,6 +786,7 @@ export const CustomerMenu: React.FC = () => {
           <DiningProfileForm
             initialProfile={profile}
             onSave={saveProfile}
+            onClearProfile={clearProfile}
             onClose={() => setIsHealthOpen(false)}
           />
         </SheetContent>
@@ -692,9 +805,14 @@ export const CustomerMenu: React.FC = () => {
       {/* Onboarding Dialog Wizard */}
       <DiningOnboarding
         open={isOnboardingOpen}
-        onClose={() => setIsOnboardingOpen(false)}
-        onComplete={saveProfile}
-        userId={guestUserId}
+        onClose={() => {
+          markOnboardingHandled();
+          setIsOnboardingOpen(false);
+        }}
+        onComplete={(newProfile) => {
+          saveProfile(newProfile);
+          markOnboardingHandled();
+        }}
         restaurantId={restaurantId}
         tableSessionId={sessionId || undefined}
       />

@@ -124,6 +124,7 @@ export const DashboardLayout: React.FC = () => {
           { id: 'notifications', label: 'Thông báo', icon: Bell },
           { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
           { id: 'insights', label: 'Phân tích thực đơn', icon: Sparkles },
+          { id: 'customers', label: 'Khách hàng', icon: Users },
           { id: 'orders', label: 'Đơn hàng', icon: ClipboardList },
           { id: 'bills', label: 'Hóa đơn', icon: FileText },
           { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
