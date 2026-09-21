@@ -1,4 +1,5 @@
 import { apiFetch } from './api';
+import { resolveIngredientGrams } from './ingredientUnitPolicy';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -54,25 +55,14 @@ export interface NutritionPreviewResult {
   attributes: string[];
   allergens: string[];
   confidence: number;
+  completeness: number;
+  isComplete: boolean;
+  missingIngredientCount: number;
 }
 
 // Unit gram conversion table (mirrors backend logic)
-const UNIT_TO_GRAMS: Record<string, number> = {
-  g: 1,
-  ml: 1,
-  tbsp: 15,
-  tsp: 5,
-  cup: 240,
-  bowl: 300,
-  piece: 1, // fallback — will use ingredient.gramsPerUnit
-};
-
 export function resolveGrams(quantity: number, unit: IngredientUnit, ingredient: Ingredient): number {
-  if (unit === 'piece') {
-    return quantity * (ingredient.gramsPerUnit || 100);
-  }
-  const factor = UNIT_TO_GRAMS[unit] ?? 1;
-  return quantity * factor;
+  return resolveIngredientGrams(quantity, unit, ingredient.gramsPerUnit);
 }
 
 // ─── API calls ───────────────────────────────────────────────────────────────
@@ -87,7 +77,7 @@ export const ingredientService = {
     const params = new URLSearchParams({ q: query });
     if (restaurantId) params.set('restaurantId', restaurantId);
     return apiFetch<Ingredient[]>(`/api/ingredients/search?${params.toString()}`, {
-      requireAuth: false,
+      requireAuth: true,
     });
   },
 
