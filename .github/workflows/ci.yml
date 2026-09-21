@@ -1,4 +1,4 @@
-name: Frontend CI
+name: Frontend CI/CD
 
 on:
   pull_request:
@@ -51,3 +51,56 @@ jobs:
       - name: Audit production dependencies
         continue-on-error: true
         run: npm audit --omit=dev --audit-level=high
+
+  deploy-production:
+    name: Frontend Production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: Production
+      url: ${{ vars.FRONTEND_PRODUCTION_URL }}
+    env:
+      FRONTEND_PRODUCTION_URL: ${{ vars.FRONTEND_PRODUCTION_URL }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+    steps:
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          test -n "$VERCEL_ORG_ID" || { echo "Missing VERCEL_ORG_ID repository variable"; exit 1; }
+          test -n "$VERCEL_PROJECT_ID" || { echo "Missing VERCEL_PROJECT_ID repository variable"; exit 1; }
+          test -n "$FRONTEND_PRODUCTION_URL" || { echo "Missing FRONTEND_PRODUCTION_URL repository variable"; exit 1; }
+          test -n "$VERCEL_TOKEN" || { echo "Missing VERCEL_TOKEN repository secret"; exit 1; }
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Pull Vercel production settings
+        run: npx --yes vercel@59.16.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build Vercel artifacts
+        run: npx --yes vercel@59.16.0 build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy to Vercel production
+        id: deploy
+        shell: bash
+        run: |
+          deployment_url="$(npx --yes vercel@59.16.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke test frontend
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-all-errors --retry-delay 5 "$DEPLOYMENT_URL" > /dev/null
+          curl --fail --silent --show-error --retry 5 --retry-all-errors --retry-delay 5 "$FRONTEND_PRODUCTION_URL" > /dev/null
