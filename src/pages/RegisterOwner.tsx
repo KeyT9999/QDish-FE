@@ -61,9 +61,13 @@ export const RegisterOwner: React.FC = () => {
   // Load/initialize Google Sign-in
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    let isMounted = true;
+    let isInitialized = false;
     
     const initGoogle = () => {
-      if ((window as any).google) {
+      if (!isMounted || isInitialized) return;
+      if ((window as any).google?.accounts?.id) {
+        isInitialized = true;
         (window as any).google.accounts.id.initialize({
           client_id: clientId || 'MOCK_CLIENT_ID',
           callback: handleGoogleCredentialResponse,
@@ -71,6 +75,7 @@ export const RegisterOwner: React.FC = () => {
 
         const btnContainer = document.getElementById('google-signin-button');
         if (btnContainer && clientId) {
+          btnContainer.innerHTML = '';
           (window as any).google.accounts.id.renderButton(btnContainer, {
             theme: 'outline',
             size: 'large',
@@ -84,13 +89,16 @@ export const RegisterOwner: React.FC = () => {
 
     // Retry initialization if google script takes time to load
     const interval = setInterval(() => {
-      if ((window as any).google) {
+      if ((window as any).google?.accounts?.id) {
         initGoogle();
         clearInterval(interval);
       }
     }, 200);
 
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleMockGoogleSignup = () => {

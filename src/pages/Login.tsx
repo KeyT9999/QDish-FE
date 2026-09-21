@@ -31,9 +31,13 @@ export const Login: React.FC = () => {
   // Load/initialize Google Sign-in for Login
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    let isMounted = true;
+    let isInitialized = false;
     
     const initGoogle = () => {
-      if ((window as any).google) {
+      if (!isMounted || isInitialized) return;
+      if ((window as any).google?.accounts?.id) {
+        isInitialized = true;
         (window as any).google.accounts.id.initialize({
           client_id: clientId || 'MOCK_CLIENT_ID',
           callback: handleGoogleLoginResponse,
@@ -41,6 +45,7 @@ export const Login: React.FC = () => {
 
         const btnContainer = document.getElementById('google-login-button');
         if (btnContainer && clientId) {
+          btnContainer.innerHTML = '';
           (window as any).google.accounts.id.renderButton(btnContainer, {
             theme: 'outline',
             size: 'large',
@@ -53,13 +58,16 @@ export const Login: React.FC = () => {
     };
 
     const interval = setInterval(() => {
-      if ((window as any).google) {
+      if ((window as any).google?.accounts?.id) {
         initGoogle();
         clearInterval(interval);
       }
     }, 200);
 
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   async function handleGoogleLoginResponse(response: any) {

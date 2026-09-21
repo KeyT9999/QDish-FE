@@ -51,13 +51,33 @@ export interface CheckoutResponse {
   amount?: number;
   status?: string;
   isFree?: boolean;
+  isSandbox?: boolean;
+  gatewayNotice?: string;
   message?: string;
   subscription?: Subscription;
+}
+
+export interface CheckoutDetailsResponse {
+  orderCode: number;
+  amount: number;
+  status: string;
+  qrCode?: string;
+  checkoutUrl?: string;
+  isSandbox: boolean;
+  plan?: {
+    name: string;
+    code: string;
+    description?: string;
+    features?: string[];
+  };
+  billingCycle: BillingCycle;
+  createdAt: string;
 }
 
 export interface PaymentStatusResponse {
   status: 'PAID' | 'PENDING' | 'CANCELLED' | 'EXPIRED' | 'FAILED' | 'PROCESSING' | 'UNDERPAID';
   message: string;
+  isSandbox?: boolean;
 }
 
 export interface SubscriptionRevenueSummary {
@@ -100,6 +120,32 @@ export const subscriptionService = {
       method: 'POST',
       body: JSON.stringify({ planId, billingCycle })
     });
+  },
+
+  getCheckoutDetails: (orderCode: number) => {
+    return apiFetch<CheckoutDetailsResponse>(
+      `/api/owner/subscription/checkout-details?orderCode=${orderCode}`
+    );
+  },
+
+  confirmSandboxPayment: (orderCode: number) => {
+    return apiFetch<{ success: boolean; message: string; status: string; subscription?: any }>(
+      '/api/owner/subscription/sandbox-confirm',
+      {
+        method: 'POST',
+        body: JSON.stringify({ orderCode })
+      }
+    );
+  },
+
+  cancelCheckout: (orderCode: number) => {
+    return apiFetch<{ success: boolean; message: string; status: string }>(
+      '/api/owner/subscription/cancel-checkout',
+      {
+        method: 'POST',
+        body: JSON.stringify({ orderCode })
+      }
+    );
   },
 
   getPaymentStatus: (orderCode: number) => {

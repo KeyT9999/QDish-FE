@@ -18,6 +18,7 @@ export interface RecommendedDish {
   bestContextLabel: string;
   reason: string;
   allergenWarnings: string[];
+  isScoreReliable?: boolean;
 }
 
 export interface ScoredDish {
@@ -26,6 +27,7 @@ export interface ScoredDish {
   bestContext: string;
   bestContextLabel: string;
   allergenWarnings: string[];
+  isScoreReliable?: boolean;
 }
 
 export interface PairingSuggestion {
@@ -152,6 +154,7 @@ function normalizeRecommendedDish(value: unknown): RecommendedDish | undefined {
     bestContextLabel: value.bestContextLabel,
     reason: value.reason,
     allergenWarnings: [...value.allergenWarnings],
+    ...(typeof value.isScoreReliable === 'boolean' ? { isScoreReliable: value.isScoreReliable } : {}),
   };
 }
 
@@ -175,6 +178,7 @@ function normalizeScoredDish(value: unknown): ScoredDish | undefined {
     bestContext: value.bestContext,
     bestContextLabel: value.bestContextLabel,
     allergenWarnings: [...value.allergenWarnings],
+    ...(typeof value.isScoreReliable === 'boolean' ? { isScoreReliable: value.isScoreReliable } : {}),
   };
 }
 

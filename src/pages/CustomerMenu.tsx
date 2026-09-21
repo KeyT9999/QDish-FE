@@ -38,7 +38,7 @@ import { DiningOnboarding } from '@/components/dining/DiningOnboarding';
 import { OrderHistoryDrawer } from '@/components/menu/OrderHistoryDrawer';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, Loader2, Info, Sparkles, Clock, Search, Heart } from 'lucide-react';
+import { ShoppingBag, Loader2, Info, Sparkles, Clock, Search, Heart, X, Flame, Dumbbell, Wheat, Droplet, Shield, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 
 const EMPTY_ALLERGIES: Allergen[] = [];
@@ -489,62 +489,93 @@ export const CustomerMenu: React.FC = () => {
       <RestaurantHeader restaurant={restaurant} tableNumber={tableNumber} />
       
       {/* Search Bar */}
-      <div className="sticky top-[68px] z-20 bg-surface/95 backdrop-blur-md px-4 py-3 -mx-4 sm:mx-0 sm:px-0">
-        <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <div className="sticky top-[64px] z-20 bg-surface/90 backdrop-blur-xl px-4 py-2.5 -mx-4 sm:mx-0 sm:px-0 transition-all">
+        <div className="relative flex items-center bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.03)] focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-200">
+          <Search className="w-4 h-4 text-slate-400 ml-3.5 shrink-0" />
           <input
             type="text"
-            placeholder="Tìm món ăn..."
+            placeholder="Tìm món ăn, calories, nguyên liệu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-gray-100/80 border-transparent rounded-xl pl-10 pr-4 py-2.5 text-sm focus:border-green-500 focus:bg-white focus:ring-2 focus:ring-green-500/20 transition-all outline-none shadow-inner"
+            className="w-full bg-transparent pl-2.5 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none font-medium"
           />
+          {searchQuery && (
+            <button 
+              onClick={() => setSearchQuery('')}
+              className="mr-3 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              aria-label="Xóa tìm kiếm"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
       
-      {/* QDish Smart Buttons */}
-      <div className={restaurant?.features?.personalizedMenuEnabled ? "grid grid-cols-2 gap-2.5 mb-3 px-1" : "mb-3 px-1"}>
+      {/* QDish Smart Quick Action Cards */}
+      <div className={restaurant?.features?.personalizedMenuEnabled ? "grid grid-cols-2 gap-2.5 mb-3.5 mt-1" : "mb-3.5 mt-1"}>
         {restaurant?.features?.personalizedMenuEnabled && (
-          <Button 
+          <button 
             type="button" 
             onClick={() => setIsHealthOpen(true)}
-            className="bg-green-50 hover:bg-green-100 text-green-700 border border-green-200 rounded-xl font-semibold shadow-sm text-xs py-2 flex items-center justify-center w-full"
+            className="group relative overflow-hidden bg-gradient-to-br from-amber-500/[0.08] via-orange-500/[0.04] to-amber-500/[0.02] hover:from-amber-500/[0.12] border border-amber-200/70 rounded-2xl p-2.5 flex items-center gap-2.5 transition-all duration-200 active:scale-[0.98] shadow-xs text-left cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 mr-1 text-amber-500" />
-            Hồ sơ ẩm thực
-          </Button>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-amber-500/30">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-slate-800 flex items-center gap-1 leading-tight">
+                Hồ sơ ẩm thực
+              </div>
+              <p className="text-[10px] text-amber-700 font-medium truncate mt-0.5">
+                {hasDiningProfileSelections(profile) ? 'Đã cá nhân hóa' : 'Tùy chỉnh mục tiêu'}
+              </p>
+            </div>
+          </button>
         )}
-        <Button 
+        <button 
           type="button" 
           onClick={() => setIsHistoryOpen(true)}
-          className="bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl font-semibold shadow-sm text-xs py-2 flex items-center justify-center w-full"
+          className="group relative overflow-hidden bg-gradient-to-br from-blue-500/[0.08] via-indigo-500/[0.04] to-blue-500/[0.02] hover:from-blue-500/[0.12] border border-blue-200/70 rounded-2xl p-2.5 flex items-center gap-2.5 transition-all duration-200 active:scale-[0.98] shadow-xs text-left cursor-pointer"
         >
-          <Clock className="w-4 h-4 mr-1 text-blue-500" />
-          Món đã gọi
-        </Button>
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/30">
+            <Clock className="w-4 h-4 text-white" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-slate-800 leading-tight">
+              Món đã gọi
+            </div>
+            <p className="text-[10px] text-blue-700 font-medium truncate mt-0.5">
+              Theo dõi đơn bàn
+            </p>
+          </div>
+        </button>
       </div>
 
       {/* ── Best For You (Smart Recommendations Section) ── */}
-      {restaurant?.features?.recommendationEnabled && recommendationResult && (
-        <div className="mb-6 pt-2">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
-            <h3 className="text-xs font-heading font-black text-neutral-900 uppercase tracking-wider flex items-center gap-1.5">
-              {getRecommendationHeading(recommendationResult.mode)}
-            </h3>
-            <span className="text-[9px] bg-green-50 text-green-700 font-extrabold px-2 py-0.5 rounded-full border border-green-200">
+      {restaurant?.features?.recommendationEnabled && recommendationResult && (recommendations.length > 0 || recommendationResult.emptyReason === 'NO_ALLERGEN_SAFE_DISHES') && (
+        <div className="mb-6 pt-1">
+          <div className="flex items-center justify-between mb-3 px-0.5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+              </div>
+              <h3 className="text-xs font-heading font-extrabold text-slate-900 uppercase tracking-wider">
+                {getRecommendationHeading(recommendationResult.mode)}
+              </h3>
+            </div>
+            <span className="text-[9.5px] bg-emerald-50 text-emerald-800 font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-xs">
               QDish Match
             </span>
           </div>
 
           {recommendationResult.emptyReason === 'NO_ALLERGEN_SAFE_DISHES' && (
-            <p role="status" className="mb-3 px-1 text-xs font-medium text-amber-800">
+            <p role="status" className="mb-3 px-1 text-xs font-medium text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200/60">
               {getRecommendationEmptyMessage(recommendationResult.emptyReason)}
             </p>
           )}
 
           {recommendations.length > 0 && (
-            <div className="overflow-x-auto flex gap-4 scrollbar-none pb-3 -mx-4 px-4">
+            <div className="overflow-x-auto flex gap-3.5 scrollbar-none pb-2 -mx-4 px-4">
             {recommendations.map((rec) => {
               const dishItem = rec.dish;
               const itemId = getMenuItemIdentity(dishItem);
@@ -559,21 +590,21 @@ export const CustomerMenu: React.FC = () => {
               return (
                 <div 
                   key={itemId}
-                  className="shrink-0 w-[260px] bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden flex flex-col justify-between"
+                  className="shrink-0 w-[260px] bg-white rounded-3xl border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] overflow-hidden flex flex-col justify-between group hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] transition-all duration-300"
                 >
                   {/* Dish Image */}
-                  <div className="relative aspect-[16/10] bg-neutral-50 overflow-hidden">
+                  <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
                     {dishItem.imageUrl ? (
                       <img 
                         src={dishItem.imageUrl} 
                         alt={dishItem.name} 
-                        className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
                         onClick={() => handleItemClick(dishItem)}
                         loading="lazy"
                       />
                     ) : (
                       <div 
-                        className="w-full h-full flex items-center justify-center text-neutral-300 font-medium text-xs cursor-pointer"
+                        className="w-full h-full flex items-center justify-center text-slate-400 font-medium text-xs cursor-pointer"
                         onClick={() => handleItemClick(dishItem)}
                       >
                         Chưa có ảnh
@@ -582,38 +613,38 @@ export const CustomerMenu: React.FC = () => {
                     
                     {/* Fit Score Badge overlay */}
                     {fitScore && (
-                      <div className="absolute top-2.5 right-2.5 shadow-md">
+                      <div className="absolute top-2.5 right-2.5 drop-shadow-md">
                         <FitScoreBadge summary={fitScore} />
                       </div>
                     )}
 
-                    <div className="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                    <div className="absolute bottom-2 left-2 bg-slate-900/70 backdrop-blur-md text-white text-[9.5px] font-extrabold px-2.5 py-0.5 rounded-lg uppercase tracking-wider shadow-xs">
                       {rec.bestContextLabel}
                     </div>
                   </div>
 
                   {/* Body details */}
-                  <div className="p-3.5 flex-1 flex flex-col justify-between gap-3">
-                    <div className="space-y-1">
+                  <div className="p-3.5 flex-1 flex flex-col justify-between gap-2.5">
+                    <div className="space-y-1.5">
                       <h4 
-                        className="font-bold text-xs text-neutral-800 line-clamp-1 hover:text-green-600 cursor-pointer transition-colors"
+                        className="font-heading font-extrabold text-[13.5px] text-slate-900 line-clamp-1 group-hover:text-emerald-700 cursor-pointer transition-colors leading-snug"
                         onClick={() => handleItemClick(dishItem)}
                       >
                         {dishItem.name}
                       </h4>
-                      <p className="text-[10px] text-green-700 font-bold bg-green-50 px-2 py-1 rounded-xl leading-snug border border-green-100/30">
+                      <p className="text-[10.5px] text-emerald-800 font-medium bg-emerald-500/10 px-2.5 py-1 rounded-xl leading-snug border border-emerald-500/20 line-clamp-2">
                         {rec.reason}
                       </p>
                     </div>
 
                     {/* Price and Add button */}
-                    <div className="flex items-center justify-between pt-2 border-t border-neutral-50 shrink-0">
-                      <span className="text-xs font-black text-neutral-900">
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 shrink-0">
+                      <span className="font-heading font-black text-[14.5px] text-slate-900 tracking-tight">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(dishItem.price)}
                       </span>
                       <Button
                         onClick={() => handleAddToCart(dishItem)}
-                        className="bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold h-7 rounded-xl px-3"
+                        className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold h-7.5 rounded-xl px-3 shadow-sm shadow-emerald-600/30 cursor-pointer transition-all"
                       >
                         Thêm món
                       </Button>
@@ -635,16 +666,16 @@ export const CustomerMenu: React.FC = () => {
             <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-wider">Mẹo kết hợp trọn vị</h4>
           </div>
           {pairingSuggestions.slice(0, 1).map((p, idx) => (
-            <div key={idx} className="text-xs leading-relaxed text-neutral-700 space-y-2">
-              <p className="font-semibold text-neutral-800">
-                Ăn kèm {p.mainDishName} + <strong className="text-green-700">{p.pairedDish.name}</strong>:
+            <div key={idx} className="text-xs leading-relaxed text-slate-700 space-y-2">
+              <p className="font-semibold text-slate-800">
+                Ăn kèm {p.mainDishName} + <strong className="text-emerald-700 font-bold">{p.pairedDish.name}</strong>:
               </p>
-              <p className="text-[11px] text-neutral-500 leading-normal">{p.reason}</p>
+              <p className="text-[11px] text-slate-500 leading-normal">{p.reason}</p>
               <div className="flex justify-end pt-1">
                 <Button
                   onClick={() => handleAddToCart(p.pairedDish)}
                   variant="outline"
-                  className="border-green-200 text-green-700 text-[9px] font-bold h-6 rounded-lg px-2 hover:bg-green-50"
+                  className="border-emerald-200 text-emerald-800 text-[10px] font-bold h-6.5 rounded-xl px-2.5 hover:bg-emerald-50 cursor-pointer"
                 >
                   Thêm {p.pairedDish.name} (+{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.pairedDish.price)})
                 </Button>
@@ -662,38 +693,40 @@ export const CustomerMenu: React.FC = () => {
       />
 
       {/* Smart Nutrition Filter Bar */}
-      <div className="mt-1 overflow-x-auto flex gap-1.5 pb-2 -mx-4 px-4 scrollbar-none sticky top-[182px] z-10 bg-surface/95 backdrop-blur-sm">
+      <div className="mt-2 overflow-x-auto flex gap-1.5 pb-2 -mx-4 px-4 scrollbar-none sticky top-[168px] z-10 bg-surface/95 backdrop-blur-xl">
         {[
-          { id: 'ALL', label: 'Tất cả chỉ số' },
-          { id: 'UNDER_400_KCAL', label: 'Dưới 400 kcal' },
-          { id: 'HIGH_PROTEIN', label: 'Giàu Đạm' },
-          { id: 'LOW_CARB', label: 'Ít Tinh bột' },
-          { id: 'LOW_FAT', label: 'Ít Chất béo' },
-          { id: 'LOW_SUGAR', label: 'Ít Đường' },
-          { id: 'LOW_SODIUM', label: 'Ít Muối' },
-          { id: 'HIGH_FIBER', label: 'Nhiều Chất xơ' },
-          { id: 'AVOID_ALLERGENS', label: 'Tránh dị ứng' }
+          { id: 'ALL', label: 'Tất cả chỉ số', icon: Sparkles },
+          { id: 'UNDER_400_KCAL', label: '≤ 400 kcal', icon: Flame },
+          { id: 'HIGH_PROTEIN', label: 'Giàu Đạm', icon: Dumbbell },
+          { id: 'LOW_CARB', label: 'Ít Tinh bột', icon: Wheat },
+          { id: 'LOW_FAT', label: 'Ít Chất béo', icon: Droplet },
+          { id: 'LOW_SUGAR', label: 'Ít Đường', icon: Sparkles },
+          { id: 'LOW_SODIUM', label: 'Ít Muối', icon: Shield },
+          { id: 'HIGH_FIBER', label: 'Nhiều Chất xơ', icon: Sparkles },
+          { id: 'AVOID_ALLERGENS', label: 'Tránh dị ứng', icon: ShieldAlert }
         ].map((f) => {
           const active = selectedNutritionFilter === f.id;
+          const IconComp = f.icon;
           return (
             <button
               key={f.id}
               onClick={() => setSelectedNutritionFilter(f.id)}
-              className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-bold border transition-colors duration-200 ${
+              className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[11.5px] transition-all duration-150 flex items-center gap-1.5 border cursor-pointer select-none ${
                 active 
-                  ? 'bg-green-600 border-green-600 text-white shadow-sm'
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  ? 'bg-emerald-600 border-emerald-600 text-white font-bold shadow-xs'
+                  : 'bg-white/90 border-slate-200/80 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-300 font-medium shadow-2xs'
               }`}
             >
-              {f.label}
+              <IconComp className={`w-3 h-3 ${active ? 'text-white' : 'text-slate-400'}`} />
+              <span>{f.label}</span>
             </button>
           );
         })}
       </div>
 
       {/* Menu Grid */}
-      <div className="py-4">
-        <div className="grid grid-cols-1 gap-4">
+      <div className="py-3">
+        <div className="grid grid-cols-1 gap-3">
           {filteredItems.map(item => {
             const itemId = getMenuItemIdentity(item);
             return (
@@ -714,8 +747,10 @@ export const CustomerMenu: React.FC = () => {
           })}
           
           {filteredItems.length === 0 && (
-            <div className="py-12 text-center text-gray-400 text-sm">
-              Không có món ăn nào trong danh mục này.
+            <div className="py-16 text-center text-slate-400 text-sm bg-white/60 rounded-3xl border border-dashed border-slate-200 my-4">
+              <Search className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+              <p className="font-semibold text-slate-600">Không tìm thấy món ăn phù hợp</p>
+              <p className="text-xs text-slate-400 mt-1">Thử đổi danh mục hoặc điều chỉnh bộ lọc dinh dưỡng.</p>
             </div>
           )}
         </div>
@@ -728,26 +763,35 @@ export const CustomerMenu: React.FC = () => {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-6 left-0 right-0 z-40 px-4 md:max-w-md md:mx-auto"
+            className="fixed bottom-5 left-0 right-0 z-40 px-4 md:max-w-md md:mx-auto"
           >
             <button 
-              className="w-full bg-gray-900/95 backdrop-blur-md hover:bg-black text-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] h-14 rounded-full font-bold flex justify-between items-center px-2 pr-6 transition-transform active:scale-[0.98] outline-none"
+              className="w-full bg-slate-950/95 backdrop-blur-2xl hover:bg-slate-950 text-white border border-white/15 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.45)] h-14 rounded-2xl font-bold flex justify-between items-center px-3 pr-4 transition-all duration-200 active:scale-[0.98] outline-none cursor-pointer group select-none"
               onClick={() => setIsCartOpen(true)}
             >
-              <div className="flex items-center">
+              <div className="flex items-center gap-3">
                 <motion.div 
                   key={cart.cartCount}
-                  initial={{ scale: 0.5 }}
+                  initial={{ scale: 0.6 }}
                   animate={{ scale: 1 }}
-                  className="bg-green-500 text-white w-10 h-10 rounded-full flex items-center justify-center text-sm mr-3 shadow-inner"
+                  transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                  className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white w-9 h-9 rounded-xl flex items-center justify-center text-sm font-heading font-black shadow-md shadow-emerald-500/30"
                 >
                   {cart.cartCount}
                 </motion.div>
-                <span className="text-[15px]">Xem giỏ hàng</span>
+                <div className="text-left">
+                  <span className="text-[13.5px] font-bold block leading-tight text-white/95">Xem giỏ hàng</span>
+                  <span className="text-[10px] text-slate-400 font-medium">{cart.cartCount} món • Bấm để gọi món</span>
+                </div>
               </div>
-              <span className="text-[15px]">
-                {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cart.cartTotal)}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] font-heading font-black text-emerald-400 tracking-tight">
+                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cart.cartTotal)}
+                </span>
+                <span className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/80 group-hover:text-white group-hover:bg-white/20 transition-all text-xs font-bold">
+                  →
+                </span>
+              </div>
             </button>
           </motion.div>
         )}

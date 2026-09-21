@@ -7,6 +7,7 @@ export interface FitScoreSummary {
   reasons: string[];
   blocked: boolean;
   blockReason?: 'allergen';
+  isScoreReliable?: boolean;
 }
 
 export type FitScoreMap = Record<string, FitScoreSummary>;
@@ -70,7 +71,8 @@ const FIT_SCORE_CONTEXT_LABELS: Record<string, string> = {
   family_sharing_fit: 'Chia s\u1ebb gia \u0111\u00ecnh',
   date_night_fit: 'H\u1eb9n h\u00f2',
   general: 'Ph\u00f9 h\u1ee3p chung',
-  legacy_recommendation: 'G\u1ee3i \u00fd c\u00e1 nh\u00e2n'
+  legacy_recommendation: 'G\u1ee3i \u00fd c\u00e1 nh\u00e2n',
+  nutrition_incomplete: 'Nutrition data incomplete'
 };
 
 export function getFitScoreContextLabel(contextType: string): string {

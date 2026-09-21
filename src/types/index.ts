@@ -226,6 +226,9 @@ export interface MenuItem {
   sugar?: number;
   sodium?: number;
   confidenceScore?: number;
+  nutritionCompleteness?: number;
+  nutritionComplete?: boolean;
+  missingIngredientCount?: number;
   allergens?: Allergen[] | string[];
   foodAttributes?: string[];     // context-based attribute keys e.g. ['HIGH_PROTEIN', 'POST_WORKOUT']
 

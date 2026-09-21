@@ -42,6 +42,12 @@ const ALLERGEN_OPTIONS = [
   { value: 'shellfish', label: 'Hải sản (Shellfish)', emoji: '🦐' },
 ];
 
+function optionalNumber(value: string): number | undefined {
+  if (value === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 export const IngredientModal: React.FC<IngredientModalProps> = ({
   open,
   onOpenChange,
@@ -55,13 +61,13 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
   const [category, setCategory] = useState('protein');
   const [defaultUnit, setDefaultUnit] = useState<IngredientUnit>('g');
   const [gramsPerUnit, setGramsPerUnit] = useState(1);
-  const [caloriesPer100g, setCaloriesPer100g] = useState(0);
-  const [proteinPer100g, setProteinPer100g] = useState(0);
-  const [carbPer100g, setCarbPer100g] = useState(0);
-  const [fatPer100g, setFatPer100g] = useState(0);
-  const [fiberPer100g, setFiberPer100g] = useState(0);
-  const [sugarPer100g, setSugarPer100g] = useState(0);
-  const [sodiumPer100g, setSodiumPer100g] = useState(0);
+  const [caloriesPer100g, setCaloriesPer100g] = useState<number | undefined>();
+  const [proteinPer100g, setProteinPer100g] = useState<number | undefined>();
+  const [carbPer100g, setCarbPer100g] = useState<number | undefined>();
+  const [fatPer100g, setFatPer100g] = useState<number | undefined>();
+  const [fiberPer100g, setFiberPer100g] = useState<number | undefined>();
+  const [sugarPer100g, setSugarPer100g] = useState<number | undefined>();
+  const [sodiumPer100g, setSodiumPer100g] = useState<number | undefined>();
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,26 +79,26 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
       setCategory(editingIngredient.category);
       setDefaultUnit(editingIngredient.defaultUnit);
       setGramsPerUnit(editingIngredient.gramsPerUnit || 1);
-      setCaloriesPer100g(editingIngredient.caloriesPer100g || 0);
-      setProteinPer100g(editingIngredient.proteinPer100g || 0);
-      setCarbPer100g(editingIngredient.carbPer100g || 0);
-      setFatPer100g(editingIngredient.fatPer100g || 0);
-      setFiberPer100g(editingIngredient.fiberPer100g || 0);
-      setSugarPer100g(editingIngredient.sugarPer100g || 0);
-      setSodiumPer100g(editingIngredient.sodiumPer100g || 0);
+      setCaloriesPer100g(editingIngredient.caloriesPer100g);
+      setProteinPer100g(editingIngredient.proteinPer100g);
+      setCarbPer100g(editingIngredient.carbPer100g);
+      setFatPer100g(editingIngredient.fatPer100g);
+      setFiberPer100g(editingIngredient.fiberPer100g);
+      setSugarPer100g(editingIngredient.sugarPer100g);
+      setSodiumPer100g(editingIngredient.sodiumPer100g);
       setSelectedAllergens(editingIngredient.allergens || []);
     } else {
       setName('');
       setCategory('protein');
       setDefaultUnit('g');
       setGramsPerUnit(1);
-      setCaloriesPer100g(0);
-      setProteinPer100g(0);
-      setCarbPer100g(0);
-      setFatPer100g(0);
-      setFiberPer100g(0);
-      setSugarPer100g(0);
-      setSodiumPer100g(0);
+      setCaloriesPer100g(undefined);
+      setProteinPer100g(undefined);
+      setCarbPer100g(undefined);
+      setFatPer100g(undefined);
+      setFiberPer100g(undefined);
+      setSugarPer100g(undefined);
+      setSodiumPer100g(undefined);
       setSelectedAllergens([]);
     }
   }, [open, editingIngredient]);
@@ -289,8 +295,8 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                     disabled={isReadOnly}
                     type="number"
                     min={0}
-                    value={caloriesPer100g}
-                    onChange={(e) => setCaloriesPer100g(Number(e.target.value) || 0)}
+                    value={caloriesPer100g ?? ''}
+                    onChange={(e) => setCaloriesPer100g(optionalNumber(e.target.value))}
                     className="border-none bg-transparent text-lg font-bold p-0 focus-visible:ring-0 text-neutral-800 text-center h-8"
                   />
                 </div>
@@ -306,8 +312,8 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                     type="number"
                     min={0}
                     step={0.1}
-                    value={proteinPer100g}
-                    onChange={(e) => setProteinPer100g(Number(e.target.value) || 0)}
+                    value={proteinPer100g ?? ''}
+                    onChange={(e) => setProteinPer100g(optionalNumber(e.target.value))}
                     className="border-none bg-transparent text-lg font-bold p-0 focus-visible:ring-0 text-neutral-800 text-center h-8"
                   />
                 </div>
@@ -323,8 +329,8 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                     type="number"
                     min={0}
                     step={0.1}
-                    value={carbPer100g}
-                    onChange={(e) => setCarbPer100g(Number(e.target.value) || 0)}
+                    value={carbPer100g ?? ''}
+                    onChange={(e) => setCarbPer100g(optionalNumber(e.target.value))}
                     className="border-none bg-transparent text-lg font-bold p-0 focus-visible:ring-0 text-neutral-800 text-center h-8"
                   />
                 </div>
@@ -340,8 +346,8 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                     type="number"
                     min={0}
                     step={0.1}
-                    value={fatPer100g}
-                    onChange={(e) => setFatPer100g(Number(e.target.value) || 0)}
+                    value={fatPer100g ?? ''}
+                    onChange={(e) => setFatPer100g(optionalNumber(e.target.value))}
                     className="border-none bg-transparent text-lg font-bold p-0 focus-visible:ring-0 text-neutral-800 text-center h-8"
                   />
                 </div>
@@ -357,8 +363,8 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                     type="number"
                     min={0}
                     step={0.1}
-                    value={fiberPer100g}
-                    onChange={(e) => setFiberPer100g(Number(e.target.value) || 0)}
+                    value={fiberPer100g ?? ''}
+                    onChange={(e) => setFiberPer100g(optionalNumber(e.target.value))}
                     className="border-none bg-transparent text-lg font-bold p-0 focus-visible:ring-0 text-neutral-800 text-center h-8"
                   />
                 </div>
@@ -374,8 +380,8 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                     type="number"
                     min={0}
                     step={0.1}
-                    value={sugarPer100g}
-                    onChange={(e) => setSugarPer100g(Number(e.target.value) || 0)}
+                    value={sugarPer100g ?? ''}
+                    onChange={(e) => setSugarPer100g(optionalNumber(e.target.value))}
                     className="border-none bg-transparent text-lg font-bold p-0 focus-visible:ring-0 text-neutral-800 text-center h-8"
                   />
                 </div>
@@ -390,8 +396,8 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                     disabled={isReadOnly}
                     type="number"
                     min={0}
-                    value={sodiumPer100g}
-                    onChange={(e) => setSodiumPer100g(Number(e.target.value) || 0)}
+                    value={sodiumPer100g ?? ''}
+                    onChange={(e) => setSodiumPer100g(optionalNumber(e.target.value))}
                     className="border-none bg-transparent text-lg font-bold p-0 focus-visible:ring-0 text-neutral-800 text-center h-8"
                   />
                 </div>

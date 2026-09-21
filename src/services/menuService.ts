@@ -11,6 +11,9 @@ type BackendMenuItem = MenuItem & {
   sugar?: number;
   sodium?: number;
   confidenceScore?: number;
+  nutritionCompleteness?: number;
+  nutritionComplete?: boolean;
+  missingIngredientCount?: number;
   ingredients?: any[];
   servingCount?: number;
   servingSizeGrams?: number;
@@ -38,9 +41,15 @@ const normalizeMenuItem = (item: BackendMenuItem): MenuItem => ({
   cookingMethod: item.cookingMethod ?? 'raw',
   foodAttributes: item.foodAttributes || [],
   allergens: item.allergens || [],
+  nutritionCompleteness: item.nutritionCompleteness ?? 0,
+  nutritionComplete: item.nutritionComplete ?? false,
+  missingIngredientCount: item.missingIngredientCount ?? 0,
 });
 
-const toBackendMenuPayload = (data: Partial<MenuItem>): Record<string, unknown> => {
+const toBackendMenuPayload = (
+  data: Partial<MenuItem>,
+  mode: 'create' | 'update' = 'update'
+): Record<string, unknown> => {
   const payload: Record<string, unknown> = {
     ...data,
     // Flatten nutrition for backend (it stores flat fields + NutritionService populates cache)
@@ -52,11 +61,17 @@ const toBackendMenuPayload = (data: Partial<MenuItem>): Record<string, unknown> 
     sugar: data.sugar ?? data.nutrition?.sugar,
     sodium: data.sodium ?? data.nutrition?.sodium,
     confidenceScore: data.confidenceScore ?? data.nutrition?.confidenceScore,
-    // QDish Step 1 recipe fields
-    ingredients: data.ingredients ?? [],
-    servingCount: data.servingCount ?? 1,
-    cookingMethod: data.cookingMethod ?? 'raw',
   };
+
+  if (mode === 'create') {
+    payload.ingredients = data.ingredients ?? [];
+    payload.servingCount = data.servingCount ?? 1;
+    payload.cookingMethod = data.cookingMethod ?? 'raw';
+  } else {
+    if (data.ingredients !== undefined) payload.ingredients = data.ingredients;
+    if (data.servingCount !== undefined) payload.servingCount = data.servingCount;
+    if (data.cookingMethod !== undefined) payload.cookingMethod = data.cookingMethod;
+  }
 
   delete payload.id;
   delete payload._id;
@@ -83,7 +98,7 @@ export const menuService = {
   create: async (data: Partial<MenuItem>) => {
     const created = await apiFetch<BackendMenuItem>('/api/menu', {
       method: 'POST',
-      body: JSON.stringify(toBackendMenuPayload(data))
+      body: JSON.stringify(toBackendMenuPayload(data, 'create'))
     });
     return normalizeMenuItem(created);
   },

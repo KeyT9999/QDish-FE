@@ -20,6 +20,18 @@ export function FitScorePanel({
     );
   }
 
+  if (summary.isScoreReliable === false) {
+    return (
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <h3 className="font-bold text-amber-800">Nutrition data incomplete</h3>
+        <p className="mt-1 text-xs text-amber-700">Fit Score is unavailable until nutrition data is complete.</p>
+        <button type="button" onClick={onEditProfile} className="mt-3 text-xs font-bold text-amber-800">
+          Cập nhật sở thích
+        </button>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
       <div className="flex items-baseline gap-2">

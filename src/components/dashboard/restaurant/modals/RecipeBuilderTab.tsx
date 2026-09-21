@@ -540,7 +540,12 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-gray-400">
-                Confidence {Math.round(preview.confidence * 100)}%
+                Consistency {Math.round(preview.confidence * 100)}%
+                {!preview.isComplete && (
+                  <span className="text-amber-600">
+                    · Incomplete ({preview.missingIngredientCount} missing)
+                  </span>
+                )}
               </span>
               {showPreview
                 ? <ChevronUp className="w-3.5 h-3.5 text-green-600" />

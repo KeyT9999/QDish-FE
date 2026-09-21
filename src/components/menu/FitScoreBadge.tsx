@@ -18,6 +18,10 @@ export function FitScoreBadge({
     return <span className="rounded-full bg-red-600 px-2 py-1 text-[10px] font-bold text-white">Có dị ứng</span>;
   }
 
+  if (summary.isScoreReliable === false) {
+    return <span className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-bold text-neutral-600">Nutrition data incomplete</span>;
+  }
+
   const tone = getFitScoreTone(summary);
 
   return (
