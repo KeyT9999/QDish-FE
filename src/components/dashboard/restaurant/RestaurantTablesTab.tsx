@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { RestaurantTable, TableStatus } from '@/services/tableService';
 import { billService } from '@/services/billService';
 import { Bill, BillStatus } from '@/types';
@@ -51,6 +51,13 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [selectedPaymentBill, setSelectedPaymentBill] = useState<Bill | null>(null);
   const [loadingBillTable, setLoadingBillTable] = useState<string | null>(null);
+  const selectedBillRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedBill) {
+      selectedBillRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedBill]);
 
   const tableSummary = tables.reduce(
     (summary, table) => {
@@ -90,10 +97,6 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
   };
 
   const getCurrentBill = async (table: RestaurantTable) => {
-    if (!table.activeSessionId) {
-      toast.error('Bàn này chưa có phiên hoạt động');
-      return null;
-    }
     const result = await billService.getCurrentBill(restaurantId, table.code, table.activeSessionId);
     if (!result.bill) {
       toast.info('Bàn này chưa có bill active');
@@ -377,7 +380,12 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
       )}
 
       {selectedBill && (
-        <Card className="shadow-sm border-emerald-200/60 rounded-2xl bg-emerald-50/60 overflow-hidden">
+        <Card
+          ref={selectedBillRef}
+          role="region"
+          aria-label="Bill hiện tại"
+          className="scroll-mt-24 overflow-hidden rounded-2xl border-emerald-200/60 bg-emerald-50/60 shadow-sm"
+        >
           <CardHeader className="border-b border-emerald-100/70 pb-4">
             <CardTitle className="text-sm font-bold text-emerald-900">Bill hiện tại: {selectedBill.billCode}</CardTitle>
           </CardHeader>

@@ -40,10 +40,28 @@ const tables = [
     restaurantId,
     code: String(index + 8).padStart(2, '0'),
     status: index === 2 ? 'PAYMENT_PENDING' : 'OCCUPIED',
-    activeSessionId: `session-${index + 8}`,
+    activeSessionId: index === 2 ? undefined : `session-${index + 8}`,
     currentSessionCode: `T${String(index + 8).padStart(2, '0')}-20260914-014619`,
   })),
 ];
+
+const currentBill = {
+  _id: 'bill-10',
+  restaurantId,
+  tableSessionId: 'session-10',
+  tableNumber: '10',
+  sessionCode: 'T10-20260914-014619',
+  billCode: 'BILL-T10',
+  status: 'UNPAID',
+  orderIds: ['order-10'],
+  itemsSnapshot: [{ name: 'Phở bò', quantity: 2, unitPrice: 50000, totalPrice: 100000 }],
+  subtotal: 100000,
+  discountAmount: 0,
+  serviceFee: 0,
+  taxAmount: 0,
+  totalAmount: 100000,
+  totalItems: 2,
+};
 
 const mockApi = async (page: Page) => {
   await page.route('**/api/**', async (route) => {
@@ -56,6 +74,12 @@ const mockApi = async (page: Page) => {
       body = { id: restaurantId, _id: restaurantId, name: 'Bếp Xanh', ownerName: 'Chủ nhà hàng' };
     } else if (url.pathname === '/api/tables') {
       body = tables;
+    } else if (url.pathname === '/api/bills/current') {
+      body = {
+        session: { _id: 'session-10', restaurantId, tableNumber: '10', status: 'OPEN' },
+        bill: currentBill,
+        orders: [],
+      };
     }
 
     await route.fulfill({
@@ -120,6 +144,9 @@ test('keeps the desktop table inside its scroll container', async ({ page }) => 
   await expect(page.getByRole('menuitem', { name: 'Thanh toán bill' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Xem bill' }).click();
   await expect(page.getByRole('menuitem', { name: 'Xem bill' })).toBeHidden();
+  const currentBillCard = page.getByText('Bill hiện tại: BILL-T10', { exact: true });
+  await expect(currentBillCard).toBeVisible();
+  await expect(currentBillCard).toBeInViewport();
 
   const tableContainer = page.locator('[data-slot="table-container"]');
   const dimensions = await tableContainer.evaluate((element) => ({
