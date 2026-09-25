@@ -4,7 +4,8 @@ import {
   loadMerchantInsights,
   MerchantInsightsPayload
 } from '@/services/merchantInsightLoader';
-import { Restaurant } from '@/types';
+import { Restaurant, RestaurantStats } from '@/types';
+import { MerchantInsightsCharts } from './MerchantInsightsCharts';
 import {
   Sparkles,
   ChefHat,
@@ -39,11 +40,25 @@ const attributeLabels: Record<string, { label: string; description: string; colo
   OFFICE_LUNCH: { label: 'Trưa văn phòng', description: 'Bữa trưa đầy đủ dinh dưỡng, nhanh gọn cho dân công sở', color: 'bg-slate-50 text-slate-700 border-slate-200/40', countColor: 'bg-slate-200 text-slate-800' },
 };
 
-export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = ({ restaurant }) => {
+interface MerchantInsightsTabProps {
+  restaurant: Restaurant | null;
+  stats: RestaurantStats | null;
+  statsPeriod: string;
+  isLoadingStats: boolean;
+  onSetStatsPeriod: (period: string) => void;
+}
+
+export const MerchantInsightsTab: React.FC<MerchantInsightsTabProps> = ({
+  restaurant,
+  stats,
+  statsPeriod,
+  isLoadingStats,
+  onSetStatsPeriod
+}) => {
   const [insights, setInsights] = useState<MerchantInsightsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshingAI, setRefreshingAI] = useState(false);
-  const [period, setPeriod] = useState<string>('all');
+  const [isChartsOpen, setIsChartsOpen] = useState(false);
 
   const features = restaurant?.features || {
     fitScoreEnabled: false,
@@ -64,7 +79,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     try {
       const data = await loadMerchantInsights({
         restaurantId: restId,
-        period,
+        period: statsPeriod,
         customerInsightsEnabled: features.customerInsightsEnabled === true,
         fetcher: apiFetch
       });
@@ -85,7 +100,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
       await new Promise(resolve => setTimeout(resolve, 1200));
       const data = await loadMerchantInsights({
         restaurantId: restId,
-        period,
+        period: statsPeriod,
         customerInsightsEnabled: features.customerInsightsEnabled === true,
         fetcher: apiFetch
       });
@@ -105,7 +120,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     } else {
       setLoading(false);
     }
-  }, [isFree, period]);
+  }, [isFree, statsPeriod]);
 
   if (loading) {
     return (
@@ -216,7 +231,6 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 border-t border-emerald-100/50">
           <div className="flex bg-slate-100/80 p-1 rounded-xl gap-1 border border-slate-200/40 w-fit shrink-0">
             {[
-              { id: 'all', label: 'Tất cả' },
               { id: 'today', label: 'Hôm nay' },
               { id: 'week', label: 'Tuần này' },
               { id: 'month', label: 'Tháng này' },
@@ -224,9 +238,9 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
             ].map((item) => (
               <button
                 key={item.id}
-                onClick={() => setPeriod(item.id)}
+                onClick={() => onSetStatsPeriod(item.id)}
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all active:scale-95 cursor-pointer
-                  ${period === item.id
+                  ${statsPeriod === item.id
                     ? 'bg-white text-slate-800 shadow-[0_1.5px_4px_rgba(0,0,0,0.06)] border border-slate-200/30'
                     : 'text-slate-500 hover:text-slate-800'
                   }`}
@@ -236,10 +250,26 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
             ))}
           </div>
           
-          <Button onClick={fetchInsights} variant="outline" className="rounded-xl border-slate-200 hover:bg-slate-50 text-slate-700 text-xs px-3.5 h-9 shrink-0 flex items-center gap-1.5 font-bold transition-all active:scale-95 shadow-sm">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin-hover" />
-            Làm mới báo cáo
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              onClick={() => setIsChartsOpen((current) => !current)}
+              variant={isChartsOpen ? 'default' : 'outline'}
+              aria-expanded={isChartsOpen}
+              aria-controls="merchant-insights-charts"
+              className={`rounded-xl text-xs px-3.5 h-9 shrink-0 flex items-center gap-1.5 font-bold transition-all active:scale-95 shadow-sm ${
+                isChartsOpen
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                  : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              {isChartsOpen ? 'Ẩn biểu đồ' : 'Xem biểu đồ'}
+            </Button>
+            <Button onClick={fetchInsights} variant="outline" className="rounded-xl border-slate-200 hover:bg-slate-50 text-slate-700 text-xs px-3.5 h-9 shrink-0 flex items-center gap-1.5 font-bold transition-all active:scale-95 shadow-sm">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin-hover" />
+              Làm mới báo cáo
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -271,6 +301,14 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
           </p>
         </div>
       </div>
+
+      {isChartsOpen && (
+        <MerchantInsightsCharts
+          stats={stats}
+          insights={insights}
+          isLoadingStats={isLoadingStats}
+        />
+      )}
 
       {/* Grid: AI advisor & distribution charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

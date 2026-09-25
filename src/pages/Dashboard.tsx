@@ -252,7 +252,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   useEffect(() => {
     if (!restaurantId) return;
 
-    if (activeTab === 'overview') {
+    if (activeTab === 'overview' || activeTab === 'insights') {
       loadStats();
     } else if (activeTab === 'menu') {
       loadMenu();
@@ -665,7 +665,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">
-          <MerchantInsightsTab restaurant={restaurant} />
+          <MerchantInsightsTab
+            restaurant={restaurant}
+            stats={stats}
+            statsPeriod={statsPeriod}
+            isLoadingStats={isLoadingStats}
+            onSetStatsPeriod={setStatsPeriod}
+          />
         </TabsContent>
 
         <TabsContent value="customers" className="space-y-6">
