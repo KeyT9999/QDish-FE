@@ -118,12 +118,19 @@ test('keeps the desktop table inside its scroll container', async ({ page }) => 
   await page.getByRole('button', { name: 'Mở thao tác bàn 10' }).click();
   await expect(page.getByRole('menuitem', { name: 'Xem bill' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Thanh toán bill' })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Xem bill' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Xem bill' })).toBeHidden();
 
   const tableContainer = page.locator('[data-slot="table-container"]');
   const dimensions = await tableContainer.evaluate((element) => ({
     scrollWidth: element.scrollWidth,
     clientWidth: element.clientWidth,
+    columnWidths: Array.from(element.querySelectorAll('thead th')).map((cell) => cell.getBoundingClientRect().width),
   }));
   // Browser layout rounds fractional table widths up by at most one pixel.
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+  expect(dimensions.columnWidths.every((width) => width >= 100)).toBe(true);
+  expect(dimensions.columnWidths[3]).toBeLessThan(
+    dimensions.columnWidths.slice(0, 3).reduce((total, width) => total + width, 0) + dimensions.columnWidths[4]
+  );
 });

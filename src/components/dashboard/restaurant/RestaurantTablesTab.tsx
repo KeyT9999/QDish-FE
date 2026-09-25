@@ -282,13 +282,20 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
           </CardHeader>
           <CardContent className="min-w-0 p-0">
             <Table className="w-full max-w-full table-fixed">
+              <colgroup>
+                <col className="w-[12%]" />
+                <col className="w-[18%]" />
+                <col className="w-[20%]" />
+                <col className="w-[34%]" />
+                <col className="w-[16%]" />
+              </colgroup>
               <TableHeader>
                 <TableRow className="border-neutral-100 hover:bg-transparent">
-                  <TableHead className="w-[84px] pl-6 text-xs font-bold text-neutral-400">Mã bàn</TableHead>
-                  <TableHead className="w-[150px] text-xs font-bold text-neutral-400">Trạng thái</TableHead>
-                  <TableHead className="w-[170px] text-xs font-bold text-neutral-400">Phiên hiện tại</TableHead>
+                  <TableHead className="pl-6 text-xs font-bold text-neutral-400">Mã bàn</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400">Trạng thái</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400">Phiên hiện tại</TableHead>
                   <TableHead className="min-w-0 text-xs font-bold text-neutral-400">Đường dẫn đặt món tại bàn</TableHead>
-                  <TableHead className="w-[116px] pl-4 text-xs font-bold text-neutral-400">Thao tác</TableHead>
+                  <TableHead className="pr-6 text-right text-xs font-bold text-neutral-400">Thao tác</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -305,8 +312,8 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                       <TableCell className="max-w-0 overflow-hidden text-xs font-semibold text-emerald-600 underline" title={orderUrl}>
                         <span className="block truncate">Trang đặt món / bàn {tbl.code}</span>
                       </TableCell>
-                      <TableCell className="pl-4">
-                        <div className="flex items-center gap-2">
+                      <TableCell className="pl-4 pr-6">
+                        <div className="flex items-center justify-end gap-2">
                           <Button
                             size="sm"
                             variant="outline"
@@ -331,7 +338,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                                   <MoreHorizontal className="h-4 w-4 text-neutral-500" aria-hidden="true" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuContent side="left" align="center" sideOffset={8} className="z-[60] w-44">
                                 <DropdownMenuItem onClick={() => handleViewBill(tbl)} disabled={loadingBillTable === tbl.code} className="min-h-10 cursor-pointer gap-2">
                                   <Eye className="h-4 w-4 text-neutral-500" aria-hidden="true" />
                                   Xem bill
