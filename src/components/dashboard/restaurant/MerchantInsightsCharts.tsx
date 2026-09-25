@@ -43,6 +43,7 @@ interface ChartCardProps {
 }
 
 const categoryColors = ['#16a34a', '#2563eb', '#d97706', '#db2777', '#7c3aed', '#0891b2'];
+const chartInitialDimension = { width: 320, height: 288 };
 const statusColors: Record<string, string> = {
   'Đang chờ': '#f59e0b',
   'Đã xác nhận': '#3b82f6',
@@ -135,7 +136,7 @@ export const MerchantInsightsCharts: React.FC<MerchantInsightsChartsProps> = ({
         >
           {isLoadingStats ? <ChartSkeleton /> : revenueTrendData.length === 0 ? <ChartEmptyState /> : (
             <div className="h-72 min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={chartInitialDimension}>
                 <ComposedChart data={revenueTrendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="insightsRevenueFill" x1="0" y1="0" x2="0" y2="1">
@@ -167,7 +168,7 @@ export const MerchantInsightsCharts: React.FC<MerchantInsightsChartsProps> = ({
         >
           {isLoadingStats ? <ChartSkeleton /> : (
             <div className="h-72 min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={chartInitialDimension}>
                 <BarChart data={hourlyOrderData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="4" vertical={false} stroke="#e2e8f0" />
                   <XAxis dataKey="label" interval={1} stroke="#94a3b8" fontSize={9} tickLine={false} axisLine={false} />
@@ -190,7 +191,7 @@ export const MerchantInsightsCharts: React.FC<MerchantInsightsChartsProps> = ({
         >
           {isLoadingStats ? <ChartSkeleton /> : topDishData.length === 0 ? <ChartEmptyState /> : (
             <div className="h-72 min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={chartInitialDimension}>
                 <BarChart layout="vertical" data={topDishData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="4" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} allowDecimals={false} />
@@ -213,7 +214,7 @@ export const MerchantInsightsCharts: React.FC<MerchantInsightsChartsProps> = ({
         >
           {isLoadingStats ? <ChartSkeleton /> : categoryRevenueData.length === 0 ? <ChartEmptyState /> : (
             <div className="h-72 min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={chartInitialDimension}>
                 <PieChart>
                   <Pie
                     data={categoryRevenueData}
@@ -247,7 +248,7 @@ export const MerchantInsightsCharts: React.FC<MerchantInsightsChartsProps> = ({
         >
           {isLoadingStats ? <ChartSkeleton /> : orderStatusData.length === 0 ? <ChartEmptyState /> : (
             <div className="h-72 min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={chartInitialDimension}>
                 <PieChart>
                   <Pie
                     data={orderStatusData}
@@ -281,7 +282,7 @@ export const MerchantInsightsCharts: React.FC<MerchantInsightsChartsProps> = ({
         >
           {isLoadingStats ? <ChartSkeleton /> : customerSegmentData.length === 0 ? <ChartEmptyState /> : (
             <div className="h-72 min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" initialDimension={chartInitialDimension}>
                 <BarChart layout="vertical" data={customerSegmentData} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="4" horizontal={false} stroke="#e2e8f0" />
                   <XAxis type="number" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} allowDecimals={false} />
