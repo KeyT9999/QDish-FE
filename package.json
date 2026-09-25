@@ -19,7 +19,8 @@
     "test:customer-checkout-contact": "node --experimental-strip-types tests/customerCheckoutContact.test.ts",
     "test:customer-crm-access": "node --experimental-strip-types tests/customerCrmAccess.test.ts",
     "test:qr-download": "node --experimental-strip-types tests/qrDownload.test.ts",
-    "test:ci": "npm run test:fit-score-client && npm run test:recommendation-client && npm run test:dining-profile-storage && npm run test:dining-profile-ui && npm run test:dining-visit-token && npm run test:merchant-insight-access && npm run test:customer-checkout-contact && npm run test:customer-crm-access && npm run test:qr-download",
+    "test:recipe-ingredient-hydration": "node --experimental-strip-types tests/recipeIngredientHydration.test.ts",
+    "test:ci": "npm run test:fit-score-client && npm run test:recommendation-client && npm run test:dining-profile-storage && npm run test:dining-profile-ui && npm run test:dining-visit-token && npm run test:merchant-insight-access && npm run test:customer-checkout-contact && npm run test:customer-crm-access && npm run test:qr-download && npm run test:recipe-ingredient-hydration",
     "test:e2e:encoding": "playwright test tests/encoding-dashboard.spec.ts",
     "preview": "vite preview"
   },

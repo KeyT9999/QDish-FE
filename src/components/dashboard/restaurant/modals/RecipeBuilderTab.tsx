@@ -2,12 +2,13 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Ingredient, DishIngredientInput, NutritionPreviewResult, resolveGrams, IngredientUnit } from '@/services/ingredientService';
 import { DishIngredient, FoodAttribute, FOOD_ATTRIBUTE_LABELS, FOOD_ATTRIBUTE_COLORS } from '@/types';
 import { ingredientService } from '@/services/ingredientService';
+import { hydrateRecipeIngredientRows } from './recipeIngredientHydration';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import {
-  Flame, Dumbbell, Wheat, Droplet, Search, Plus, Trash2,
+  Flame, Dumbbell, Wheat, Droplet, Search, Plus, Trash2, CircleAlert,
   RefreshCw, Loader2, ChevronDown, ChevronUp, FlaskConical, Utensils, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -100,6 +101,7 @@ interface SearchRowProps {
   idx: number;
   showDelete: boolean;
   restaurantId: string;
+  ingredientCatalogStatus: 'loading' | 'ready' | 'error';
   onSelect: (ing: Ingredient) => void;
   onClear: () => void;
   onQuantityChange: (qty: number) => void;
@@ -108,7 +110,7 @@ interface SearchRowProps {
 }
 
 const IngredientSearchRow: React.FC<SearchRowProps> = ({
-  row, idx, showDelete, restaurantId,
+  row, idx, showDelete, restaurantId, ingredientCatalogStatus,
   onSelect, onClear, onQuantityChange, onUnitChange, onRemove,
 }) => {
   const [query, setQuery] = useState('');
@@ -172,12 +174,27 @@ const IngredientSearchRow: React.FC<SearchRowProps> = ({
         <div ref={containerRef} className="flex-1 min-w-0">
           {row.ingredientId ? (
             /* Selected state */
-            <div className="flex items-center gap-1.5 h-8 bg-green-50 border border-green-200 rounded-lg px-2.5">
-              <Check className="w-3 h-3 text-green-600 shrink-0" />
-              <span className="text-xs font-semibold text-green-800 flex-1 truncate">{row.ingredientName}</span>
+            <div className={`flex items-center gap-1.5 h-8 border rounded-lg px-2.5 ${
+              row.ingredientName ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'
+            }`}>
+              {row.ingredientName
+                ? <Check className="w-3 h-3 text-green-600 shrink-0" />
+                : <CircleAlert className="w-3 h-3 text-amber-600 shrink-0" />}
+              <span className={`text-xs font-semibold flex-1 truncate ${
+                row.ingredientName ? 'text-green-800' : 'text-amber-800'
+              }`}>
+                {row.ingredientName || (
+                  ingredientCatalogStatus === 'loading'
+                    ? 'Đang tải nguyên liệu…'
+                    : ingredientCatalogStatus === 'error'
+                      ? 'Không tải được kho nguyên liệu'
+                      : 'Không tìm thấy trong kho nguyên liệu'
+                )}
+              </span>
               <button
                 type="button"
                 onClick={handleClear}
+                aria-label={`Xóa nguyên liệu ${row.ingredientName || idx + 1}`}
                 className="text-gray-400 hover:text-red-500 transition-colors text-sm leading-none shrink-0 w-4 h-4 flex items-center justify-center"
               >
                 ×
@@ -302,6 +319,39 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
     }
     return [makeEmptyRow()];
   });
+
+  const [ingredientCatalog, setIngredientCatalog] = useState<Ingredient[]>([]);
+  const [ingredientCatalogStatus, setIngredientCatalogStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    const loadIngredientCatalog = async () => {
+      setIngredientCatalogStatus('loading');
+      try {
+        const firstPage = await ingredientService.getAll({ page: 1, limit: 500 });
+        const allIngredients = [...firstPage.ingredients];
+        for (let page = 2; page <= firstPage.pages; page += 1) {
+          const nextPage = await ingredientService.getAll({ page, limit: 500 });
+          allIngredients.push(...nextPage.ingredients);
+        }
+
+        if (isCurrent) {
+          setIngredientCatalog(allIngredients);
+          setIngredientCatalogStatus('ready');
+        }
+      } catch {
+        if (isCurrent) setIngredientCatalogStatus('error');
+      }
+    };
+
+    void loadIngredientCatalog();
+    return () => { isCurrent = false; };
+  }, [restaurantId]);
+
+  useEffect(() => {
+    setRows((currentRows) => hydrateRecipeIngredientRows(currentRows, ingredientCatalog));
+  }, [ingredientCatalog]);
 
   const [preview, setPreview] = useState<NutritionPreviewResult | null>(null);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -488,6 +538,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
             idx={idx}
             showDelete={rows.length > 1}
             restaurantId={restaurantId}
+            ingredientCatalogStatus={ingredientCatalogStatus}
             onSelect={(ing) => handleSelect(row.id, ing)}
             onClear={() => updateRow(row.id, { ingredient: null, ingredientId: '', ingredientName: '' })}
             onQuantityChange={(qty) => handleQuantityChange(row.id, qty)}
