@@ -8,10 +8,26 @@ import {
   buildRevenueTrendData,
   buildTopDishData
 } from '../src/components/dashboard/restaurant/charts/merchantInsightsChartData.ts';
+import { buildOperationalRecommendations } from '../src/components/dashboard/restaurant/insightRecommendations.ts';
 import type { MerchantInsightsPayload } from '../src/services/merchantInsightLoader.ts';
 import type { RestaurantStats } from '../src/types/index.ts';
 
 const stats = {
+  overview: {
+    totalRevenue: 300000,
+    previousRevenue: 250000,
+    revenueChange: 20,
+    totalOrders: 11,
+    previousOrders: 9,
+    ordersChange: 22.22,
+    averageOrderValue: 27273,
+    previousAverageOrderValue: 27778,
+    totalCustomers: 7,
+    cancellationRate: 6,
+    averageProcessingTime: 24,
+    topSellingItem: { name: 'Cơm gà', quantity: 8 },
+    peakHour: 12
+  },
   revenueByDate: [
     { date: '2026-09-12', revenue: 120000, orders: 3 },
     { date: '2026-09-13', revenue: 180000, orders: 5 }
@@ -97,10 +113,27 @@ const testStatusAndCustomerLabelsAreReadyForCharts = () => {
   ]);
 };
 
+const testOperationalRecommendationsPrioritizeConcreteActions = () => {
+  const recommendations = buildOperationalRecommendations(stats);
+
+  assert.equal(recommendations.length, 3);
+  assert.equal(recommendations[0].id, 'peak-hour');
+  assert.match(recommendations[0].title, /12:00/);
+  assert.equal(recommendations[1].id, 'cancellation-rate');
+  assert.equal(recommendations[2].id, 'processing-time');
+};
+
+const testOperationalRecommendationsStayEmptyWithoutStats = () => {
+  assert.deepEqual(buildOperationalRecommendations(null), []);
+  assert.deepEqual(buildOperationalRecommendations({} as RestaurantStats), []);
+};
+
 testRevenueTrendUsesReadableDateAndNumbers();
 testHourlyDataKeepsAll24HoursAndUsesStats();
 testTopDishFallsBackToInsightPayload();
 testEmptyCategoryAndStatusDataStayEmpty();
 testStatusAndCustomerLabelsAreReadyForCharts();
+testOperationalRecommendationsPrioritizeConcreteActions();
+testOperationalRecommendationsStayEmptyWithoutStats();
 
 console.log('merchant insights chart data tests passed');
