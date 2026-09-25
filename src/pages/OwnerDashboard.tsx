@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { ownerRestaurantService } from '@/services/ownerRestaurantService';
+import { ownerRestaurantService, type OwnerRestaurant } from '@/services/ownerRestaurantService';
+import { getNextActiveRestaurantId, refreshOwnerRestaurantLists } from '@/services/ownerRestaurantArchivePolicy';
 import { PENDING_PAYMENT_ORDER_KEY, subscriptionService } from '@/services/subscriptionService';
 import { planService } from '@/services/planService';
 import { BillingCycle, Plan } from '@/types';
@@ -12,7 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { 
   AlertCircle, 
-  CheckCircle2, 
   Store, 
   ShieldCheck, 
   Plus, 
@@ -31,7 +31,10 @@ import {
   QrCode,
   UtensilsCrossed,
   Users,
-  Bell
+  Bell,
+  Archive,
+  RotateCcw,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dashboard } from './Dashboard';
@@ -45,8 +48,14 @@ export const OwnerDashboard: React.FC = () => {
   const activeTab = searchParams.get('tab') || 'owner-home';
 
   // State
-  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [restaurants, setRestaurants] = useState<OwnerRestaurant[]>([]);
+  const [archivedRestaurants, setArchivedRestaurants] = useState<OwnerRestaurant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isArchivedLoading, setIsArchivedLoading] = useState(true);
+  const [showArchived, setShowArchived] = useState(searchParams.get('view') === 'archived');
+  const [restaurantToArchive, setRestaurantToArchive] = useState<OwnerRestaurant | null>(null);
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
   const [selectedRestId, setSelectedRestId] = useState(localStorage.getItem('selected_restaurant_id') || '');
   const [subDetails, setSubDetails] = useState<any>(null);
   const [billingPlans, setBillingPlans] = useState<Plan[]>([]);
@@ -134,21 +143,45 @@ export const OwnerDashboard: React.FC = () => {
     try {
       const data = await ownerRestaurantService.getMyRestaurants(period);
       setRestaurants(data);
-      
-      // Auto select first branch if none selected yet
-      if (data.length > 0 && !localStorage.getItem('selected_restaurant_id')) {
-        localStorage.setItem('selected_restaurant_id', data[0].id || data[0]._id);
-        setSelectedRestId(data[0].id || data[0]._id);
+
+      const storedSelection = localStorage.getItem('selected_restaurant_id') || '';
+      const selectedIsActive = data.some((restaurant) => (restaurant.id || restaurant._id) === storedSelection);
+      if (storedSelection && !selectedIsActive) {
+        const fallbackId = data[0]?.id || data[0]?._id;
+        if (fallbackId) {
+          localStorage.setItem('selected_restaurant_id', fallbackId);
+          setSelectedRestId(fallbackId);
+        } else {
+          localStorage.removeItem('selected_restaurant_id');
+          setSelectedRestId('');
+        }
+        window.location.reload();
+      } else if (data.length > 0 && !storedSelection) {
+        const firstId = data[0].id || data[0]._id;
+        localStorage.setItem('selected_restaurant_id', firstId);
+        setSelectedRestId(firstId);
       }
-    } catch (err) {
+    } catch {
       toast.error('Không thể tải danh sách chi nhánh nhà hàng');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const loadArchivedRestaurants = async (period = 'all') => {
+    setIsArchivedLoading(true);
+    try {
+      setArchivedRestaurants(await ownerRestaurantService.getArchivedRestaurants(period));
+    } catch {
+      toast.error('Không thể tải danh sách chi nhánh đã lưu trữ');
+    } finally {
+      setIsArchivedLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadRestaurants(statsPeriod);
+    loadArchivedRestaurants(statsPeriod);
   }, [statsPeriod]);
 
   // Update default form email when user profile email is available
@@ -240,6 +273,97 @@ export const OwnerDashboard: React.FC = () => {
     setSelectedRestId(id);
     toast.success('Đã chuyển đổi không gian làm việc chi nhánh!');
     window.location.reload();
+  };
+
+  const changeRestaurantListView = (archived: boolean) => {
+    setShowArchived(archived);
+    const nextParams = new URLSearchParams(searchParams);
+    if (archived) nextParams.set('view', 'archived');
+    else nextParams.delete('view');
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const handleArchiveRestaurant = async () => {
+    if (!restaurantToArchive) return;
+    const restaurantId = restaurantToArchive.id || restaurantToArchive._id;
+    const restaurantName = restaurantToArchive.name;
+    const wasSelected = localStorage.getItem('selected_restaurant_id') === restaurantId;
+    setArchivingId(restaurantId);
+    try {
+      const result = await ownerRestaurantService.archiveRestaurant(restaurantId);
+      setRestaurants((current) => current.filter((item) => (item.id || item._id) !== restaurantId));
+      setArchivedRestaurants((current) => [
+        { ...restaurantToArchive, archivedAt: result.archivedAt },
+        ...current.filter((item) => (item.id || item._id) !== restaurantId)
+      ]);
+      setRestaurantToArchive(null);
+      changeRestaurantListView(true);
+      toast.success(`${restaurantName} đã được lưu trữ. Dữ liệu lịch sử vẫn được giữ nguyên.`);
+
+      const refreshed = await refreshOwnerRestaurantLists(
+        () => ownerRestaurantService.getMyRestaurants(statsPeriod),
+        () => ownerRestaurantService.getArchivedRestaurants(statsPeriod)
+      );
+      if (refreshed.active.status === 'fulfilled') setRestaurants(refreshed.active.value);
+      if (refreshed.archived.status === 'fulfilled') setArchivedRestaurants(refreshed.archived.value);
+
+      if (wasSelected) {
+        const nextId = refreshed.active.status === 'fulfilled'
+          ? getNextActiveRestaurantId(refreshed.active.value, restaurantId)
+          : null;
+        if (nextId) {
+          localStorage.setItem('selected_restaurant_id', nextId);
+          setSelectedRestId(nextId);
+          window.location.assign('/owner?tab=owner-home&view=archived');
+        } else {
+          localStorage.removeItem('selected_restaurant_id');
+          setSelectedRestId('');
+          navigate('/owner?tab=owner-home&view=archived', { replace: true });
+        }
+      }
+      if (refreshed.active.status === 'rejected' || refreshed.archived.status === 'rejected') {
+        toast.error('Chi nhánh đã lưu trữ, nhưng danh sách chưa tải mới được. Vui lòng tải lại trang.');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể lưu trữ chi nhánh.');
+    } finally {
+      setArchivingId(null);
+    }
+  };
+
+  const handleRestoreRestaurant = async (restaurant: OwnerRestaurant) => {
+    const restaurantId = restaurant.id || restaurant._id;
+    setRestoringId(restaurantId);
+    try {
+      const restored = await ownerRestaurantService.restoreRestaurant(restaurantId);
+      setArchivedRestaurants((current) => current.filter((item) => (item.id || item._id) !== restaurantId));
+      setRestaurants((current) => [
+        restored,
+        ...current.filter((item) => (item.id || item._id) !== restaurantId)
+      ]);
+      changeRestaurantListView(false);
+      toast.success(`${restaurant.name} đã được khôi phục.`);
+
+      const refreshed = await refreshOwnerRestaurantLists(
+        () => ownerRestaurantService.getMyRestaurants(statsPeriod),
+        () => ownerRestaurantService.getArchivedRestaurants(statsPeriod)
+      );
+      if (refreshed.active.status === 'fulfilled') setRestaurants(refreshed.active.value);
+      if (refreshed.archived.status === 'fulfilled') setArchivedRestaurants(refreshed.archived.value);
+
+      if (!localStorage.getItem('selected_restaurant_id')) {
+        const restoredId = restored.id || restored._id || restaurantId;
+        localStorage.setItem('selected_restaurant_id', restoredId);
+        setSelectedRestId(restoredId);
+      }
+      if (refreshed.active.status === 'rejected' || refreshed.archived.status === 'rejected') {
+        toast.error('Chi nhánh đã khôi phục, nhưng danh sách chưa tải mới được. Vui lòng tải lại trang.');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Không thể khôi phục chi nhánh.');
+    } finally {
+      setRestoringId(null);
+    }
   };
 
   if (activeTab !== 'owner-home' && activeTab !== 'billing' && activeTab !== 'notifications' && selectedRestId) {
@@ -850,11 +974,11 @@ export const OwnerDashboard: React.FC = () => {
         </div>
       )}
 
-      {isLoading ? (
+      {isLoading || isArchivedLoading ? (
         <div className="flex justify-center items-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-green-600" />
         </div>
-      ) : restaurants.length === 0 ? (
+      ) : restaurants.length === 0 && archivedRestaurants.length === 0 ? (
         /* Empty State Landing Page */
         <div className="text-center py-16 bg-white border border-dashed border-slate-200 rounded-3xl p-8 max-w-lg mx-auto shadow-sm">
           <Building2 className="w-16 h-16 text-emerald-600 mx-auto mb-4 opacity-80" />
@@ -872,115 +996,169 @@ export const OwnerDashboard: React.FC = () => {
       ) : (
         /* Branch lists and quick selection workspace */
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
             <div>
-              <h2 className="text-xl font-heading font-bold text-slate-800">Danh sách chi nhánh của bạn</h2>
-              <p className="text-slate-400 text-xs mt-0.5">Chọn một chi nhánh dưới đây để chuyển sang không gian quản trị chi tiết.</p>
+              <h2 className="text-xl font-heading font-bold text-slate-800">
+                {showArchived ? 'Chi nhánh đã lưu trữ' : 'Danh sách chi nhánh của bạn'}
+              </h2>
+              <p className="text-slate-500 text-sm mt-1">
+                {showArchived
+                  ? 'Chi nhánh lưu trữ không nhận đơn mới; dữ liệu cũ vẫn được giữ và có thể khôi phục.'
+                  : 'Chọn chi nhánh để vào quản trị hoặc lưu trữ chi nhánh không còn hoạt động.'}
+              </p>
             </div>
-            <Button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md"
-            >
-              <Plus className="w-3.5 h-3.5 mr-1" /> Thêm chi nhánh mới
-            </Button>
+            {!showArchived && (
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md self-start"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Thêm chi nhánh mới
+              </Button>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {restaurants.map((rest) => {
-              const isSelected = selectedRestId === (rest.id || rest._id);
-              return (
-                <Card 
-                  key={rest.id || rest._id} 
-                  className={`overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 relative border ${
-                    isSelected 
-                      ? 'border-emerald-500 bg-emerald-50/10 shadow-[0_4px_20px_rgba(16,185,129,0.05)]' 
-                      : 'border-slate-100 bg-white'
-                  }`}
-                >
-                  {isSelected && (
-                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-500" />
-                  )}
-                  
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold shrink-0">
-                        <Store className="w-5 h-5" />
-                      </div>
-                      
-                      {isSelected ? (
-                        <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                          Không gian làm việc
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => selectRestaurant(rest.id || rest._id)}
-                          className="text-[10px] bg-slate-100 hover:bg-emerald-100 hover:text-emerald-700 text-slate-600 font-bold px-2.5 py-1 rounded-full uppercase transition-colors"
-                        >
-                          Chọn làm việc
-                        </button>
-                      )}
-                    </div>
-                    
-                    <CardTitle className="text-lg font-heading font-bold text-slate-800 mt-3.5">
-                      {rest.name}
-                    </CardTitle>
-                    <CardDescription className="text-xs font-mono text-slate-400">
-                      ID Admin: {rest.username}
-                    </CardDescription>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-3 pt-0 text-xs text-slate-600">
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-                      <span className="truncate">{rest.address}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-slate-400 shrink-0" />
-                      <span>{rest.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                      <span className="truncate">{rest.email}</span>
-                    </div>
+          <div className="inline-flex max-w-full rounded-xl border border-slate-200 bg-slate-50 p-1" role="tablist" aria-label="Lọc chi nhánh">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!showArchived}
+              onClick={() => changeRestaurantListView(false)}
+              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200 ${!showArchived ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              Đang hoạt động <span className="ml-1 text-xs opacity-70">{restaurants.length}</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={showArchived}
+              onClick={() => changeRestaurantListView(true)}
+              className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200 ${showArchived ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+            >
+              Đã lưu trữ <span className="ml-1 text-xs opacity-70">{archivedRestaurants.length}</span>
+            </button>
+          </div>
 
-                    <div className="pt-2 mt-2 border-t border-slate-50 flex items-center justify-between">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Doanh thu chi nhánh:</span>
-                      <strong className="text-slate-800 text-xs">
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(rest.revenue || 0)}
-                      </strong>
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        rest.status === 'ACTIVE'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-rose-50 text-rose-700'
-                      }`}>
-                        {rest.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm khóa'}
-                      </span>
-                      
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => navigate(`/owner/restaurant/${rest.id || rest._id}`)}
-                          className="text-[11px] font-bold text-slate-550 hover:text-emerald-700 transition-colors"
+          {showArchived ? (
+            archivedRestaurants.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center">
+                <Archive className="mx-auto mb-3 h-9 w-9 text-slate-400" />
+                <h3 className="font-semibold text-slate-800">Chưa có chi nhánh lưu trữ</h3>
+                <p className="mt-1 text-sm text-slate-500">Các chi nhánh đã lưu trữ sẽ xuất hiện ở đây để bạn khôi phục khi cần.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {archivedRestaurants.map((rest) => {
+                  const id = rest.id || rest._id;
+                  return (
+                    <Card key={id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                              <Archive className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <CardTitle className="truncate text-base font-bold text-slate-800">{rest.name}</CardTitle>
+                              <CardDescription className="mt-1 truncate font-mono text-xs">Admin: {rest.username}</CardDescription>
+                            </div>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">Đã lưu trữ</span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3 pt-0 text-sm text-slate-600">
+                        <div className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0 text-slate-400" /><span className="truncate">{rest.address}</span></div>
+                        <div className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0 text-slate-400" /><span>{rest.phone}</span></div>
+                        <div className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0 text-slate-400" /><span className="truncate">{rest.email}</span></div>
+                        <div className="flex items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
+                          <Archive className="h-3.5 w-3.5" />
+                          Lưu trữ ngày {rest.archivedAt ? new Date(rest.archivedAt).toLocaleDateString('vi-VN') : 'Không rõ'}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleRestoreRestaurant(rest)}
+                          disabled={restoringId === id}
+                          className="mt-1 w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
                         >
-                          Xem chi tiết
-                        </button>
-                        {isSelected && (
-                          <button 
-                            onClick={() => setSearchParams({ tab: 'overview' })}
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
-                          >
-                            Vào Quản trị <ExternalLink className="w-3.5 h-3.5" />
+                          {restoringId === id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                          Khôi phục chi nhánh
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )
+          ) : restaurants.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center">
+              <Store className="mx-auto mb-3 h-9 w-9 text-slate-400" />
+              <h3 className="font-semibold text-slate-800">Không có chi nhánh đang hoạt động</h3>
+              <p className="mt-1 text-sm text-slate-500">Khôi phục một chi nhánh đã lưu trữ hoặc tạo chi nhánh mới để tiếp tục.</p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <Button type="button" variant="outline" onClick={() => changeRestaurantListView(true)}>
+                  <Archive className="mr-2 h-4 w-4" /> Xem chi nhánh lưu trữ
+                </Button>
+                <Button type="button" onClick={() => setIsModalOpen(true)} className="bg-emerald-600 text-white hover:bg-emerald-700">
+                  <Plus className="mr-2 h-4 w-4" /> Tạo chi nhánh
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {restaurants.map((rest) => {
+                const id = rest.id || rest._id;
+                const isSelected = selectedRestId === id;
+                return (
+                  <Card key={id} className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md ${isSelected ? 'border-emerald-400' : 'border-slate-200'}`}>
+                    {isSelected && <div className="h-1 bg-emerald-500" />}
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700"><Store className="h-5 w-5" /></div>
+                          <div className="min-w-0">
+                            <CardTitle className="truncate text-base font-bold text-slate-800">{rest.name}</CardTitle>
+                            <CardDescription className="mt-1 truncate font-mono text-xs">Admin: {rest.username}</CardDescription>
+                          </div>
+                        </div>
+                        {isSelected ? (
+                          <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Đang chọn</span>
+                        ) : (
+                          <button type="button" onClick={() => selectRestaurant(id)} className="shrink-0 cursor-pointer rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700">
+                            Chọn
                           </button>
                         )}
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3 pt-0 text-sm text-slate-600">
+                      <div className="flex items-center gap-2"><MapPin className="h-4 w-4 shrink-0 text-slate-400" /><span className="truncate">{rest.address}</span></div>
+                      <div className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0 text-slate-400" /><span>{rest.phone}</span></div>
+                      <div className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0 text-slate-400" /><span className="truncate">{rest.email}</span></div>
+                      <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+                        <span className={`rounded-full px-2.5 py-1 font-semibold ${rest.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                          {rest.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm khóa'}
+                        </span>
+                        <span className="text-slate-500">Doanh thu</span>
+                        <strong className="text-slate-800">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(rest.revenue || 0)}</strong>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                        <button type="button" onClick={() => navigate(`/owner/restaurant/${id}`)} className="cursor-pointer text-xs font-semibold text-slate-600 transition-colors duration-200 hover:text-emerald-700">Xem chi tiết</button>
+                        <div className="flex flex-wrap items-center gap-3">
+                          {isSelected && (
+                            <button type="button" onClick={() => setSearchParams({ tab: 'overview' })} className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-emerald-700 transition-colors duration-200 hover:text-emerald-800">
+                              Vào quản trị <ExternalLink className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                          <button type="button" onClick={() => setRestaurantToArchive(rest)} className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-slate-500 transition-colors duration-200 hover:text-rose-700" aria-label={`Lưu trữ ${rest.name}`}>
+                            <Archive className="h-3.5 w-3.5" /> Lưu trữ
+                          </button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -1106,6 +1284,41 @@ export const OwnerDashboard: React.FC = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!restaurantToArchive}
+        onOpenChange={(open) => { if (!open && !archivingId) setRestaurantToArchive(null); }}
+      >
+        <DialogContent className="sm:max-w-md rounded-2xl bg-white p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
+              <Archive className="h-5 w-5 text-amber-600" /> Lưu trữ chi nhánh?
+            </DialogTitle>
+            <DialogDescription className="text-sm leading-relaxed text-slate-600">
+              {restaurantToArchive?.name} sẽ ngừng nhận đơn mới và không còn được tính vào giới hạn số chi nhánh.
+              Đơn hàng, hóa đơn, bàn, thực đơn và lịch sử liên quan vẫn được giữ nguyên.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>Hãy đóng các phiên bàn và thanh toán hết hóa đơn trước. Bạn có thể khôi phục chi nhánh sau, nếu gói hiện tại còn hạn mức.</p>
+          </div>
+          <DialogFooter className="mt-2 gap-2 sm:justify-end">
+            <Button type="button" variant="outline" disabled={!!archivingId} onClick={() => setRestaurantToArchive(null)}>
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              disabled={!restaurantToArchive || archivingId === (restaurantToArchive.id || restaurantToArchive._id)}
+              onClick={handleArchiveRestaurant}
+              className="bg-amber-700 text-white hover:bg-amber-800"
+            >
+              {archivingId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Archive className="mr-2 h-4 w-4" />}
+              {archivingId ? 'Đang lưu trữ...' : 'Lưu trữ chi nhánh'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

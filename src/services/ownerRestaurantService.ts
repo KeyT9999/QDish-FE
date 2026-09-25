@@ -1,4 +1,19 @@
 import { apiFetch } from './api';
+import { buildOwnerRestaurantListPath } from './ownerRestaurantArchivePolicy';
+
+export interface OwnerRestaurant {
+  id?: string;
+  _id: string;
+  name: string;
+  username?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  status?: string;
+  archivedAt?: string | null;
+  revenue?: number;
+  orderCount?: number;
+}
 
 export const ownerRestaurantService = {
   createRestaurant: (data: any) => apiFetch<any>('/api/owner/restaurants', {
@@ -7,9 +22,20 @@ export const ownerRestaurantService = {
   }),
 
   getMyRestaurants: (period?: string) => {
-    const qs = period ? `?period=${period}` : '';
-    return apiFetch<any[]>(`/api/owner/restaurants${qs}`);
+    return apiFetch<OwnerRestaurant[]>(buildOwnerRestaurantListPath(period));
   },
+
+  getArchivedRestaurants: (period?: string) => apiFetch<OwnerRestaurant[]>(buildOwnerRestaurantListPath(period, true)),
+
+  archiveRestaurant: (restaurantId: string) => apiFetch<{ restaurantId: string; archivedAt: string }>(
+    `/api/owner/restaurants/${encodeURIComponent(restaurantId)}`,
+    { method: 'DELETE' }
+  ),
+
+  restoreRestaurant: (restaurantId: string) => apiFetch<OwnerRestaurant>(
+    `/api/owner/restaurants/${encodeURIComponent(restaurantId)}/restore`,
+    { method: 'POST' }
+  ),
 
   getRestaurantDetails: (id: string) => apiFetch<any>(`/api/owner/restaurants/${id}`, {
     method: 'GET'
