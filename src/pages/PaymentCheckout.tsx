@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { subscriptionService, CheckoutDetailsResponse, PENDING_PAYMENT_ORDER_KEY } from '@/services/subscriptionService';
 import { Button } from '@/components/ui/button';
 import {
-  CreditCard,
   QrCode,
   CheckCircle2,
   AlertCircle,
@@ -11,7 +10,6 @@ import {
   ArrowLeft,
   Sparkles,
   ShieldCheck,
-  Building2,
   Copy,
   Check
 } from 'lucide-react';
@@ -43,6 +41,8 @@ export const PaymentCheckout: React.FC = () => {
         if (data.status === 'PAID') {
           toast.success('Đơn hàng này đã được thanh toán thành công!');
           navigate(`/payment-success?orderCode=${orderCode}`, { replace: true });
+        } else if (data.status === 'PENDING' && !data.isSandbox && data.checkoutUrl) {
+          window.location.replace(data.checkoutUrl);
         }
       } catch (err: any) {
         console.error(err);
@@ -153,7 +153,7 @@ export const PaymentCheckout: React.FC = () => {
             <div className="space-y-1 text-xs">
               <p className="font-bold text-amber-300">Cổng Thanh Toán Mô Phỏng (Sandbox Testing Gateway)</p>
               <p className="text-amber-200/80 leading-relaxed">
-                Tài khoản PayOS của hệ thống hiện đang tạm dừng hoặc chờ gia hạn hạn mức (Code 215). Để hỗ trợ chấm điểm và nghiệm thu đồ án mượt mà, hệ thống đã tự động chuyển sang chế độ <strong>Sandbox</strong>. Bạn có thể quét mã QR giả lập hoặc nhấn nút xác nhận bên dưới để hoàn tất nâng cấp ngay lập tức!
+                Đây là giao dịch Sandbox cũ chỉ dùng để demo. Giao dịch mới được chuyển sang trang thanh toán PayOS và chỉ kích hoạt sau khi PayOS xác nhận thành công.
               </p>
             </div>
           </div>
@@ -257,23 +257,24 @@ export const PaymentCheckout: React.FC = () => {
 
             {/* Actions */}
             <div className="space-y-2.5 pt-2">
-              <Button
-                type="button"
-                disabled={isConfirming || isCancelling}
-                onClick={handleConfirmSandbox}
-                className="w-full py-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-400 hover:to-green-400 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/15 transition-all duration-200"
-              >
-                {isConfirming ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Đang kích hoạt gói...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-amber-950" />
-                    {details.isSandbox ? 'Xác Nhận Đã Thanh Toán (Sandbox Demo)' : 'Tôi Đã Chuyển Khoản Thành Công'}
-                  </span>
-                )}
-              </Button>
+              {details.isSandbox && (
+                <Button
+                  type="button"
+                  disabled={isConfirming || isCancelling}
+                  onClick={handleConfirmSandbox}
+                  className="w-full py-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-green-500 to-emerald-600 hover:from-emerald-400 hover:to-green-400 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/15 transition-all duration-200"
+                >
+                  {isConfirming ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> Đang kích hoạt gói...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-amber-950" /> Xác Nhận Đã Thanh Toán (Sandbox Demo)
+                    </span>
+                  )}
+                </Button>
+              )}
 
               <Button
                 type="button"

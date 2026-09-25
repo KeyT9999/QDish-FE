@@ -31,5 +31,9 @@ export const tableService = {
     method: 'POST',
     body: JSON.stringify({ code }),
   }),
+
+  delete: (idOrCode: string) => apiFetch<{ message: string; id?: string; code?: string }>(`/api/tables/${encodeURIComponent(idOrCode)}`, {
+    method: 'DELETE',
+  }),
 };
 

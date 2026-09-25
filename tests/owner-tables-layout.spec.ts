@@ -151,25 +151,21 @@ test('keeps phone cards and the desktop breakpoint within the viewport', async (
   }
 });
 
-test('opens the current bill modal and keeps the desktop table inside its scroll container', async ({ page }) => {
+test('opens the delete table confirmation dialog and keeps the desktop table inside its scroll container', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${appUrl}/owner?tab=tables`);
 
   await expect(page.getByText('Danh sách bàn & mã QR dẫn bàn', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Mở thao tác bàn 10' }).click();
-  await expect(page.getByRole('menuitem', { name: 'Xem bill' })).toBeVisible();
-  await expect(page.getByRole('menuitem', { name: 'Thanh toán bill' })).toBeVisible();
-  await page.getByRole('menuitem', { name: 'Xem bill' }).click();
-  await expect(page.getByRole('menuitem', { name: 'Xem bill' })).toBeHidden();
-  const billDialog = page.getByRole('dialog');
-  await expect(billDialog).toBeVisible();
-  await expect(billDialog.getByRole('heading', { name: 'Bill hiện tại · Bàn 10' })).toBeVisible();
-  await expect(billDialog.getByText('BILL-T10', { exact: true })).toBeVisible();
-  await expect(billDialog.getByText('Phở bò', { exact: true })).toBeVisible();
-  await expect(billDialog.getByText('Chi tiết tiền', { exact: true })).toBeVisible();
-  await expect(billDialog.getByText('Đơn order-10', { exact: true })).toBeVisible();
-  await billDialog.getByRole('button', { name: 'Đóng bill' }).click();
-  await expect(billDialog).toBeHidden();
+  await expect(page.getByRole('menuitem', { name: 'Xoá bàn' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Xem bill' })).toHaveCount(0);
+  await page.getByRole('menuitem', { name: 'Xoá bàn' }).click();
+  
+  const deleteDialog = page.getByRole('dialog');
+  await expect(deleteDialog).toBeVisible();
+  await expect(deleteDialog.getByRole('heading', { name: 'Xác nhận xoá Bàn 10' })).toBeVisible();
+  await deleteDialog.getByRole('button', { name: 'Huỷ' }).click();
+  await expect(deleteDialog).toBeHidden();
 
   const tableContainer = page.locator('[data-slot="table-container"]');
   const dimensions = await tableContainer.evaluate((element) => ({
@@ -179,24 +175,67 @@ test('opens the current bill modal and keeps the desktop table inside its scroll
   }));
   // Browser layout rounds fractional table widths up by at most one pixel.
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+  expect(dimensions.columnWidths.length).toBe(4);
   expect(dimensions.columnWidths.every((width) => width >= 100)).toBe(true);
-  expect(dimensions.columnWidths[3]).toBeLessThan(
-    dimensions.columnWidths.slice(0, 3).reduce((total, width) => total + width, 0) + dimensions.columnWidths[4]
+  expect(dimensions.columnWidths[2]).toBeLessThan(
+    dimensions.columnWidths[0] + dimensions.columnWidths[1] + dimensions.columnWidths[3]
   );
 });
 
-test('keeps the current bill modal usable on a phone viewport', async ({ page }) => {
+test('keeps the delete table confirmation dialog usable on a phone viewport', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto(`${appUrl}/owner?tab=tables`);
 
-  await page.getByRole('button', { name: 'Xem bill' }).first().click();
+  await page.getByRole('button', { name: 'Xoá bàn' }).first().click();
 
-  const billDialog = page.getByRole('dialog');
-  await expect(billDialog).toBeVisible();
-  await expect(billDialog.getByText('Chi tiết tiền', { exact: true })).toBeVisible();
+  const deleteDialog = page.getByRole('dialog');
+  await expect(deleteDialog).toBeVisible();
+  await expect(deleteDialog.getByText(/Xác nhận xoá Bàn/i)).toBeVisible();
 
-  const dialogBox = await billDialog.boundingBox();
+  const dialogBox = await deleteDialog.boundingBox();
   expect(dialogBox?.width).toBeLessThanOrEqual(304);
   expect(dialogBox?.x).toBeGreaterThanOrEqual(0);
   expect((dialogBox?.x || 0) + (dialogBox?.width || 0)).toBeLessThanOrEqual(320);
 });
+
+test('displays QR download controls per table and batch download options', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${appUrl}/owner?tab=tables`);
+
+  // Verify batch download button
+  const downloadAllBtn = page.getByRole('button', { name: /Tải tất cả mã QR/i });
+  await expect(downloadAllBtn).toBeVisible();
+
+  // Open batch download dropdown
+  await downloadAllBtn.click();
+  await expect(page.getByText('Tải file nén ZIP')).toBeVisible();
+  await expect(page.getByText('Tải từng file rời (.jpg)')).toBeVisible();
+
+  // Close dropdown by pressing Escape
+  await page.keyboard.press('Escape');
+
+  // Verify individual table download buttons
+  const downloadBan1 = page.getByRole('button', { name: /Tải ảnh/i }).first();
+  await expect(downloadBan1).toBeVisible();
+
+  // Open single table QR preview
+  await page.getByRole('button', { name: /Hiển thị mã QR bàn/i }).first().click();
+  const qrDialog = page.getByRole('dialog');
+  await expect(qrDialog).toBeVisible();
+  await expect(qrDialog.getByText(/Tên file xuất: ban1\.jpg/i)).toBeVisible();
+  // Close single table QR preview
+  await page.keyboard.press('Escape');
+
+  // Verify that all "Xem" buttons across all rows have the exact same horizontal alignment
+  const xemButtons = page.locator('tbody tr button[title="Xem mã QR lớn"]');
+  const count = await xemButtons.count();
+  expect(count).toBeGreaterThan(1);
+  const xemBoxes = await Promise.all(
+    Array.from({ length: count }, (_, i) => xemButtons.nth(i).boundingBox())
+  );
+  const firstX = xemBoxes[0]?.x;
+  for (const box of xemBoxes) {
+    expect(Math.abs((box?.x || 0) - (firstX || 0))).toBeLessThanOrEqual(1);
+  }
+});
+

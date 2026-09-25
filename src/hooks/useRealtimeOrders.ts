@@ -19,8 +19,8 @@ const RECENT_EVENT_WINDOW_MS = 60000;
 
 let audioContext: AudioContext | null = null;
 let isRealtimeAudioReady = false;
-let alertIntervalId: ReturnType<typeof window.setInterval> | null = null;
-let alertTimeoutId: ReturnType<typeof window.setTimeout> | null = null;
+let alertIntervalId: number | null = null;
+let alertTimeoutId: number | null = null;
 let activeAlertOrderId: string | null = null;
 
 const recentlyHandledNewOrderIds = new Map<string, number>();

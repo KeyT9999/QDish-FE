@@ -62,6 +62,8 @@ function App() {
             <Route path="/payment-checkout" element={<PaymentCheckout />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-cancel" element={<PaymentCancel />} />
+            {/* PAYOS_CANCEL_URL currently points to /orders. Keep it mapped to the payment result page. */}
+            <Route path="/orders" element={<PaymentCancel />} />
 
             {/* Dashboard Routes (Auth required) */}
             <Route element={<DashboardLayout />}>

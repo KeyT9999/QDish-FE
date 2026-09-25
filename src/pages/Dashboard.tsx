@@ -372,6 +372,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleDeleteTable = async (table: RestaurantTable) => {
+    const tableId = table._id || table.id || table.code;
+    await tableService.delete(tableId);
+    await loadTables();
+  };
+
   // Staff
   const handleOpenStaffModal = (item?: Staff) => {
     setEditingStaffItem(item || null);
@@ -691,11 +697,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             tables={tables}
             tableCountInput={tableCountInput}
             restaurantId={restaurantId}
+            restaurantName={restaurant?.name}
             isLoadingTables={isLoadingTables}
             onSetTableCountInput={setTableCountInput}
             onSyncTables={handleSyncTables}
             onSelectTableQR={setSelectedTableQR}
             onRefreshTables={loadTables}
+            onDeleteTable={handleDeleteTable}
           />
         </TabsContent>
 
