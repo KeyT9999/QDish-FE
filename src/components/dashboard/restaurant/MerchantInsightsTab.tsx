@@ -45,6 +45,7 @@ interface MerchantInsightsTabProps {
   stats: RestaurantStats | null;
   statsPeriod: string;
   isLoadingStats: boolean;
+  hasStatsError: boolean;
   onSetStatsPeriod: (period: string) => void;
 }
 
@@ -53,6 +54,7 @@ export const MerchantInsightsTab: React.FC<MerchantInsightsTabProps> = ({
   stats,
   statsPeriod,
   isLoadingStats,
+  hasStatsError,
   onSetStatsPeriod
 }) => {
   const [insights, setInsights] = useState<MerchantInsightsPayload | null>(null);
@@ -307,6 +309,7 @@ export const MerchantInsightsTab: React.FC<MerchantInsightsTabProps> = ({
           stats={stats}
           insights={insights}
           isLoadingStats={isLoadingStats}
+          hasStatsError={hasStatsError}
         />
       )}
 

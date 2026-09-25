@@ -107,6 +107,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Loading States
   const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [hasStatsError, setHasStatsError] = useState(false);
   const [isLoadingMenu, setIsLoadingMenu] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
@@ -160,10 +161,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const loadStats = async () => {
     if (!restaurantId) return;
     setIsLoadingStats(true);
+    setHasStatsError(false);
     try {
       const data = await restaurantService.getMeStats(statsPeriod);
       setStats(data);
     } catch (err) {
+      setHasStatsError(true);
       toast.error('Không thể tải thống kê doanh thu');
     } finally {
       setIsLoadingStats(false);
@@ -670,6 +673,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             stats={stats}
             statsPeriod={statsPeriod}
             isLoadingStats={isLoadingStats}
+            hasStatsError={hasStatsError}
             onSetStatsPeriod={setStatsPeriod}
           />
         </TabsContent>

@@ -32,6 +32,7 @@ interface MerchantInsightsChartsProps {
   stats: RestaurantStats | null;
   insights: MerchantInsightsPayload;
   isLoadingStats: boolean;
+  hasStatsError: boolean;
 }
 
 interface ChartCardProps {
@@ -94,7 +95,8 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, description, ariaLabel, ch
 export const MerchantInsightsCharts: React.FC<MerchantInsightsChartsProps> = ({
   stats,
   insights,
-  isLoadingStats
+  isLoadingStats,
+  hasStatsError
 }) => {
   const revenueTrendData = buildRevenueTrendData(stats);
   const hourlyOrderData = buildHourlyOrderData(stats, insights);
@@ -126,6 +128,18 @@ export const MerchantInsightsCharts: React.FC<MerchantInsightsChartsProps> = ({
           Số liệu vận hành
         </span>
       </div>
+
+      {hasStatsError && (
+        <div
+          role="status"
+          className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-xs text-amber-900"
+        >
+          <Database className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+          <p>
+            Chưa tải được số liệu vận hành cho kỳ này. Các biểu đồ có dữ liệu insight vẫn được giữ lại, bạn có thể thử đổi kỳ hoặc làm mới báo cáo.
+          </p>
+        </div>
+      )}
 
       <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-2">
         <ChartCard
