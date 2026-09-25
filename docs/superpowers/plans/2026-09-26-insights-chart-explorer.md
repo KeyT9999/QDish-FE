@@ -110,7 +110,7 @@ git commit -m "test: cover merchant insight chart data adapters"
 - Create: `src/components/dashboard/restaurant/MerchantInsightsCharts.tsx`
 
 **Interfaces:**
-- Consumes: `{ stats: RestaurantStats | null; insights: MerchantInsightsPayload; isLoadingStats: boolean }`.
+- Consumes: `{ stats: RestaurantStats | null; insights: MerchantInsightsPayload; isLoadingStats: boolean; hasStatsError: boolean }`.
 - Produces: section trình bày sáu chart, loading skeleton và empty state; không có side effect/API call.
 
 - [ ] **Step 1: Tạo component shell và loading/empty states**
@@ -160,6 +160,7 @@ git commit -m "feat: add expandable merchant insight charts"
 **Interfaces:**
 - `Dashboard` tải stats khi `activeTab` là `overview` hoặc `insights`.
 - `MerchantInsightsTab` nhận `stats`, `statsPeriod`, `isLoadingStats`, `onSetStatsPeriod`.
+- `MerchantInsightsTab` nhận thêm `hasStatsError` để chart explorer có thể báo lỗi stats inline mà vẫn giữ các insight chart còn dùng được.
 - Chart explorer nhận `insights` đã tải và `stats` từ parent.
 
 - [ ] **Step 1: Sửa test/fixture contract cho period chung**
@@ -206,6 +207,7 @@ Trong `MerchantInsightsTab`, thêm `const [isChartsOpen, setIsChartsOpen] = useS
     stats={stats}
     insights={insights}
     isLoadingStats={isLoadingStats}
+    hasStatsError={hasStatsError}
   />
 )}
 ```
