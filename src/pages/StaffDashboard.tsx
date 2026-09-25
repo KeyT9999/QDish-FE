@@ -123,10 +123,27 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId }) => {
     fetchActiveBills(true);
   }, [fetchActiveBills]);
 
+  const handleRealtimeSync = useCallback(async (
+    changedOrders: Order[],
+    { requiresFullRefresh }: { requiresFullRefresh: boolean }
+  ) => {
+    if (requiresFullRefresh) {
+      await Promise.all([fetchOrders(true), fetchActiveBills(true)]);
+      return;
+    }
+
+    if (changedOrders.length > 0) {
+      setOrders((current) => changedOrders.reduce(upsertRealtimeOrder, current));
+    }
+    await fetchActiveBills(true);
+  }, [fetchActiveBills, fetchOrders]);
+
   useRealtimeOrders({
     enabled: Boolean(restaurantId),
+    restaurantId,
     onNewOrder: handleRealtimeNewOrder,
     onOrderUpdated: handleRealtimeOrderUpdated,
+    onRealtimeSync: handleRealtimeSync,
   });
 
   const handleEnableAudio = useCallback(async () => {
