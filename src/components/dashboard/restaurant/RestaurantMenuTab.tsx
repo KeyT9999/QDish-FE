@@ -1,5 +1,5 @@
 import React from 'react';
-import { MenuItem } from '@/types';
+import { MenuItem, RestaurantStats } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -14,9 +14,13 @@ import {
 import { Plus, Edit2, Trash2, ClipboardList, MoreHorizontal, Copy } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { MenuAnalyticsSummary } from './RestaurantAnalyticsSummary';
 
 export interface RestaurantMenuTabProps {
   menuItems: MenuItem[];
+  stats: RestaurantStats | null;
+  isLoadingStats: boolean;
+  hasStatsError: boolean;
   isLoadingMenu: boolean;
   onOpenMenuModal: (item?: MenuItem) => void;
   onDeleteMenuItem: (id: string) => Promise<void>;
@@ -27,6 +31,9 @@ export interface RestaurantMenuTabProps {
 
 export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
   menuItems,
+  stats,
+  isLoadingStats,
+  hasStatsError,
   isLoadingMenu,
   onOpenMenuModal,
   onDeleteMenuItem,
@@ -58,6 +65,8 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
           </Button>
         </div>
       </div>
+
+      <MenuAnalyticsSummary stats={stats} isLoading={isLoadingStats} hasError={hasStatsError} />
 
       {isMobile ? (
         <div className="grid grid-cols-1 gap-4">

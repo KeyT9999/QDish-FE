@@ -255,9 +255,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   useEffect(() => {
     if (!restaurantId) return;
 
-    if (activeTab === 'overview' || activeTab === 'insights') {
+    if (['overview', 'insights', 'orders', 'menu', 'tables'].includes(activeTab)) {
       loadStats();
-    } else if (activeTab === 'menu') {
+    }
+
+    if (activeTab === 'menu') {
       loadMenu();
       loadCategories();
     } else if (activeTab === 'categories') {
@@ -688,6 +690,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <TabsContent value="orders" className="space-y-6">
           <RestaurantOrdersTab
             activeBills={activeBills}
+            stats={stats}
+            isLoadingStats={isLoadingStats}
+            hasStatsError={hasStatsError}
             orderSearch={orderSearch}
             orderStatusFilter={orderStatusFilter}
             isLoadingOrders={isLoadingOrders}
@@ -704,6 +709,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <TabsContent value="menu" className="space-y-6">
           <RestaurantMenuTab
             menuItems={menuItems}
+            stats={stats}
+            isLoadingStats={isLoadingStats}
+            hasStatsError={hasStatsError}
             isLoadingMenu={isLoadingMenu}
             onOpenMenuModal={handleOpenMenuModal}
             onDeleteMenuItem={handleDeleteMenuItem}
@@ -722,6 +730,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <TabsContent value="tables" className="space-y-6">
           <RestaurantTablesTab
             tables={tables}
+            stats={stats}
+            isLoadingStats={isLoadingStats}
+            hasStatsError={hasStatsError}
             tableCountInput={tableCountInput}
             restaurantId={restaurantId}
             restaurantName={restaurant?.name}
