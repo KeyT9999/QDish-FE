@@ -4,11 +4,16 @@ import { toast } from 'sonner';
 import { Order } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { getRealtimeSocket } from '@/services/realtimeService';
+import { orderService } from '@/services/orderService';
+import { fetchAllOrderChanges } from '@/lib/realtimeOrderSync';
+import { recordRealtimeOrderArrival } from '@/lib/realtimeOrderTelemetry';
 
 type UseRealtimeOrdersOptions = {
   enabled?: boolean;
+  restaurantId?: string;
   onNewOrder?: (order: Order) => void;
   onOrderUpdated?: (order: Order) => void;
+  onRealtimeSync?: (orders: Order[], options: { requiresFullRefresh: boolean }) => void | Promise<void>;
   showToast?: boolean;
 };
 
@@ -16,6 +21,12 @@ export const REALTIME_ORDER_ALERT_DURATION_MS = 15000;
 
 const ALERT_REPEAT_MS = 2000;
 const RECENT_EVENT_WINDOW_MS = 60000;
+const ORDER_SYNC_OVERLAP_MS = 5000;
+const ORDER_SYNC_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const ORDER_SYNC_INITIAL_LOOKBACK_MS = 60000;
+const ORDER_SYNC_HEALTHY_INTERVAL_MS = 60000;
+const ORDER_SYNC_DEGRADED_INTERVAL_MS = 15000;
+const ORDER_SYNC_POLL_TICK_MS = 5000;
 
 let audioContext: AudioContext | null = null;
 let isRealtimeAudioReady = false;
@@ -178,17 +189,23 @@ const showNewOrderToast = (order: Order) => {
 
 export const useRealtimeOrders = ({
   enabled = true,
+  restaurantId = '',
   onNewOrder,
   onOrderUpdated,
+  onRealtimeSync,
   showToast = true,
 }: UseRealtimeOrdersOptions) => {
   const onNewOrderRef = useRef(onNewOrder);
   const onOrderUpdatedRef = useRef(onOrderUpdated);
+  const onRealtimeSyncRef = useRef(onRealtimeSync);
+  const lastSyncedRestaurantIdRef = useRef('');
+  const lastSyncedAtRef = useRef(0);
 
   useEffect(() => {
     onNewOrderRef.current = onNewOrder;
     onOrderUpdatedRef.current = onOrderUpdated;
-  }, [onNewOrder, onOrderUpdated]);
+    onRealtimeSyncRef.current = onRealtimeSync;
+  }, [onNewOrder, onOrderUpdated, onRealtimeSync]);
 
   useEffect(() => {
     window.addEventListener('pointerdown', unlockAudio, { once: true });
@@ -201,19 +218,33 @@ export const useRealtimeOrders = ({
   }, []);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !restaurantId) return;
 
     const socket = getRealtimeSocket();
     if (!socket) return;
 
+    if (lastSyncedRestaurantIdRef.current !== restaurantId) {
+      lastSyncedRestaurantIdRef.current = restaurantId;
+      lastSyncedAtRef.current = Date.now() - ORDER_SYNC_INITIAL_LOOKBACK_MS;
+    }
+
+    let isActive = true;
+    let lastJoinKey = '';
+    let isSubscribed = false;
+    let lastFallbackSyncAt = Date.now();
+    let syncPromise: Promise<void> | null = null;
+
     const handleNewOrder = (order: Order) => {
+      const displayOrder = { ...order };
+      delete displayOrder.realtimeTrace;
       const orderId = getOrderId(order);
       if (!claimRecentId(recentlyHandledNewOrderIds, orderId)) return;
+      if (order.realtimeTrace) recordRealtimeOrderArrival(order.realtimeTrace);
 
-      onNewOrderRef.current?.(order);
-      startRealtimeOrderAlert(order);
+      onNewOrderRef.current?.(displayOrder);
+      startRealtimeOrderAlert(displayOrder);
       if (showToast) {
-        showNewOrderToast(order);
+        showNewOrderToast(displayOrder);
       }
     };
 
@@ -221,16 +252,130 @@ export const useRealtimeOrders = ({
       onOrderUpdatedRef.current?.(order);
     };
 
-    socket.emit('restaurant:join');
+    const syncMissedOrders = () => {
+      if (!isActive) return Promise.resolve();
+      if (syncPromise) return syncPromise;
+
+      const lastSyncedAt = lastSyncedAtRef.current;
+      if (Date.now() - lastSyncedAt > ORDER_SYNC_MAX_AGE_MS) {
+        const refreshStartedAt = Date.now();
+        syncPromise = Promise.resolve(onRealtimeSyncRef.current?.([], { requiresFullRefresh: true }))
+          .then(() => { lastSyncedAtRef.current = refreshStartedAt; })
+          .catch((error) => console.error('[realtime] full order refresh failed', error))
+          .finally(() => { syncPromise = null; });
+        return syncPromise;
+      }
+
+      const since = new Date(Math.max(0, lastSyncedAt - ORDER_SYNC_OVERLAP_MS)).toISOString();
+      syncPromise = fetchAllOrderChanges<Order>(
+        (request) => orderService.getChanges({ restaurantId, ...request }),
+        { since, limit: 200 }
+      )
+        .then(async ({ orders, snapshotAt }) => {
+          if (!isActive) return;
+          await onRealtimeSyncRef.current?.(orders, { requiresFullRefresh: false });
+          lastSyncedAtRef.current = Date.parse(snapshotAt);
+        })
+        .catch(async (error) => {
+          if (!isActive) return;
+          console.error('[realtime] order changes reconciliation failed', error);
+          try {
+            const refreshStartedAt = Date.now();
+            await onRealtimeSyncRef.current?.([], { requiresFullRefresh: true });
+            lastSyncedAtRef.current = refreshStartedAt;
+          } catch (refreshError) {
+            console.error('[realtime] fallback order refresh failed', refreshError);
+          }
+        })
+        .finally(() => { syncPromise = null; });
+
+      return syncPromise;
+    };
+
+    const requestRestaurantJoin = () => {
+      if (!socket.connected) return;
+      const joinKey = `${socket.id || 'connected'}:${restaurantId}`;
+      if (lastJoinKey === joinKey) return;
+      lastJoinKey = joinKey;
+
+      socket.timeout(5000).emit('restaurant:join', { restaurantId }, (error: Error | null, result?: {
+        ok?: boolean;
+        message?: string;
+      }) => {
+        if (!isActive) return;
+        if (error || !result?.ok) {
+          isSubscribed = false;
+          lastJoinKey = '';
+          console.error('[realtime] restaurant room subscription acknowledgement failed', error);
+          if (result?.message) toast.error(result.message);
+          return;
+        }
+        isSubscribed = true;
+        void syncMissedOrders();
+      });
+    };
+
+    const handleConnect = () => {
+      lastJoinKey = '';
+      isSubscribed = false;
+      requestRestaurantJoin();
+    };
+
+    const handleRealtimeReady = (payload: { restaurantId?: string }) => {
+      if (payload?.restaurantId === restaurantId) {
+        isSubscribed = true;
+        void syncMissedOrders();
+      }
+    };
+
+    const handleAccessRevoked = (payload: { restaurantId?: string }) => {
+      if (payload?.restaurantId === restaurantId) {
+        lastJoinKey = '';
+        isSubscribed = false;
+        toast.warning('Quyền realtime của chi nhánh này đã bị thu hồi.');
+      }
+    };
+
+    const handleVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      requestRestaurantJoin();
+      void syncMissedOrders();
+    };
+
     socket.on('new-order', handleNewOrder);
     socket.on('order-updated', handleOrderUpdated);
+    socket.on('connect', handleConnect);
+    socket.on('realtime:ready', handleRealtimeReady);
+    socket.on('restaurant:access-revoked', handleAccessRevoked);
+    window.addEventListener('focus', handleVisible);
+    document.addEventListener('visibilitychange', handleVisible);
+    const fallbackPollId = window.setInterval(() => {
+      if (!isActive || document.visibilityState !== 'visible') return;
+      const intervalMs = socket.connected && isSubscribed
+        ? ORDER_SYNC_HEALTHY_INTERVAL_MS
+        : ORDER_SYNC_DEGRADED_INTERVAL_MS;
+      if (Date.now() - lastFallbackSyncAt < intervalMs) return;
+      lastFallbackSyncAt = Date.now();
+      if (!isSubscribed) requestRestaurantJoin();
+      void syncMissedOrders();
+    }, ORDER_SYNC_POLL_TICK_MS);
+
+    // The singleton socket may have connected before this hook mounted.
+    requestRestaurantJoin();
 
     return () => {
+      isActive = false;
       socket.off('new-order', handleNewOrder);
       socket.off('order-updated', handleOrderUpdated);
+      socket.off('connect', handleConnect);
+      socket.off('realtime:ready', handleRealtimeReady);
+      socket.off('restaurant:access-revoked', handleAccessRevoked);
+      window.removeEventListener('focus', handleVisible);
+      document.removeEventListener('visibilitychange', handleVisible);
+      window.clearInterval(fallbackPollId);
       stopRealtimeOrderAlert();
     };
-  }, [enabled, showToast]);
+  }, [enabled, restaurantId, showToast]);
 };
 
 export const upsertRealtimeOrder = (orders: Order[], incoming: Order) => {

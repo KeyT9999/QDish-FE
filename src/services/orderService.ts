@@ -2,6 +2,12 @@ import { apiFetch } from './api';
 import { Order, OrderStatus } from '@/types';
 
 type BackendOrder = Order & { _id?: string };
+type OrderChangesPage = {
+  orders?: BackendOrder[];
+  snapshotAt: string;
+  nextCursor: string | null;
+  hasMore: boolean;
+};
 
 const normalizeOrder = (order: BackendOrder): Order => ({
   ...order,
@@ -66,6 +72,28 @@ export const orderService = {
   getAll: async (status?: string, startDate?: string, endDate?: string) => {
     const data = await apiFetch<BackendOrder[] | { orders?: BackendOrder[] }>('/api/staff/orders');
     return filterOrders(getOrderArray(data).map(normalizeOrder), status, startDate, endDate);
+  },
+
+  getChanges: async (request: {
+    restaurantId: string;
+    since: string;
+    cursor: string | null;
+    snapshotAt: string | null;
+    limit: number;
+  }) => {
+    const params = new URLSearchParams({
+      restaurantId: request.restaurantId,
+      since: request.since,
+      limit: String(request.limit)
+    });
+    if (request.cursor) params.set('cursor', request.cursor);
+    if (request.snapshotAt) params.set('snapshotAt', request.snapshotAt);
+
+    const page = await apiFetch<OrderChangesPage>(`/api/orders/changes?${params.toString()}`);
+    return {
+      ...page,
+      orders: Array.isArray(page.orders) ? page.orders.map(normalizeOrder) : []
+    };
   },
   
   updateStatus: (id: string, status: OrderStatus, paymentMethod?: string) => {

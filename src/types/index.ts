@@ -282,6 +282,10 @@ export interface Order {
   billStatus?: BillStatus;
   createdAt?: string;
   updatedAt?: string;
+  realtimeTrace?: {
+    requestId: string;
+    emittedAt: string;
+  };
 }
 
 export interface CartItem extends OrderItem {}
