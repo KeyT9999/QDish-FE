@@ -152,6 +152,7 @@ test('opens and closes the merchant chart explorer without runtime errors', asyn
 
   await page.goto('/dashboard?tab=insights');
   await expect(page.getByRole('button', { name: 'Xem biểu đồ' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Biến số liệu thành việc nên làm' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Xem biểu đồ' }).click();
   const chartRegion = page.getByRole('region', { name: 'Bảng điều khiển biểu đồ' });
