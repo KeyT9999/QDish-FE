@@ -6,6 +6,7 @@ import {
 } from '@/services/merchantInsightLoader';
 import { Restaurant, RestaurantStats } from '@/types';
 import { MerchantInsightsCharts } from './MerchantInsightsCharts';
+import { MerchantOperationalRecommendations } from './MerchantOperationalRecommendations';
 import {
   Sparkles,
   ChefHat,
@@ -303,6 +304,8 @@ export const MerchantInsightsTab: React.FC<MerchantInsightsTabProps> = ({
           </p>
         </div>
       </div>
+
+      <MerchantOperationalRecommendations stats={stats} isLoadingStats={isLoadingStats} />
 
       {isChartsOpen && (
         <MerchantInsightsCharts
