@@ -111,6 +111,26 @@ test('opens and closes the merchant chart explorer without runtime errors', asyn
   await page.route('**/api/restaurants/customer-insights*', async (route) => {
     await route.fulfill({ json: insights });
   });
+  await page.route('**/api/menu*', async (route) => {
+    await route.fulfill({ json: [] });
+  });
+  await page.route('**/api/categories*', async (route) => {
+    await route.fulfill({ json: [] });
+  });
+  await page.route('**/api/bills*', async (route) => {
+    await route.fulfill({ json: { bills: [], page: 1, limit: 50, total: 0, totalPages: 1 } });
+  });
+  await page.route('**/api/tables*', async (route) => {
+    await route.fulfill({ json: [] });
+  });
+  await page.route('**/api/restaurants/customers*', async (route) => {
+    await route.fulfill({
+      json: {
+        data: [],
+        pagination: { page: 1, limit: 20, totalItems: 0, totalPages: 1 }
+      }
+    });
+  });
   await page.route('**/api/notifications**', async (route) => {
     if (route.request().url().includes('/unread-count')) {
       await route.fulfill({ json: { unreadCount: 0 } });
@@ -146,5 +166,21 @@ test('opens and closes the merchant chart explorer without runtime errors', asyn
 
   await page.getByRole('button', { name: 'Ẩn biểu đồ' }).click();
   await expect(chartRegion).toBeHidden();
+
+  await page.goto('/dashboard?tab=orders');
+  await expect(page.getByRole('heading', { name: 'Trạng thái đơn hàng' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Đơn hàng giá trị cao' })).toBeVisible();
+
+  await page.goto('/dashboard?tab=menu');
+  await expect(page.getByRole('heading', { name: 'Top món bán chạy' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Doanh thu theo danh mục' })).toBeVisible();
+
+  await page.goto('/dashboard?tab=tables');
+  await expect(page.getByRole('heading', { name: 'Hiệu quả từng bàn' })).toBeVisible();
+
+  await page.goto('/dashboard?tab=customers');
+  await expect(page.getByRole('heading', { name: 'Phân khúc khách hàng' })).toBeVisible();
+  await expect(page.getByText(/Đã ghi nhận 20 lượt khảo sát/)).toBeVisible();
+
   expect(consoleProblems).toEqual([]);
 });

@@ -684,6 +684,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <RestaurantCustomersTab
             restaurantId={restaurantId}
             enabled={restaurant?.features?.customerCrmEnabled === true}
+            period={statsPeriod}
+            customerInsightsEnabled={restaurant?.features?.customerInsightsEnabled === true}
           />
         </TabsContent>
 
