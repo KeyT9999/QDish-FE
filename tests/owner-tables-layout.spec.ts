@@ -76,9 +76,26 @@ const mockApi = async (page: Page) => {
       body = tables;
     } else if (url.pathname === '/api/bills/current') {
       body = {
-        session: { _id: 'session-10', restaurantId, tableNumber: '10', status: 'OPEN' },
+        session: {
+          _id: 'session-10',
+          restaurantId,
+          tableNumber: '10',
+          sessionCode: 'T10-20260914-014619',
+          status: 'OPEN',
+          openedAt: '2026-09-14T01:46:19.000Z',
+        },
         bill: currentBill,
-        orders: [],
+        orders: [{
+          _id: 'order-10',
+          restaurantId,
+          tableNumber: '10',
+          tableSessionId: 'session-10',
+          billId: 'bill-10',
+          items: [{ menuItemId: 'pho-bo', name: 'Phở bò', price: 50000, quantity: 2 }],
+          totalAmount: 100000,
+          status: 'SERVED',
+          timestamp: 1726278379000,
+        }],
       };
     }
 
@@ -134,7 +151,7 @@ test('keeps phone cards and the desktop breakpoint within the viewport', async (
   }
 });
 
-test('keeps the desktop table inside its scroll container', async ({ page }) => {
+test('opens the current bill modal and keeps the desktop table inside its scroll container', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${appUrl}/owner?tab=tables`);
 
@@ -144,9 +161,15 @@ test('keeps the desktop table inside its scroll container', async ({ page }) => 
   await expect(page.getByRole('menuitem', { name: 'Thanh toán bill' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Xem bill' }).click();
   await expect(page.getByRole('menuitem', { name: 'Xem bill' })).toBeHidden();
-  const currentBillCard = page.getByText('Bill hiện tại: BILL-T10', { exact: true });
-  await expect(currentBillCard).toBeVisible();
-  await expect(currentBillCard).toBeInViewport();
+  const billDialog = page.getByRole('dialog');
+  await expect(billDialog).toBeVisible();
+  await expect(billDialog.getByRole('heading', { name: 'Bill hiện tại · Bàn 10' })).toBeVisible();
+  await expect(billDialog.getByText('BILL-T10', { exact: true })).toBeVisible();
+  await expect(billDialog.getByText('Phở bò', { exact: true })).toBeVisible();
+  await expect(billDialog.getByText('Chi tiết tiền', { exact: true })).toBeVisible();
+  await expect(billDialog.getByText('Đơn order-10', { exact: true })).toBeVisible();
+  await billDialog.getByRole('button', { name: 'Đóng bill' }).click();
+  await expect(billDialog).toBeHidden();
 
   const tableContainer = page.locator('[data-slot="table-container"]');
   const dimensions = await tableContainer.evaluate((element) => ({
@@ -160,4 +183,20 @@ test('keeps the desktop table inside its scroll container', async ({ page }) => 
   expect(dimensions.columnWidths[3]).toBeLessThan(
     dimensions.columnWidths.slice(0, 3).reduce((total, width) => total + width, 0) + dimensions.columnWidths[4]
   );
+});
+
+test('keeps the current bill modal usable on a phone viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto(`${appUrl}/owner?tab=tables`);
+
+  await page.getByRole('button', { name: 'Xem bill' }).first().click();
+
+  const billDialog = page.getByRole('dialog');
+  await expect(billDialog).toBeVisible();
+  await expect(billDialog.getByText('Chi tiết tiền', { exact: true })).toBeVisible();
+
+  const dialogBox = await billDialog.boundingBox();
+  expect(dialogBox?.width).toBeLessThanOrEqual(304);
+  expect(dialogBox?.x).toBeGreaterThanOrEqual(0);
+  expect((dialogBox?.x || 0) + (dialogBox?.width || 0)).toBeLessThanOrEqual(320);
 });

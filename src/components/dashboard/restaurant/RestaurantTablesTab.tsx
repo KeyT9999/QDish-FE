@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { RestaurantTable, TableStatus } from '@/services/tableService';
 import { billService } from '@/services/billService';
 import { Bill, BillStatus } from '@/types';
 import { BillPaymentModal } from '@/components/dashboard/restaurant/modals/BillPaymentModal';
+import { CurrentBillDetails, CurrentBillModal } from '@/components/dashboard/restaurant/modals/CurrentBillModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,7 +24,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { formatCurrency } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
 export interface RestaurantTablesTabProps {
@@ -48,16 +48,9 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
   onRefreshTables
 }) => {
   const isCompact = useIsMobile(1024);
-  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [selectedBillDetails, setSelectedBillDetails] = useState<CurrentBillDetails | null>(null);
   const [selectedPaymentBill, setSelectedPaymentBill] = useState<Bill | null>(null);
   const [loadingBillTable, setLoadingBillTable] = useState<string | null>(null);
-  const selectedBillRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (selectedBill) {
-      selectedBillRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [selectedBill]);
 
   const tableSummary = tables.reduce(
     (summary, table) => {
@@ -102,16 +95,20 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
       toast.info('Bàn này chưa có bill active');
       return null;
     }
-    return result.bill;
+    return {
+      bill: result.bill,
+      session: result.session,
+      orders: result.orders,
+    };
   };
 
   const handleViewBill = async (table: RestaurantTable) => {
     setLoadingBillTable(table.code);
     try {
-      const bill = await getCurrentBill(table);
-      if (bill) setSelectedBill(bill);
-    } catch (error: any) {
-      toast.error(error.message || 'Không thể tải bill hiện tại');
+      const details = await getCurrentBill(table);
+      if (details) setSelectedBillDetails(details);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Không thể tải bill hiện tại');
     } finally {
       setLoadingBillTable(null);
     }
@@ -120,15 +117,16 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
   const handlePayBill = async (table: RestaurantTable) => {
     setLoadingBillTable(table.code);
     try {
-      const bill = await getCurrentBill(table);
-      if (!bill) return;
+      const details = await getCurrentBill(table);
+      if (!details) return;
+      const bill = details.bill;
       if (bill.status === BillStatus.PAID || bill.status === BillStatus.CANCELLED) {
         toast.info('Bill này không còn cần thanh toán');
         return;
       }
       setSelectedPaymentBill(bill);
-    } catch (error: any) {
-      toast.error(error.message || 'Không thể tải bill thanh toán');
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'Không thể tải bill thanh toán');
     } finally {
       setLoadingBillTable(null);
     }
@@ -379,40 +377,17 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
         </Card>
       )}
 
-      {selectedBill && (
-        <Card
-          ref={selectedBillRef}
-          role="region"
-          aria-label="Bill hiện tại"
-          className="scroll-mt-24 overflow-hidden rounded-2xl border-emerald-200/60 bg-emerald-50/60 shadow-sm"
-        >
-          <CardHeader className="border-b border-emerald-100/70 pb-4">
-            <CardTitle className="text-sm font-bold text-emerald-900">Bill hiện tại: {selectedBill.billCode}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-            <div>
-              <span className="block text-xs font-semibold text-emerald-700">Bàn</span>
-              <span className="font-bold text-neutral-900">Bàn {selectedBill.tableNumber}</span>
-            </div>
-            <div>
-              <span className="block text-xs font-semibold text-emerald-700">Trạng thái</span>
-              <span className="font-bold text-neutral-900">{selectedBill.status}</span>
-            </div>
-            <div>
-              <span className="block text-xs font-semibold text-emerald-700">Số order</span>
-              <span className="font-bold text-neutral-900">{selectedBill.orderIds.length}</span>
-            </div>
-            <div>
-              <span className="block text-xs font-semibold text-emerald-700">Tổng món</span>
-              <span className="font-bold text-neutral-900">{selectedBill.totalItems}</span>
-            </div>
-            <div>
-              <span className="block text-xs font-semibold text-emerald-700">Tổng tiền</span>
-              <span className="font-bold text-emerald-800">{formatCurrency(selectedBill.totalAmount)}</span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <CurrentBillModal
+        open={Boolean(selectedBillDetails)}
+        details={selectedBillDetails}
+        onOpenChange={(open) => {
+          if (!open) setSelectedBillDetails(null);
+        }}
+        onPay={(bill) => {
+          setSelectedBillDetails(null);
+          setSelectedPaymentBill(bill);
+        }}
+      />
 
       <BillPaymentModal
         open={Boolean(selectedPaymentBill)}
@@ -422,7 +397,6 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
           if (!open) setSelectedPaymentBill(null);
         }}
         onPaid={async () => {
-          setSelectedBill(null);
           await onRefreshTables?.();
         }}
       />
