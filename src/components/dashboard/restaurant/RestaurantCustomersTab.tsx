@@ -5,11 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { customerCrmService, CustomerListResponse, CustomerSummary } from '@/services/customerCrmService';
+import { apiFetch } from '@/services/api';
+import { loadMerchantInsights, CustomerInsightsPayload } from '@/services/merchantInsightLoader';
 import { CustomerDetailSheet } from './CustomerDetailSheet';
+import { CustomerSegmentsSummary } from './RestaurantAnalyticsSummary';
 
 interface RestaurantCustomersTabProps {
   restaurantId: string;
   enabled: boolean;
+  period: string;
+  customerInsightsEnabled: boolean;
 }
 
 const formatDate = (value: string) => new Intl.DateTimeFormat('vi-VN', {
@@ -18,7 +23,12 @@ const formatDate = (value: string) => new Intl.DateTimeFormat('vi-VN', {
   year: 'numeric'
 }).format(new Date(value));
 
-export const RestaurantCustomersTab: React.FC<RestaurantCustomersTabProps> = ({ restaurantId, enabled }) => {
+export const RestaurantCustomersTab: React.FC<RestaurantCustomersTabProps> = ({
+  restaurantId,
+  enabled,
+  period,
+  customerInsightsEnabled
+}) => {
   const [result, setResult] = useState<CustomerListResponse | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -26,6 +36,9 @@ export const RestaurantCustomersTab: React.FC<RestaurantCustomersTabProps> = ({ 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerSummary | null>(null);
+  const [customerInsights, setCustomerInsights] = useState<CustomerInsightsPayload | null>(null);
+  const [customerInsightsLoading, setCustomerInsightsLoading] = useState(false);
+  const [customerInsightsError, setCustomerInsightsError] = useState('');
 
   const loadCustomers = useCallback(async () => {
     if (!enabled || !restaurantId) return;
@@ -43,6 +56,35 @@ export const RestaurantCustomersTab: React.FC<RestaurantCustomersTabProps> = ({ 
   useEffect(() => {
     void loadCustomers();
   }, [loadCustomers]);
+
+  const loadCustomerInsights = useCallback(async () => {
+    if (!enabled || !customerInsightsEnabled || !restaurantId) return;
+
+    setCustomerInsightsLoading(true);
+    setCustomerInsightsError('');
+    try {
+      const data = await loadMerchantInsights({
+        restaurantId,
+        period,
+        customerInsightsEnabled: true,
+        fetcher: apiFetch
+      });
+      setCustomerInsights({
+        customerSegments: data.customerSegments,
+        surveyResponseCount: data.surveyResponseCount,
+        gapAnalysis: data.gapAnalysis,
+        peakHours: data.peakHours
+      });
+    } catch (reason) {
+      setCustomerInsightsError(reason instanceof Error ? reason.message : 'Không thể tải phân khúc khách hàng.');
+    } finally {
+      setCustomerInsightsLoading(false);
+    }
+  }, [customerInsightsEnabled, enabled, period, restaurantId]);
+
+  useEffect(() => {
+    void loadCustomerInsights();
+  }, [loadCustomerInsights]);
 
   const handleSearch = (event: FormEvent) => {
     event.preventDefault();
@@ -87,6 +129,14 @@ export const RestaurantCustomersTab: React.FC<RestaurantCustomersTabProps> = ({ 
           </Button>
         </form>
       </div>
+
+      <CustomerSegmentsSummary
+        insights={customerInsights}
+        isLoading={customerInsightsLoading}
+        error={customerInsightsError}
+        enabled={customerInsightsEnabled}
+        onRetry={() => void loadCustomerInsights()}
+      />
 
       {error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">

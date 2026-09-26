@@ -356,8 +356,8 @@ export const DashboardLayout: React.FC = () => {
       {/* 3. Main Workspace Container */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
         {/* Sticky Topbar */}
-        <header className="h-16 border-b border-neutral-200/60 bg-white px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-sm/5">
-          <div className="flex items-center gap-3">
+        <header className="h-16 min-w-0 overflow-hidden border-b border-neutral-200/60 bg-white px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shadow-sm/5">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             {/* Mobile menu trigger */}
             <button
               onClick={() => setIsMobileOpen(true)}
@@ -384,7 +384,7 @@ export const DashboardLayout: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4">
             {/* Action buttons based on Role */}
             {user?.role === Role.RESTAURANT_ADMIN && user.restaurantId && (
               <a 

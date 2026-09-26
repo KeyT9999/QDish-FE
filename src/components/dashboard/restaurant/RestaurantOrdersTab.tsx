@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ActiveBill, BillStatus, Order, OrderStatus, Role } from '@/types';
+import { ActiveBill, BillStatus, Order, OrderStatus, RestaurantStats, Role } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,13 @@ import {
 import { RefreshCw, Search, ClipboardList, Clock, MoreHorizontal, Receipt, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
+import { OrderAnalyticsSummary } from './RestaurantAnalyticsSummary';
 
 export interface RestaurantOrdersTabProps {
   activeBills: ActiveBill[];
+  stats: RestaurantStats | null;
+  isLoadingStats: boolean;
+  hasStatsError: boolean;
   orderSearch: string;
   orderStatusFilter: string;
   isLoadingOrders: boolean;
@@ -121,6 +125,9 @@ const orderMatchesSearch = (order: Order, searchLower: string) => {
 
 export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
   activeBills,
+  stats,
+  isLoadingStats,
+  hasStatsError,
   orderSearch,
   orderStatusFilter,
   isLoadingOrders,
@@ -160,6 +167,8 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
           <RefreshCw className={`w-3.5 h-3.5 ${isLoadingOrders ? 'animate-spin' : ''}`} /> Làm mới
         </Button>
       </div>
+
+      <OrderAnalyticsSummary stats={stats} isLoading={isLoadingStats} hasError={hasStatsError} />
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-2xl border border-neutral-200/50 shadow-sm">
         <div className="relative w-full md:w-80">

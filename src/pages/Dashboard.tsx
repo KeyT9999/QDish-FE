@@ -107,6 +107,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Loading States
   const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [hasStatsError, setHasStatsError] = useState(false);
   const [isLoadingMenu, setIsLoadingMenu] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
@@ -160,10 +161,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const loadStats = async () => {
     if (!restaurantId) return;
     setIsLoadingStats(true);
+    setHasStatsError(false);
     try {
       const data = await restaurantService.getMeStats(statsPeriod);
       setStats(data);
     } catch (err) {
+      setHasStatsError(true);
       toast.error('Không thể tải thống kê doanh thu');
     } finally {
       setIsLoadingStats(false);
@@ -252,9 +255,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   useEffect(() => {
     if (!restaurantId) return;
 
-    if (activeTab === 'overview') {
+    if (['overview', 'insights', 'orders', 'menu', 'tables'].includes(activeTab)) {
       loadStats();
-    } else if (activeTab === 'menu') {
+    }
+
+    if (activeTab === 'menu') {
       loadMenu();
       loadCategories();
     } else if (activeTab === 'categories') {
@@ -665,19 +670,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">
-          <MerchantInsightsTab restaurant={restaurant} />
+          <MerchantInsightsTab
+            restaurant={restaurant}
+            stats={stats}
+            statsPeriod={statsPeriod}
+            isLoadingStats={isLoadingStats}
+            hasStatsError={hasStatsError}
+            onSetStatsPeriod={setStatsPeriod}
+          />
         </TabsContent>
 
         <TabsContent value="customers" className="space-y-6">
           <RestaurantCustomersTab
             restaurantId={restaurantId}
             enabled={restaurant?.features?.customerCrmEnabled === true}
+            period={statsPeriod}
+            customerInsightsEnabled={restaurant?.features?.customerInsightsEnabled === true}
           />
         </TabsContent>
 
         <TabsContent value="orders" className="space-y-6">
           <RestaurantOrdersTab
             activeBills={activeBills}
+            stats={stats}
+            isLoadingStats={isLoadingStats}
+            hasStatsError={hasStatsError}
             orderSearch={orderSearch}
             orderStatusFilter={orderStatusFilter}
             isLoadingOrders={isLoadingOrders}
@@ -694,6 +711,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <TabsContent value="menu" className="space-y-6">
           <RestaurantMenuTab
             menuItems={menuItems}
+            stats={stats}
+            isLoadingStats={isLoadingStats}
+            hasStatsError={hasStatsError}
             isLoadingMenu={isLoadingMenu}
             onOpenMenuModal={handleOpenMenuModal}
             onDeleteMenuItem={handleDeleteMenuItem}
@@ -712,6 +732,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <TabsContent value="tables" className="space-y-6">
           <RestaurantTablesTab
             tables={tables}
+            stats={stats}
+            isLoadingStats={isLoadingStats}
+            hasStatsError={hasStatsError}
             tableCountInput={tableCountInput}
             restaurantId={restaurantId}
             restaurantName={restaurant?.name}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RestaurantTable, TableStatus, tableService } from '@/services/tableService';
+import type { RestaurantStats } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,9 +41,13 @@ import {
   downloadAllTablesQRIndividual,
   getTableFileName
 } from '@/utils/qrDownload';
+import { TableAnalyticsSummary } from './RestaurantAnalyticsSummary';
 
 export interface RestaurantTablesTabProps {
   tables: RestaurantTable[];
+  stats: RestaurantStats | null;
+  isLoadingStats: boolean;
+  hasStatsError: boolean;
   tableCountInput: string;
   restaurantId: string;
   restaurantName?: string;
@@ -56,6 +61,9 @@ export interface RestaurantTablesTabProps {
 
 export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
   tables,
+  stats,
+  isLoadingStats,
+  hasStatsError,
   tableCountInput,
   restaurantId,
   restaurantName = 'Nhà hàng',
@@ -357,6 +365,8 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
           </div>
         </div>
       </div>
+
+      <TableAnalyticsSummary stats={stats} isLoading={isLoadingStats} hasError={hasStatsError} />
 
       {/* Main Table List */}
       {isCompact ? (

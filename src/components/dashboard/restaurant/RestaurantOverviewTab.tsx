@@ -1,6 +1,6 @@
 import React from 'react';
 import { RestaurantStats } from '@/types';
-import { DollarSign, ShoppingBag, TrendingUp, Flame, RefreshCw } from 'lucide-react';
+import { Ban, DollarSign, Flame, RefreshCw, ShoppingBag, TrendingUp, Users } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { RevenueChart } from './charts/RevenueChart';
 import { PeakHourChart } from './charts/PeakHourChart';
@@ -68,7 +68,7 @@ export const RestaurantOverviewTab: React.FC<RestaurantOverviewTabProps> = ({
       ) : (
         <>
           {/* Stats Grid cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
             {/* Card 1: Doanh thu tích lũy */}
             <div className="rounded-2xl border border-neutral-200/50 bg-white p-6 shadow-sm hover:shadow-md/5 transition-shadow duration-200 flex flex-col justify-between relative overflow-hidden">
               <div className="flex justify-between items-start">
@@ -141,6 +141,44 @@ export const RestaurantOverviewTab: React.FC<RestaurantOverviewTabProps> = ({
                 <div className="flex items-center gap-1.5 mt-2">
                   <span className="text-[10px] text-neutral-500 font-bold bg-neutral-100 px-2 py-0.5 rounded-md">
                     Đã bán {stats?.overview.topSellingItem?.quantity || 0} suất
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 5: Khách hàng */}
+            <div className="rounded-2xl border border-neutral-200/50 bg-white p-6 shadow-sm hover:shadow-md/5 transition-shadow duration-200 flex flex-col justify-between relative overflow-hidden">
+              <div className="flex justify-between items-start">
+                <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Khách hàng</span>
+                <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-violet-600" aria-hidden="true" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <span className="text-3xl font-bold tracking-tight text-neutral-900 block">
+                  {stats?.overview.totalCustomers || 0}
+                </span>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className="text-[10px] text-neutral-400 font-semibold">Có tên trong đơn hàng</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 6: Tỷ lệ huỷ */}
+            <div className="rounded-2xl border border-neutral-200/50 bg-white p-6 shadow-sm hover:shadow-md/5 transition-shadow duration-200 flex flex-col justify-between relative overflow-hidden">
+              <div className="flex justify-between items-start">
+                <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Tỷ lệ huỷ đơn</span>
+                <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center">
+                  <Ban className="w-4 h-4 text-rose-600" aria-hidden="true" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <span className="text-3xl font-bold tracking-tight text-neutral-900 block">
+                  {stats?.overview.cancellationRate || 0}%
+                </span>
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${((stats?.overview.cancellationRate || 0) >= 5) ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                    {(stats?.overview.cancellationRate || 0) >= 5 ? 'Cần theo dõi' : 'Trong ngưỡng tốt'}
                   </span>
                 </div>
               </div>
