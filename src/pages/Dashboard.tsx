@@ -24,6 +24,8 @@ import { Button } from '@/components/ui/button';
 import { BellRing } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
+import { getOrderStatusSuccessMessage } from '@/lib/orderStatusMessages';
+import { usePendingOrderUpdates } from '@/hooks/usePendingOrderUpdates';
 
 // Tab Components
 import { RestaurantOverviewTab } from '@/components/dashboard/restaurant/RestaurantOverviewTab';
@@ -106,6 +108,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Search & Filter States
   const [orderSearch, setOrderSearch] = useState('');
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>('ALL');
+  const { pendingOrderIds, beginOrderUpdate, finishOrderUpdate } = usePendingOrderUpdates();
 
   // Loading States
   const [isLoadingStats, setIsLoadingStats] = useState(false);
@@ -431,16 +434,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
   // Orders
   const handleUpdateOrderStatus = async (id: string, newStatus: OrderStatus) => {
+    if (!beginOrderUpdate(id)) return;
+
     try {
       const updatedOrder = await orderService.updateStatus(id, newStatus);
       setOrders((current) => upsertRealtimeOrder(current, updatedOrder));
+      setActiveBills((current) => current.map((bill) => ({
+        ...bill,
+        orders: bill.orders.map((order) => getOrderId(order) === id ? updatedOrder : order)
+      })));
       if (newStatus === OrderStatus.CONFIRMED) {
         clearRealtimeAlert(id);
       }
-      toast.success(`Đã chuyển đơn hàng sang trạng thái ${newStatus}`);
-      loadOrderBillGroups();
+      toast.success(getOrderStatusSuccessMessage(newStatus));
+      void loadOrderBillGroups();
     } catch (err: any) {
       toast.error(err.message || 'Lỗi khi cập nhật trạng thái đơn hàng');
+    } finally {
+      finishOrderUpdate(id);
     }
   };
 
@@ -700,6 +711,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onSetOrderStatusFilter={setOrderStatusFilter}
             onRefreshOrders={loadOrderBillGroups}
             onUpdateOrderStatus={handleUpdateOrderStatus}
+            pendingOrderIds={pendingOrderIds}
             onPayBill={handlePayBill}
             userRole={user?.role as Role | undefined}
             canPayBill={user?.role === Role.RESTAURANT_ADMIN || user?.role === Role.RESTAURANT_OWNER}

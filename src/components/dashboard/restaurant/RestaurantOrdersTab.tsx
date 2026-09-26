@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
-import { RefreshCw, Search, ClipboardList, Clock, MoreHorizontal, Receipt, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, Search, ClipboardList, Clock, MoreHorizontal, Receipt, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 
@@ -23,6 +23,7 @@ export interface RestaurantOrdersTabProps {
   onSetOrderStatusFilter: (filter: string) => void;
   onRefreshOrders: () => void;
   onUpdateOrderStatus: (id: string, newStatus: OrderStatus) => Promise<void>;
+  pendingOrderIds: ReadonlySet<string>;
   onPayBill: (billId: string) => Promise<void>;
   userRole?: Role;
   canPayBill?: boolean;
@@ -128,6 +129,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
   onSetOrderStatusFilter,
   onRefreshOrders,
   onUpdateOrderStatus,
+  pendingOrderIds,
   onPayBill,
   userRole,
   canPayBill = true
@@ -249,6 +251,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                   <div className="divide-y divide-neutral-100">
                     {bill.orders.map((order) => {
                       const orderId = getOrderId(order);
+                      const isUpdatingOrder = pendingOrderIds.has(orderId);
                       const orderIdShort = orderId.slice(-6).toUpperCase();
                       const orderItemsText = order.items.map((item) => `${item.name} x${item.quantity}`).join(', ');
                       const canUpdateOrder = bill.status !== BillStatus.PAID && bill.status !== BillStatus.CANCELLED;
@@ -291,18 +294,22 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                               <Button
                                 size="sm"
                                 onClick={() => onUpdateOrderStatus(orderId, OrderStatus.CONFIRMED)}
+                                disabled={isUpdatingOrder}
+                                aria-busy={isUpdatingOrder}
                                 className="h-8 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
                               >
-                                Xác nhận
+                                {isUpdatingOrder ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Đang cập nhật…</> : 'Xác nhận'}
                               </Button>
                             )}
                             {canUpdateOrder && order.status === OrderStatus.CONFIRMED && (
                               <Button
                                 size="sm"
                                 onClick={() => onUpdateOrderStatus(orderId, OrderStatus.SERVED)}
+                                disabled={isUpdatingOrder}
+                                aria-busy={isUpdatingOrder}
                                 className="h-8 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white shadow-sm hover:bg-violet-700"
                               >
-                                Ra món
+                                {isUpdatingOrder ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Đang ra món…</> : 'Ra món'}
                               </Button>
                             )}
                             {canUpdateOrder && order.status === OrderStatus.SERVED && (
@@ -322,6 +329,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                                   <>
                                     <DropdownMenuItem
                                       onClick={() => onUpdateOrderStatus(orderId, OrderStatus.CANCELLED)}
+                                      disabled={isUpdatingOrder}
                                       className="text-rose-600 hover:bg-rose-50/50 focus:text-rose-700 focus:bg-rose-50 font-semibold text-xs rounded-lg cursor-pointer"
                                     >
                                       Hủy đơn hàng

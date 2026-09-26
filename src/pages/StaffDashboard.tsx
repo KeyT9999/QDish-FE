@@ -23,6 +23,8 @@ import { Loader2, RefreshCw, ChefHat, Play, CheckCircle2, Clock, BellRing, Recei
 import { toast } from 'sonner';
 import { BillPaymentModal } from '@/components/dashboard/restaurant/modals/BillPaymentModal';
 import { formatCurrency } from '@/lib/utils';
+import { getOrderStatusSuccessMessage } from '@/lib/orderStatusMessages';
+import { usePendingOrderUpdates } from '@/hooks/usePendingOrderUpdates';
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
 const getOrderVersion = (order: Order) => String((order as any).updatedAt || (order as any).createdAt || order.timestamp || '');
@@ -69,6 +71,7 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId }) => {
   const [realtimeAlertStartedAt, setRealtimeAlertStartedAt] = useState<number | null>(null);
   const [isConfirmingRealtimeOrder, setIsConfirmingRealtimeOrder] = useState(false);
   const [isAudioReady, setIsAudioReady] = useState(false);
+  const { pendingOrderIds, beginOrderUpdate, finishOrderUpdate } = usePendingOrderUpdates();
 
   const fetchOrders = useCallback(async (silent = false) => {
     if (!silent) setIsRefreshing(true);
@@ -217,19 +220,27 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId }) => {
   }, [activeRealtimeOrder, clearRealtimeAlert, fetchActiveBills]);
 
   const handleUpdateStatus = useCallback(async (orderId: string, newStatus: OrderStatus) => {
+    if (!beginOrderUpdate(orderId)) return;
+
     try {
       const updatedOrder = await orderService.updateStaffOrderStatus(orderId, newStatus);
       setOrders((current) => upsertRealtimeOrder(current, updatedOrder));
+      setActiveBills((current) => current.map((bill) => ({
+        ...bill,
+        orders: bill.orders.map((order) => getOrderId(order) === orderId ? updatedOrder : order)
+      })));
       if (newStatus === OrderStatus.CONFIRMED) {
         clearRealtimeAlert(orderId);
       }
-      toast.success(`Đã cập nhật trạng thái đơn hàng sang ${newStatus}`);
-      fetchOrders(true);
-      fetchActiveBills(true);
+      toast.success(getOrderStatusSuccessMessage(newStatus));
+      void fetchOrders(true);
+      void fetchActiveBills(true);
     } catch (err: any) {
       toast.error(err.message || 'Lỗi khi cập nhật đơn hàng');
+    } finally {
+      finishOrderUpdate(orderId);
     }
-  }, [clearRealtimeAlert, fetchActiveBills, fetchOrders]);
+  }, [beginOrderUpdate, clearRealtimeAlert, fetchActiveBills, fetchOrders, finishOrderUpdate]);
 
   // Group active orders
   const pendingOrders = useMemo(() => orders.filter(o => o.status === OrderStatus.PENDING), [orders]);
@@ -277,22 +288,26 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId }) => {
           <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
             <span className="text-xs font-bold text-green-700">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.totalAmount)}</span>
             <div className="flex gap-1.5">
-              {order.status === OrderStatus.PENDING && (
+      {order.status === OrderStatus.PENDING && (
                 <Button 
                   size="sm" 
                   onClick={() => handleUpdateStatus(order.id || (order as any)._id, OrderStatus.CONFIRMED)}
+                  disabled={pendingOrderIds.has(getOrderId(order))}
+                  aria-busy={pendingOrderIds.has(getOrderId(order))}
                   className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] py-1 h-7"
                 >
-                  <Play className="w-3.5 h-3.5 mr-1" /> Nhận đơn
+                  {pendingOrderIds.has(getOrderId(order)) ? <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Đang nhận…</> : <><Play className="w-3.5 h-3.5 mr-1" /> Nhận đơn</>}
                 </Button>
               )}
               {order.status === OrderStatus.CONFIRMED && (
                 <Button 
                   size="sm" 
                   onClick={() => handleUpdateStatus(order.id || (order as any)._id, OrderStatus.SERVED)}
+                  disabled={pendingOrderIds.has(getOrderId(order))}
+                  aria-busy={pendingOrderIds.has(getOrderId(order))}
                   className="bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] py-1 h-7"
                 >
-                  <ChefHat className="w-3.5 h-3.5 mr-1" /> Ra món
+                  {pendingOrderIds.has(getOrderId(order)) ? <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Đang ra món…</> : <><ChefHat className="w-3.5 h-3.5 mr-1" /> Ra món</>}
                 </Button>
               )}
               {order.status === OrderStatus.SERVED && (
@@ -303,7 +318,7 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId }) => {
         </CardContent>
       </Card>
     );
-  }, [handleUpdateStatus]);
+  }, [handleUpdateStatus, pendingOrderIds]);
 
   return (
     <div className="space-y-6 px-4">
