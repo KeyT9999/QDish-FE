@@ -4,6 +4,10 @@ import {
   loadMerchantInsights,
   MerchantInsightsPayload
 } from '@/services/merchantInsightLoader';
+import {
+  getSurveyDataDisclosure,
+  meetsMerchantInsightThreshold
+} from '@/services/merchantInsightPolicy';
 import { Restaurant } from '@/types';
 import {
   Sparkles,
@@ -82,7 +86,6 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     if (!restId) return;
     setRefreshingAI(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1200));
       const data = await loadMerchantInsights({
         restaurantId: restId,
         period,
@@ -90,10 +93,10 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
         fetcher: apiFetch
       });
       setInsights(data);
-      toast.success('Đã cập nhật phân tích AI mới nhất!');
+      toast.success('Đã làm mới báo cáo dữ liệu.');
     } catch (err: any) {
       console.error('Error refreshing AI:', err);
-      toast.error('Không thể cập nhật phân tích AI.');
+      toast.error('Không thể làm mới báo cáo dữ liệu.');
     } finally {
       setRefreshingAI(false);
     }
@@ -123,10 +126,10 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
           <div>
             <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
-              QDish Intelligence Advisor
+              QDish Intelligence
             </h2>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Phân tích thói quen ăn uống của thực khách quét QR & tối ưu hóa thực đơn tăng trưởng doanh thu.
+              Tham khảo dữ liệu hoạt động và xu hướng khảo sát khi tối ưu thực đơn.
             </p>
           </div>
         </div>
@@ -150,8 +153,8 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
             <ul className="text-[11px] text-neutral-600 space-y-1.5 font-medium list-disc list-inside">
               <li>Biểu đồ thị hiếu & xu hướng ăn uống của thực khách</li>
               <li>Bản đồ định vị thuộc tính dinh dưỡng thực đơn</li>
-              <li>AI phân tích khoảng trống thực đơn (Gap Analysis)</li>
-              <li>Đề xuất tối ưu thực đơn tăng trưởng 18%+ doanh thu</li>
+              <li>Phân tích khoảng trống thực đơn theo thuộc tính món</li>
+              <li>Gợi ý tối ưu thực đơn dựa trên dữ liệu hiện có</li>
             </ul>
           </div>
 
@@ -187,9 +190,25 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
     topDishes,
     customerSegments,
     surveyResponseCount: rawSurveyResponseCount,
+    realSurveyResponseCount: rawRealSurveyResponseCount,
+    demoSurveyResponseCount: rawDemoSurveyResponseCount,
+    completedOrderCount: rawCompletedOrderCount,
     gapAnalysis
   } = insights;
   const surveyResponseCount = rawSurveyResponseCount ?? 0;
+  const realSurveyResponseCount = rawRealSurveyResponseCount ?? 0;
+  const demoSurveyResponseCount = rawDemoSurveyResponseCount ?? 0;
+  const completedOrderCount = rawCompletedOrderCount ?? 0;
+  const surveyDataDisclosure = getSurveyDataDisclosure({
+    customerInsightsEnabled: features.customerInsightsEnabled === true,
+    surveyResponseCount,
+    realSurveyResponseCount,
+    demoSurveyResponseCount
+  });
+  const hasEnoughInsightData = meetsMerchantInsightThreshold({
+    surveyResponseCount,
+    completedOrderCount
+  });
 
   // Format currency
   const formatVND = (num: number) => {
@@ -205,10 +224,10 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
           <div>
             <h2 className="text-lg font-bold text-neutral-900 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-500 animate-pulse" />
-              QDish Intelligence Advisor
+              QDish Intelligence
             </h2>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Phân tích thói quen ăn uống của thực khách quét QR & tối ưu hóa thực đơn tăng trưởng doanh thu.
+              Tham khảo dữ liệu hoạt động và xu hướng khảo sát khi tối ưu thực đơn.
             </p>
           </div>
         </div>
@@ -243,6 +262,27 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
         </div>
       </div>
 
+      {surveyDataDisclosure && (
+        <div
+          role="note"
+          aria-label="Nguồn dữ liệu khảo sát"
+          className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-xs text-amber-950"
+        >
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <div className="space-y-1">
+            <p className="font-bold">Minh bạch dữ liệu khảo sát</p>
+            <p>
+              Trong kỳ đã chọn, báo cáo gồm {surveyDataDisclosure.surveyResponseCount} lượt khảo sát: {surveyDataDisclosure.realSurveyResponseCount} phản hồi thực tế và {surveyDataDisclosure.demoSurveyResponseCount} phản hồi mẫu.
+            </p>
+            <p>
+              {surveyDataDisclosure.hasDemoResponses
+                ? 'Phản hồi mẫu trong kỳ được thêm cho mục đích trình diễn và không phải dữ liệu khách hàng thật.'
+                : 'Kỳ đã chọn không có phản hồi khảo sát mẫu.'}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Revenue Impact Banner */}
       <div className="bg-white rounded-3xl border border-neutral-100 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2.5 flex-1">
@@ -267,7 +307,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
         <div className="rounded-2xl bg-amber-50/70 p-4 border border-amber-100/50 text-xs text-amber-800 font-medium flex items-start gap-3 max-w-sm shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]">
           <TrendingUp className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            Món ăn có thông tin dinh dưỡng rõ ràng có tỷ lệ gọi món <strong>cao hơn 24%</strong> so với thông thường!
+            Doanh thu trong báo cáo phản ánh dữ liệu đơn hàng của kỳ đã chọn, không dự báo kết quả trong tương lai.
           </p>
         </div>
       </div>
@@ -296,11 +336,11 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                     QDish Intelligence
                   </h3>
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#dcfce7] text-[#15803d]">
-                    AI ACTIVE
+                    BẢN DEMO
                   </span>
                 </div>
                 <p className="text-[11px] text-neutral-500">
-                  Phân tích hành vi khách quét QR và đề xuất tăng doanh thu bằng AI.
+                  Bản demo tóm tắt dữ liệu khảo sát và hoạt động đặt món.
                 </p>
               </div>
               <Button
@@ -310,7 +350,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                 className="rounded-xl border-green-600/20 hover:border-green-600/40 text-green-700 text-[11px] font-bold px-3 h-8 shrink-0 flex items-center gap-1.5 bg-white/50 backdrop-blur-sm self-start sm:self-auto shadow-sm"
               >
                 <RefreshCw className={`w-3 h-3 ${refreshingAI ? 'animate-spin' : ''}`} />
-                Làm mới AI
+                Làm mới báo cáo
               </Button>
             </div>
 
@@ -329,13 +369,12 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                 </div>
               </div>
             ) : (() => {
-              const totalOrders = topDishes.reduce((sum, d) => sum + d.orderCount, 0);
               const healthyCount = customerSegments
                 .filter(s => ['LIGHT_MEAL', 'BALANCED', 'WEIGHT_LOSS'].includes(s.segment))
                 .reduce((sum, segment) => sum + segment.count, 0);
               const gapCount = gapAnalysis.filter(g => !g.includes('Thực đơn của bạn')).length;
 
-              if (surveyResponseCount < 20 || totalOrders < 10) {
+              if (!hasEnoughInsightData) {
                 return (
                   <div className="flex flex-col items-center justify-center py-10 px-4 text-center space-y-4">
                     <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-4xl animate-bounce">
@@ -344,18 +383,18 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                     <div className="space-y-2 max-w-sm">
                       <h4 className="text-xs font-bold text-neutral-800">Cần thêm dữ liệu hoạt động</h4>
                       <p className="text-[11px] text-neutral-500 leading-relaxed">
-                        Để phân tích xu hướng chính xác hơn, nhà hàng cần tích lũy tối thiểu <strong>20 lượt khảo sát QR</strong> và <strong>10 đơn hàng đặt món thành công</strong>.
+                        Để mở phần phân tích, nhà hàng cần tối thiểu <strong>20 lượt khảo sát QR</strong> và <strong>10 đơn đã phục vụ/hoàn tất</strong>.
                       </p>
                       <div className="flex justify-center gap-4 text-[10px] text-neutral-400 font-bold bg-neutral-50/50 p-2 rounded-xl border border-neutral-100">
                         <span>Lượt khảo sát: {surveyResponseCount}/20</span>
-                        <span>Đơn hàng: {totalOrders}/10</span>
+                        <span>Đơn đã phục vụ/hoàn tất: {completedOrderCount}/10</span>
                       </div>
                     </div>
                     <Button
                       variant="link"
                       className="text-xs text-emerald-600 font-bold hover:text-emerald-700 flex items-center gap-1 mt-2"
                       onClick={() => {
-                        toast.info('Tính năng AI phân tích tự động dựa trên học máy (Machine Learning) để nhận diện khoảng trống dinh dưỡng trong thực đơn dựa theo hồ sơ người dùng thực khách.');
+                        toast.info('Đây là bản demo minh họa cách tổng hợp dữ liệu khảo sát và thực đơn.');
                       }}
                     >
                       Tìm hiểu thêm
@@ -378,13 +417,14 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                 <div className="space-y-5">
                   {/* KPI Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Card 1: Revenue growth opportunity */}
+                    {/* Card 1: Illustrative demo metric */}
                     <div className="bg-white/80 backdrop-blur-sm border border-neutral-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
                       <div className="space-y-1">
-                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Cơ hội doanh thu</span>
+                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider block">Chỉ số minh họa</span>
                         <div className="text-sm font-black text-emerald-600 flex items-center gap-0.5">
-                          +18% 📈
+                          +18%
                         </div>
+                        <span className="block text-[9px] leading-relaxed text-neutral-500">Không phải dự báo hay cam kết doanh thu</span>
                       </div>
                       <div className="p-1.5 bg-emerald-50 rounded-xl">
                         <TrendingUp className="w-4 h-4 text-emerald-600" />
@@ -425,11 +465,11 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-neutral-800">QDish AI Assistant</span>
-                        <span className="text-[9px] text-neutral-400 font-medium">Vừa phân tích xong</span>
+                        <span className="text-xs font-bold text-neutral-800">QDish Intelligence Demo</span>
+                        <span className="text-[9px] text-neutral-400 font-medium">Nội dung minh họa</span>
                       </div>
                       <p className="text-[11px] text-neutral-600 leading-relaxed">
-                        Xin chào! Hệ thống ghi nhận <strong>{surveyResponseCount} lượt khảo sát QR</strong> và <strong>{totalOrders} đơn đặt món</strong> thành công. Nhóm mục tiêu ăn uống lành mạnh có <strong>{healthyCount} lượt lựa chọn</strong>. QDish phát hiện thực đơn của bạn có <strong>{gapCount} điểm khuyết thiếu</strong>. Khắc phục các điểm này dự kiến mang lại <strong>+18% cơ hội tăng trưởng doanh thu</strong>.
+                        Báo cáo gồm <strong>{surveyResponseCount} lượt khảo sát QR</strong> và <strong>{completedOrderCount} đơn đã phục vụ/hoàn tất</strong>. Nhóm mục tiêu ăn uống lành mạnh có <strong>{healthyCount} lượt lựa chọn</strong>. Thực đơn có <strong>{gapCount} điểm cần xem xét</strong>. Các gợi ý và chỉ số trên màn hình là nội dung minh họa, không phải dự báo hay cam kết doanh thu.
                       </p>
                     </div>
                   </div>
@@ -520,10 +560,10 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
             })()}
 
             {/* Footer info (only if above threshold) */}
-            {(!refreshingAI && (surveyResponseCount >= 20 && topDishes.reduce((sum, d) => sum + d.orderCount, 0) >= 10)) && (
+            {(!refreshingAI && hasEnoughInsightData) && (
               <div className="text-[10px] text-neutral-400 italic pt-2 border-t border-green-600/10 flex items-center gap-1.5">
                 <Info className="w-3.5 h-3.5 shrink-0 text-neutral-400" />
-                <span>Dữ liệu đề xuất được cập nhật tự động dựa trên thói quen ăn uống của các lượt quét QR gần nhất.</span>
+                <span>Báo cáo có thể gồm khảo sát mẫu đã gắn nhãn; số liệu đơn hàng và doanh thu lấy từ dữ liệu vận hành. Gợi ý chỉ mang tính tham khảo.</span>
               </div>
             )}
           </div>
@@ -534,9 +574,9 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                 🔒
               </div>
               <div className="space-y-1.5 max-w-[280px]">
-                <h4 className="text-sm font-bold text-neutral-900">Tính năng AI Advisor bị khóa</h4>
+                <h4 className="text-sm font-bold text-neutral-900">Tính năng QDish Intelligence bị khóa</h4>
                 <p className="text-xs text-neutral-500 leading-normal">
-                  Tính năng phân tích đề xuất tối ưu khoảng trống thực đơn bằng AI chỉ khả dụng cho gói <strong>PRO</strong>. Nâng cấp để sở hữu trợ lý AI tư vấn món ăn tăng trưởng 18%+ doanh thu!
+                  Phân tích khoảng trống thực đơn và đề xuất món ăn chỉ khả dụng cho gói <strong>PRO</strong>. Các kết quả tham khảo không bảo đảm mức tăng trưởng doanh thu.
                 </p>
               </div>
               <Button
@@ -724,7 +764,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
         <div className="bg-white rounded-3xl border border-neutral-100 p-6 shadow-sm space-y-4 lg:col-span-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-neutral-800">Hiệu suất món ăn Smart-Menu</h3>
-            <span className="text-[10px] text-neutral-400 font-medium">Báo cáo lượt gọi món</span>
+            <span className="text-[10px] text-neutral-500 font-semibold">{completedOrderCount} đơn đã phục vụ/hoàn tất</span>
           </div>
 
           <div className="overflow-x-auto">
@@ -732,7 +772,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
               <thead>
                 <tr className="border-b border-neutral-100 text-neutral-400 uppercase tracking-wider text-[10px] font-extrabold">
                   <th className="py-2.5">Tên món</th>
-                  <th className="py-2.5 text-center">Số lượt bán</th>
+                  <th className="py-2.5 text-center">Số lượng món đã bán</th>
                   <th className="py-2.5 text-right">Doanh thu tạo ra</th>
                 </tr>
               </thead>
@@ -748,7 +788,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
                 {topDishes.length === 0 && (
                   <tr>
                     <td colSpan={3} className="text-center text-neutral-400 italic py-8">
-                      Chưa phát sinh bất kỳ đơn đặt món nào cho các món có recipe.
+                      Chưa có số lượng món bán cho các món có recipe.
                     </td>
                   </tr>
                 )}

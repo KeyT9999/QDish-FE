@@ -19,7 +19,11 @@ export interface CustomerInsightsPayload {
     count: number;
     label: string;
   }>;
+  /** Combined count of real and demo survey responses. */
   surveyResponseCount: number;
+  realSurveyResponseCount: number;
+  demoSurveyResponseCount: number;
+  completedOrderCount: number;
   gapAnalysis: string[];
   peakHours: {
     periods: Array<{
@@ -48,6 +52,9 @@ interface LoadMerchantInsightsInput {
 const emptyCustomerInsights = (): CustomerInsightsPayload => ({
   customerSegments: [],
   surveyResponseCount: 0,
+  realSurveyResponseCount: 0,
+  demoSurveyResponseCount: 0,
+  completedOrderCount: 0,
   gapAnalysis: [],
   peakHours: {
     periods: [],
