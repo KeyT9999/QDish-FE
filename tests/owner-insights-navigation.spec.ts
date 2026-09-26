@@ -33,7 +33,14 @@ const restaurant = {
 
 const customerInsights = {
   menuCoverage: { totalItems: 5, itemsWithRecipe: 5, coveragePct: 100 },
-  attributeDistribution: { VEGAN: 3, GLUTEN_FREE: 1 },
+  attributeDistribution: {
+    HIGH_FIBER: 5,
+    LOW_CALORIE: 4,
+    VEGAN: 3,
+    GLUTEN_FREE: 1,
+    SOCIAL_SHARING: 2,
+    LATE_NIGHT_FIT: 1,
+  },
   topDishes: [{ dishId: 'dish-1', name: 'Bowl mẫu', orderCount: 12, revenue: 960000 }],
   customerSegments: [{ segment: 'VEGAN', count: 18, label: 'Thuần chay' }],
   surveyResponseCount: 20,
@@ -150,6 +157,21 @@ test('offers accessible desktop Insights sections and reuses the shared payload'
   await expect(workspace.getByRole('tabpanel')).toHaveCount(1);
   expect(customerInsightsRequestCount).toBe(initialRequestCount);
 
+  const attributesTab = tablist.getByRole('tab', { name: 'Thuộc tính thực đơn', exact: true });
+  await attributesTab.click();
+  await expect(attributesTab).toHaveAttribute('aria-selected', 'true');
+  const attributesPanel = workspace.getByRole('tabpanel');
+  await expect(attributesPanel.getByRole('heading', { name: 'Phân bố thuộc tính món ăn' })).toBeVisible();
+  await expect(attributesPanel.getByText('Một món có thể có nhiều thuộc tính', { exact: false })).toBeVisible();
+  await expect(attributesPanel.getByText('Tổng số món', { exact: true })).toBeVisible();
+  await expect(attributesPanel.getByText('Món có Recipe', { exact: true })).toBeVisible();
+  await expect(attributesPanel.getByRole('heading', { name: 'Dinh dưỡng' })).toBeVisible();
+  await expect(attributesPanel.getByRole('heading', { name: 'Chế độ ăn' })).toBeVisible();
+  await expect(attributesPanel.getByRole('heading', { name: 'Ngữ cảnh sử dụng' })).toBeVisible();
+  await expect(attributesPanel.getByText('Nhiều chất xơ', { exact: true })).toBeVisible();
+  await expect(attributesPanel.getByText('Ăn đêm cân bằng', { exact: true })).toBeVisible();
+  await expect(attributesPanel.getByText('HIGH_FIBER', { exact: true })).toHaveCount(0);
+
   await peakHoursTab.press('End');
   const smartMenuTab = tablist.getByRole('tab', { name: 'Hiệu suất món ăn Smart-Menu', exact: true });
   await expect(smartMenuTab).toHaveAttribute('aria-selected', 'true');
@@ -202,6 +224,9 @@ test('uses a labeled section selector on mobile without horizontal page overflow
   await sectionSelect.selectOption({ label: 'Khung giờ đặt món' });
   await expect(workspace.getByRole('tabpanel').getByText('Buổi trưa (11:00 - 14:00)')).toBeVisible();
   expect(customerInsightsRequestCount).toBe(initialRequestCount);
+
+  await sectionSelect.selectOption({ label: 'Thuộc tính thực đơn' });
+  await expect(workspace.getByRole('tabpanel').getByRole('heading', { name: 'Phân bố thuộc tính món ăn' })).toBeVisible();
 
   const viewport = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
@@ -317,7 +342,10 @@ test('preserves threshold and empty-state copy for an empty insight payload', as
   await expect(workspace.getByRole('tabpanel').getByText('Lượt khảo sát: 0/20')).toBeVisible();
 
   await tablist.getByRole('tab', { name: 'Thuộc tính thực đơn', exact: true }).click();
-  await expect(workspace.getByRole('tabpanel').getByText('Chưa có món ăn nào cấu hình Recipe để phân loại thuộc tính.')).toBeVisible();
+  const emptyAttributesPanel = workspace.getByRole('tabpanel');
+  await expect(emptyAttributesPanel.getByText('Chưa có món ăn nào cấu hình Recipe để phân loại thuộc tính.')).toBeVisible();
+  await expect(emptyAttributesPanel.getByText('Tổng số món', { exact: true })).toBeVisible();
+  await expect(emptyAttributesPanel.getByText('Món có Recipe', { exact: true })).toBeVisible();
   await tablist.getByRole('tab', { name: 'Hiệu suất món ăn Smart-Menu', exact: true }).click();
   await expect(workspace.getByRole('tabpanel').getByText('Chưa có số lượng món bán cho các món có recipe.')).toBeVisible();
 });

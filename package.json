@@ -12,6 +12,7 @@
     "test:recommendation-client": "node --experimental-strip-types tests/recommendationService.test.ts",
     "test:dining-profile-storage": "node --experimental-strip-types tests/diningProfileStorage.test.ts",
     "test:dining-profile-ui": "node --experimental-strip-types tests/diningProfileUiPolicy.test.ts",
+    "test:menu-attribute-presentation": "node --experimental-strip-types tests/menuAttributePresentation.test.ts",
     "test:e2e:fit-score": "playwright test --config playwright.fit-score.config.ts",
     "test:e2e:recommendation": "playwright test --config playwright.recommendation.config.ts",
     "test:e2e:owner-insights": "playwright test --config playwright.owner-insights.config.ts",
@@ -27,7 +28,7 @@
     "test:owner-workspace-selection": "node --experimental-strip-types tests/ownerWorkspaceSelection.test.ts",
     "test:realtime-order-sync": "node --experimental-strip-types tests/realtimeOrderSync.test.ts",
     "test:realtime-order-telemetry": "node --experimental-strip-types tests/realtimeOrderTelemetry.test.ts",
-    "test:ci": "npm run test:fit-score-client && npm run test:recommendation-client && npm run test:dining-profile-storage && npm run test:dining-profile-ui && npm run test:dining-visit-token && npm run test:merchant-insight-access && npm run test:customer-checkout-contact && npm run test:customer-crm-access && npm run test:qr-download && npm run test:recipe-ingredient-hydration && npm run test:owner-restaurant-archive && npm run test:owner-workspace-selection && npm run test:realtime-order-sync && npm run test:realtime-order-telemetry",
+    "test:ci": "npm run test:fit-score-client && npm run test:recommendation-client && npm run test:dining-profile-storage && npm run test:dining-profile-ui && npm run test:menu-attribute-presentation && npm run test:dining-visit-token && npm run test:merchant-insight-access && npm run test:customer-checkout-contact && npm run test:customer-crm-access && npm run test:qr-download && npm run test:recipe-ingredient-hydration && npm run test:owner-restaurant-archive && npm run test:owner-workspace-selection && npm run test:realtime-order-sync && npm run test:realtime-order-telemetry",
     "test:e2e:encoding": "playwright test tests/encoding-dashboard.spec.ts",
     "preview": "vite preview"
   },
