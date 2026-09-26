@@ -257,7 +257,7 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
         {selectedSection === 'smart-menu-performance' && (
           <SmartMenuPerformancePanel
             topDishes={insights.topDishes}
-            completedOrderCount={completedOrderCount}
+            completedOrderCount={customerInsightsEnabled ? completedOrderCount : null}
             formatVND={formatVND}
           />
         )}

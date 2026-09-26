@@ -3,7 +3,7 @@ import type { MerchantInsightsPayload } from '@/services/merchantInsightLoader';
 
 interface SmartMenuPerformancePanelProps {
   topDishes: MerchantInsightsPayload['topDishes'];
-  completedOrderCount: number;
+  completedOrderCount: number | null;
   formatVND: (amount: number) => string;
 }
 
@@ -42,7 +42,13 @@ export const SmartMenuPerformancePanel = ({
     <div className="space-y-4 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-bold text-neutral-800">Hiệu suất món ăn Smart-Menu</h3>
-        <span className="text-right text-[10px] font-semibold text-neutral-500">{completedOrderCount} đơn đã phục vụ/hoàn tất</span>
+        {completedOrderCount === null ? (
+          <span className="text-right text-[10px] font-semibold text-neutral-500">
+            Số đơn đã phục vụ/hoàn tất chỉ khả dụng trên gói PRO.
+          </span>
+        ) : (
+          <span className="text-right text-[10px] font-semibold text-neutral-500">{completedOrderCount} đơn đã phục vụ/hoàn tất</span>
+        )}
       </div>
 
       <div className="overflow-x-auto">

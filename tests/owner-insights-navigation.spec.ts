@@ -263,7 +263,10 @@ test('shows loading progress while the shared insight payload is loading', async
   const workspace = page.getByRole('region', { name: 'Phân tích nhà hàng' });
   await expect(workspace).toHaveAttribute('aria-busy', 'true');
   await expect(workspace.getByRole('status').getByText('Đang tổng hợp báo cáo dữ liệu thực đơn...')).toBeVisible();
-  await expect(page.getByText('QDish Intelligence Demo')).toBeVisible();
+  await expect(workspace.getByRole('tabpanel')).toHaveCount(0);
+  await expect(workspace.getByRole('tabpanel').getByText('QDish Intelligence Demo')).toBeVisible();
+  await expect(workspace).not.toHaveAttribute('aria-busy', 'true');
+  await expect(workspace.getByRole('tabpanel')).toHaveCount(1);
   expect(customerInsightsRequestCount).toBe(1);
 });
 
@@ -328,6 +331,12 @@ test('keeps PRO-only analysis locked on PLUS while retaining its existing menu r
   await expect(workspace.getByRole('heading', { name: 'Tính năng Phân tích giờ vàng bị khóa' })).toBeVisible();
   expect(menuInsightsRequestCount).toBe(1);
   expect(customerInsightsRequestCount).toBe(0);
+
+  await tablist.getByRole('tab', { name: 'Hiệu suất món ăn Smart-Menu', exact: true }).click();
+  const smartMenuPanel = workspace.getByRole('tabpanel');
+  await expect(smartMenuPanel.getByText('0 đơn đã phục vụ/hoàn tất', { exact: true })).toHaveCount(0);
+  await expect(smartMenuPanel.getByText('Số đơn đã phục vụ/hoàn tất chỉ khả dụng trên gói PRO.')).toBeVisible();
+  await expect(smartMenuPanel.getByText('Bowl mẫu', { exact: true })).toBeVisible();
 });
 
 test('keeps FREE plan disclosure and does not request insight data', async ({ page }) => {
