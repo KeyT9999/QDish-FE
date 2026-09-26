@@ -13,8 +13,18 @@ type UseRealtimeOrdersOptions = {
   restaurantId?: string;
   onNewOrder?: (order: Order) => void;
   onOrderUpdated?: (order: Order) => void;
+  onTableStatusUpdated?: (table: RealtimeTableStatusPayload) => void;
   onRealtimeSync?: (orders: Order[], options: { requiresFullRefresh: boolean }) => void | Promise<void>;
   showToast?: boolean;
+};
+
+export type RealtimeTableStatusPayload = {
+  tableId?: string;
+  code?: string;
+  status?: string;
+  activeSessionId?: string | null;
+  currentSessionCode?: string | null;
+  lastSessionClosedAt?: string | null;
 };
 
 export const REALTIME_ORDER_ALERT_DURATION_MS = 15000;
@@ -192,11 +202,13 @@ export const useRealtimeOrders = ({
   restaurantId = '',
   onNewOrder,
   onOrderUpdated,
+  onTableStatusUpdated,
   onRealtimeSync,
   showToast = true,
 }: UseRealtimeOrdersOptions) => {
   const onNewOrderRef = useRef(onNewOrder);
   const onOrderUpdatedRef = useRef(onOrderUpdated);
+  const onTableStatusUpdatedRef = useRef(onTableStatusUpdated);
   const onRealtimeSyncRef = useRef(onRealtimeSync);
   const lastSyncedRestaurantIdRef = useRef('');
   const lastSyncedAtRef = useRef(0);
@@ -204,8 +216,9 @@ export const useRealtimeOrders = ({
   useEffect(() => {
     onNewOrderRef.current = onNewOrder;
     onOrderUpdatedRef.current = onOrderUpdated;
+    onTableStatusUpdatedRef.current = onTableStatusUpdated;
     onRealtimeSyncRef.current = onRealtimeSync;
-  }, [onNewOrder, onOrderUpdated, onRealtimeSync]);
+  }, [onNewOrder, onOrderUpdated, onTableStatusUpdated, onRealtimeSync]);
 
   useEffect(() => {
     window.addEventListener('pointerdown', unlockAudio, { once: true });
@@ -250,6 +263,10 @@ export const useRealtimeOrders = ({
 
     const handleOrderUpdated = (order: Order) => {
       onOrderUpdatedRef.current?.(order);
+    };
+
+    const handleTableStatusUpdated = (table: RealtimeTableStatusPayload) => {
+      onTableStatusUpdatedRef.current?.(table);
     };
 
     const syncMissedOrders = () => {
@@ -344,6 +361,7 @@ export const useRealtimeOrders = ({
 
     socket.on('new-order', handleNewOrder);
     socket.on('order-updated', handleOrderUpdated);
+    socket.on('table:status-updated', handleTableStatusUpdated);
     socket.on('connect', handleConnect);
     socket.on('realtime:ready', handleRealtimeReady);
     socket.on('restaurant:access-revoked', handleAccessRevoked);
@@ -367,6 +385,7 @@ export const useRealtimeOrders = ({
       isActive = false;
       socket.off('new-order', handleNewOrder);
       socket.off('order-updated', handleOrderUpdated);
+      socket.off('table:status-updated', handleTableStatusUpdated);
       socket.off('connect', handleConnect);
       socket.off('realtime:ready', handleRealtimeReady);
       socket.off('restaurant:access-revoked', handleAccessRevoked);
