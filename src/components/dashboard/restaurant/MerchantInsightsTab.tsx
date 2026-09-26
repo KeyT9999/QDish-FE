@@ -16,7 +16,11 @@ import { QDishIntelligencePanel } from '@/components/dashboard/restaurant/mercha
 import { SmartMenuPerformancePanel } from '@/components/dashboard/restaurant/merchant-insights/SmartMenuPerformancePanel';
 import { SurveyTrendsPanel } from '@/components/dashboard/restaurant/merchant-insights/SurveyTrendsPanel';
 
-export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = ({ restaurant }) => {
+export const MerchantInsightsTab: React.FC<{
+  restaurant: Restaurant | null;
+  onOpenRecipeBuilder: () => void;
+  onOpenMenu: () => void;
+}> = ({ restaurant, onOpenRecipeBuilder, onOpenMenu }) => {
   const [insights, setInsights] = useState<MerchantInsightsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshingAI, setRefreshingAI] = useState(false);
@@ -239,6 +243,10 @@ export const MerchantInsightsTab: React.FC<{ restaurant: Restaurant | null }> = 
             refreshingAI={refreshingAI}
             hasEnoughInsightData={hasEnoughInsightData}
             formatVND={formatVND}
+            onViewSurveyTrends={() => setSelectedSection('survey-trends')}
+            onViewSmartMenuPerformance={() => setSelectedSection('smart-menu-performance')}
+            onOpenRecipeBuilder={onOpenRecipeBuilder}
+            onOpenMenu={onOpenMenu}
           />
         )}
         {selectedSection === 'survey-trends' && (

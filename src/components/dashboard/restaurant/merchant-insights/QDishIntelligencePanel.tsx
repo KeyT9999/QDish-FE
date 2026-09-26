@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { ChefHat, Info, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MerchantInsightsPayload } from '@/services/merchantInsightLoader';
+import { MenuRecommendationDialog } from './MenuRecommendationDialog';
 import { toast } from 'sonner';
 
 interface QDishIntelligencePanelProps {
@@ -13,6 +15,10 @@ interface QDishIntelligencePanelProps {
   refreshingAI: boolean;
   hasEnoughInsightData: boolean;
   formatVND: (amount: number) => string;
+  onViewSurveyTrends: () => void;
+  onViewSmartMenuPerformance: () => void;
+  onOpenRecipeBuilder: () => void;
+  onOpenMenu: () => void;
 }
 
 export const QDishIntelligencePanel = ({
@@ -25,15 +31,21 @@ export const QDishIntelligencePanel = ({
   refreshingAI,
   hasEnoughInsightData,
   formatVND,
+  onViewSurveyTrends,
+  onViewSmartMenuPerformance,
+  onOpenRecipeBuilder,
+  onOpenMenu,
 }: QDishIntelligencePanelProps) => {
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const recommendations = gapAnalysis.filter((gap) => !gap.includes('Thực đơn của bạn'));
   const healthyCount = customerSegments
     .filter((segment) => ['LIGHT_MEAL', 'BALANCED', 'WEIGHT_LOSS'].includes(segment.segment))
     .reduce((sum, segment) => sum + segment.count, 0);
-  const gapCount = gapAnalysis.filter((gap) => !gap.includes('Thực đơn của bạn')).length;
+  const gapCount = recommendations.length;
 
   const getMissingCategory = () => {
-    if (gapAnalysis.length === 0) return 'Đầy đủ ✨';
-    const firstGap = gapAnalysis[0] || '';
+    if (recommendations.length === 0) return 'Đầy đủ ✨';
+    const firstGap = recommendations[0] || '';
     if (firstGap.includes('Giàu Đạm') || firstGap.includes('HIGH_PROTEIN')) return 'Giàu Đạm 🍗';
     if (firstGap.includes('Chay') || firstGap.includes('VEGETARIAN')) return 'Đồ Chay 🌱';
     if (firstGap.includes('Ăn nhanh') || firstGap.includes('QUICK_BITE')) return 'Ăn Nhẹ ⏱️';
@@ -130,10 +142,14 @@ export const QDishIntelligencePanel = ({
 
                 <div className="flex items-center justify-between rounded-2xl border border-neutral-100 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
                   <div className="space-y-1">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-neutral-400">Mức ưu tiên</span>
-                    <div className="flex items-center gap-1 text-xs font-extrabold text-red-600">Cao 🎯</div>
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-neutral-400">Tình trạng thực đơn</span>
+                    <div className={`flex items-center gap-1 text-xs font-extrabold ${recommendations.length > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {recommendations.length > 0 ? 'Cần xem xét' : 'Đang cân bằng'}
+                    </div>
                   </div>
-                  <div className="rounded-xl bg-red-50 p-1.5"><ShieldCheck className="h-4 w-4 text-red-500" /></div>
+                  <div className={`rounded-xl p-1.5 ${recommendations.length > 0 ? 'bg-amber-50' : 'bg-emerald-50'}`}>
+                    <ShieldCheck className={`h-4 w-4 ${recommendations.length > 0 ? 'text-amber-500' : 'text-emerald-600'}`} />
+                  </div>
                 </div>
               </div>
 
@@ -154,13 +170,17 @@ export const QDishIntelligencePanel = ({
                 <span className="block text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Đề xuất tối ưu thực đơn</span>
                 <div className="flex flex-col justify-between gap-3 rounded-2xl border border-neutral-100 bg-white/95 p-4 shadow-sm transition-all duration-300 hover:shadow-md motion-reduce:transition-none sm:flex-row sm:items-center">
                   <div className="flex items-start gap-3">
-                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-base">🍗</div>
+                    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-base">🍽️</div>
                     <div className="space-y-0.5">
-                      <h4 className="text-xs font-bold text-neutral-800">{gapAnalysis[0]?.includes('Chay') ? 'Bổ sung món chay / thuần chay' : 'Bổ sung món ăn Giàu Đạm'}</h4>
-                      <p className="text-[11px] leading-relaxed text-neutral-500">{gapAnalysis[0] || 'Menu đang thiếu hụt món ăn chứa lượng dinh dưỡng phù hợp cho nhu cầu thực khách.'}</p>
+                      <h4 className="text-xs font-bold text-neutral-800">
+                        {recommendations.length > 0 ? `Khoảng trống: ${getMissingCategory()}` : 'Thực đơn đang cân bằng'}
+                      </h4>
+                      <p className="text-[11px] leading-relaxed text-neutral-500">
+                        {recommendations[0] || gapAnalysis[0] || 'Chưa có gợi ý khoảng trống từ dữ liệu thực đơn hiện tại.'}
+                      </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="h-8 shrink-0 self-end rounded-xl border-emerald-100 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 sm:self-auto" onClick={() => toast.success('Đang chuyển tới Recipe Builder để thêm nguyên liệu...')}>
+                  <Button variant="outline" size="sm" className="h-8 shrink-0 self-end rounded-xl border-emerald-100 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 sm:self-auto" onClick={() => setShowRecommendations(true)}>
                     Xem gợi ý món
                   </Button>
                 </div>
@@ -173,7 +193,7 @@ export const QDishIntelligencePanel = ({
                       <p className="text-[11px] leading-relaxed text-neutral-500">Mục tiêu ăn uống Healthy được chọn <strong>{healthyCount} lượt</strong> trong khảo sát. Hãy tối ưu các tag Calo.</p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="h-8 shrink-0 self-end rounded-xl border-emerald-100 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 sm:self-auto" onClick={() => toast.success('Đang mở chi tiết phân khúc khách hàng...')}>
+                  <Button variant="outline" size="sm" className="h-8 shrink-0 self-end rounded-xl border-emerald-100 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 sm:self-auto" onClick={onViewSurveyTrends}>
                     Xem dữ liệu
                   </Button>
                 </div>
@@ -186,7 +206,7 @@ export const QDishIntelligencePanel = ({
                       <p className="text-[11px] leading-relaxed text-neutral-500">Mang lại <strong>{formatVND(topDishes[0]?.revenue || 0)}</strong> doanh thu. Đề xuất ghim món này lên đầu thực đơn QR.</p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="h-8 shrink-0 self-end rounded-xl border-emerald-100 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 sm:self-auto" onClick={() => toast.success('Đang mở báo cáo chi tiết doanh thu món ăn...')}>
+                  <Button variant="outline" size="sm" className="h-8 shrink-0 self-end rounded-xl border-emerald-100 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 sm:self-auto" onClick={onViewSmartMenuPerformance}>
                     Chi tiết
                   </Button>
                 </div>
@@ -217,6 +237,14 @@ export const QDishIntelligencePanel = ({
           </div>
         )}
       </div>
+
+      <MenuRecommendationDialog
+        open={showRecommendations}
+        recommendations={recommendations}
+        onOpenChange={setShowRecommendations}
+        onOpenRecipeBuilder={onOpenRecipeBuilder}
+        onOpenMenu={onOpenMenu}
+      />
 
     </div>
   );
