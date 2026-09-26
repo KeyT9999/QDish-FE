@@ -212,7 +212,14 @@ test('keeps the workspace accessible and free of page overflow at supported widt
   const runtimeErrors: string[] = [];
   page.on('pageerror', (error) => runtimeErrors.push(error.message));
   page.on('console', (message) => {
-    if (message.type() === 'error') runtimeErrors.push(message.text());
+    if (message.type() !== 'error') return;
+
+    const messageText = message.text();
+    // This fixture mocks REST APIs, but CI does not run the Socket.IO backend.
+    const unavailableSocketBackend = messageText.includes('/socket.io/?EIO=4&transport=websocket')
+      && messageText.includes('net::ERR_CONNECTION_REFUSED');
+
+    if (!unavailableSocketBackend) runtimeErrors.push(messageText);
   });
   await page.setViewportSize({ width: 375, height: 812 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
