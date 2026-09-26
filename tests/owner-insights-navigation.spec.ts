@@ -84,6 +84,8 @@ test.beforeEach(async ({ context, page }) => {
       body = { ...restaurant, features: ownerFeatures };
     } else if (url.pathname === '/api/notifications/unread-count') {
       body = { unreadCount: 0 };
+    } else if (url.pathname === '/api/ingredients') {
+      body = { ingredients: [], total: 0, pages: 1, page: 1 };
     } else if (url.pathname === '/api/restaurants/menu-insights') {
       menuInsightsRequestCount += 1;
       body = menuInsights;
@@ -356,4 +358,60 @@ test('keeps FREE plan disclosure and does not request insight data', async ({ pa
   await expect(workspace.getByText('Đặc quyền gói PLUS & PRO:')).toBeVisible();
   expect(customerInsightsRequestCount).toBe(0);
   expect(menuInsightsRequestCount).toBe(0);
+});
+
+test('opens the real survey, Smart-Menu, and Recipe Builder destinations from QDish actions', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/owner?tab=insights');
+  await page.waitForLoadState('networkidle');
+
+  const workspace = page.getByRole('region', { name: 'Phân tích nhà hàng' });
+  const tablist = workspace.getByRole('tablist', { name: 'Chọn nội dung phân tích' });
+  const intelligenceTab = tablist.getByRole('tab', { name: 'QDish Intelligence', exact: true });
+  await expect(workspace.getByText('Cần xem xét', { exact: true })).toBeVisible();
+
+  await workspace.getByRole('button', { name: 'Xem dữ liệu', exact: true }).click();
+  await expect(tablist.getByRole('tab', { name: 'Xu hướng khảo sát QR', exact: true }))
+    .toHaveAttribute('aria-selected', 'true');
+  await expect(workspace.getByRole('tabpanel').getByRole('heading', { name: 'Xu hướng từ lượt khảo sát QR' }))
+    .toBeVisible();
+
+  await intelligenceTab.click();
+  await workspace.getByRole('button', { name: 'Chi tiết', exact: true }).click();
+  await expect(tablist.getByRole('tab', { name: 'Hiệu suất món ăn Smart-Menu', exact: true }))
+    .toHaveAttribute('aria-selected', 'true');
+  await expect(workspace.getByRole('tabpanel').getByText('Bowl mẫu', { exact: true })).toBeVisible();
+
+  await intelligenceTab.click();
+  await workspace.getByRole('button', { name: 'Xem gợi ý món', exact: true }).click();
+  const recommendationDialog = page.getByRole('dialog', { name: 'Gợi ý tối ưu thực đơn' });
+  await expect(recommendationDialog).toBeVisible();
+  await expect(recommendationDialog.getByText('Có thể cân nhắc thêm lựa chọn giàu đạm')).toBeVisible();
+
+  await recommendationDialog.getByRole('button', { name: 'Mở Recipe Builder', exact: true }).click();
+  await expect(page).toHaveURL(/\/owner\?tab=menu$/);
+  const menuItemDialog = page.getByRole('dialog', { name: 'Thêm món ăn mới' });
+  await expect(menuItemDialog).toBeVisible();
+  await expect(menuItemDialog.getByText('Số khẩu phần', { exact: true })).toBeVisible();
+  await expect(menuItemDialog.getByPlaceholder('Tìm nguyên liệu (VD: gà, cơm, dầu...)')).toBeVisible();
+});
+
+test('does not offer to create a dish when the menu has no actionable gaps', async ({ page }) => {
+  customerInsightsResponse = {
+    ...customerInsights,
+    gapAnalysis: ['✨ Thực đơn của bạn đang được phân bổ đa dạng và cân đối.'],
+  };
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/owner?tab=insights');
+  await page.waitForLoadState('networkidle');
+
+  const workspace = page.getByRole('region', { name: 'Phân tích nhà hàng' });
+  await expect(workspace.getByText('Đang cân bằng', { exact: true })).toBeVisible();
+  await workspace.getByRole('button', { name: 'Xem gợi ý món', exact: true }).click();
+  const recommendationDialog = page.getByRole('dialog', { name: 'Gợi ý tối ưu thực đơn' });
+  await expect(recommendationDialog.getByText('Không có khoảng trống thực đơn cần xử lý.')).toBeVisible();
+  await expect(recommendationDialog.getByRole('button', { name: 'Mở Recipe Builder', exact: true })).toHaveCount(0);
+  await recommendationDialog.getByRole('button', { name: 'Xem thực đơn', exact: true }).click();
+  await expect(page).toHaveURL(/\/owner\?tab=menu$/);
+  await expect(page.getByRole('dialog', { name: 'Thêm món ăn mới' })).toHaveCount(0);
 });

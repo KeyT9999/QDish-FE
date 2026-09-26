@@ -116,6 +116,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Modal States
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
+  const [menuModalInitialTab, setMenuModalInitialTab] = useState<'info' | 'recipe'>('info');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
   const [tableCountInput, setTableCountInput] = useState('');
@@ -275,6 +276,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Menu
   const handleOpenMenuModal = (item?: MenuItem) => {
     setEditingMenuItem(item || null);
+    setMenuModalInitialTab('info');
+    setIsMenuModalOpen(true);
+  };
+
+  const handleOpenRecipeBuilder = () => {
+    setEditingMenuItem(null);
+    setMenuModalInitialTab('recipe');
+    setActiveTab('menu');
     setIsMenuModalOpen(true);
   };
 
@@ -665,7 +674,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </TabsContent>
 
         <TabsContent value="insights" className="space-y-6">
-          <MerchantInsightsTab restaurant={restaurant} />
+          <MerchantInsightsTab
+            restaurant={restaurant}
+            onOpenRecipeBuilder={handleOpenRecipeBuilder}
+            onOpenMenu={() => setActiveTab('menu')}
+          />
         </TabsContent>
 
         <TabsContent value="customers" className="space-y-6">
@@ -762,6 +775,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         editingItem={editingMenuItem}
         categories={categories}
         onSave={handleSaveMenuItem}
+        initialTab={menuModalInitialTab}
       />
 
 

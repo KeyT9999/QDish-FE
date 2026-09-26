@@ -14,15 +14,16 @@ import { Camera, ChefHat, Info, Loader2 as UploadLoader, AlertTriangle } from 'l
 import { toast } from 'sonner';
 import { RecipeBuilderTab } from './RecipeBuilderTab';
 
+type TabId = 'info' | 'recipe';
+
 export interface MenuItemModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingItem: MenuItem | null;
   categories: CategoryItem[];
   onSave: (payload: Partial<MenuItem>, editingItem: MenuItem | null) => Promise<void>;
+  initialTab?: TabId;
 }
-
-type TabId = 'info' | 'recipe';
 
 const getDefaultMenuForm = () => ({
   name: '',
@@ -49,7 +50,8 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
   onOpenChange,
   editingItem,
   categories,
-  onSave
+  onSave,
+  initialTab = 'info',
 }) => {
   const { user } = useAuth();
   const restaurantId =
@@ -67,7 +69,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
 
   useEffect(() => {
     if (!open) return;
-    setActiveTab('info');
+    setActiveTab(initialTab);
 
     if (editingItem) {
       setMenuForm({
@@ -104,7 +106,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
       setCookingMethod('raw');
       setIsCreatingNewCategory(categories.length === 0);
     }
-  }, [open, editingItem, categories]);
+  }, [open, editingItem, categories, initialTab]);
 
   const handleUploadMenuImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
