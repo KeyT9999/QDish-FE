@@ -260,7 +260,10 @@ export const MerchantInsightsTab: React.FC<{
           <PeakHoursPanel peakHours={insights.peakHours} isPlus={isPlus} />
         )}
         {selectedSection === 'menu-attributes' && (
-          <MenuAttributesPanel attributeDistribution={insights.attributeDistribution} />
+          <MenuAttributesPanel
+            attributeDistribution={insights.attributeDistribution}
+            menuCoverage={insights.menuCoverage}
+          />
         )}
         {selectedSection === 'smart-menu-performance' && (
           <SmartMenuPerformancePanel
