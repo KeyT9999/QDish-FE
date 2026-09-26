@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Chromium for owner Insights browser tests
+      - name: Install Chromium for browser regression tests
         run: npx playwright install --with-deps chromium
 
       - name: Check source encoding
@@ -53,6 +53,9 @@ jobs:
 
       - name: Run owner sidebar navigation browser regression
         run: npm run test:e2e:owner-sidebar
+
+      - name: Run order status feedback browser regression
+        run: npm run test:e2e:order-status
 
       - name: Build
         run: npm run build
