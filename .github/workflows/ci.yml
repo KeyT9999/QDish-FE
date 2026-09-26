@@ -51,6 +51,9 @@ jobs:
       - name: Run owner Insights browser regression
         run: npm run test:e2e:owner-insights
 
+      - name: Run owner sidebar navigation browser regression
+        run: npm run test:e2e:owner-sidebar
+
       - name: Build
         run: npm run build
 

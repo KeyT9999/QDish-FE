@@ -31,18 +31,19 @@ import { restaurantService } from '@/services/restaurantService';
 import { ownerRestaurantService } from '@/services/ownerRestaurantService';
 import { toast } from 'sonner';
 import { NotificationBell } from '../notification/NotificationBell';
+import { OwnerWorkspaceProvider, useOwnerWorkspace } from './OwnerWorkspaceContext';
+import { resolveOwnerRestaurantSelection } from './ownerWorkspaceSelection';
 
-export const DashboardLayout: React.FC = () => {
+const DashboardLayoutContent: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { selectedRestId, resolveSelectedRestaurant } = useOwnerWorkspace();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [restaurantName, setRestaurantName] = useState('Nhà hàng QDish');
   const [showBranches, setShowBranches] = useState(false);
   const [ownerRestaurants, setOwnerRestaurants] = useState<any[]>([]);
-
-  const selectedRestId = localStorage.getItem('selected_restaurant_id') || '';
 
   useEffect(() => {
     if (user?.role === Role.RESTAURANT_ADMIN && user.restaurantId) {
@@ -59,18 +60,17 @@ export const DashboardLayout: React.FC = () => {
       ownerRestaurantService.getMyRestaurants()
         .then(data => {
           setOwnerRestaurants(data);
-          const current = data.find((r: any) => (r.id || r._id) === selectedRestId);
-          if (current) {
-            setRestaurantName(current.name);
-          } else if (data.length > 0) {
-            // Backup selection if storage is out of sync
-            localStorage.setItem('selected_restaurant_id', data[0].id || data[0]._id);
-            setRestaurantName(data[0].name);
-          }
+          const resolvedId = resolveOwnerRestaurantSelection(
+            data,
+            window.localStorage.getItem('selected_restaurant_id')
+          );
+          resolveSelectedRestaurant(resolvedId);
+          const current = data.find((r: any) => (r.id || r._id) === resolvedId);
+          if (current) setRestaurantName(current.name);
         })
         .catch(() => {});
     }
-  }, [user, selectedRestId]);
+  }, [resolveSelectedRestaurant, user]);
 
   const handleLogout = () => {
     logout();
@@ -416,3 +416,9 @@ export const DashboardLayout: React.FC = () => {
     </div>
   );
 };
+
+export const DashboardLayout: React.FC = () => (
+  <OwnerWorkspaceProvider>
+    <DashboardLayoutContent />
+  </OwnerWorkspaceProvider>
+);

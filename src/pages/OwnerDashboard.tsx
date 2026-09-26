@@ -40,6 +40,8 @@ import { toast } from 'sonner';
 import { Dashboard } from './Dashboard';
 import { OwnerNotificationForm } from '@/components/notification/OwnerNotificationForm';
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
+import { useOwnerWorkspace } from '@/components/layout/OwnerWorkspaceContext';
+import { resolveOwnerRestaurantSelection } from '@/components/layout/ownerWorkspaceSelection';
 
 export const OwnerDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -56,7 +58,7 @@ export const OwnerDashboard: React.FC = () => {
   const [restaurantToArchive, setRestaurantToArchive] = useState<OwnerRestaurant | null>(null);
   const [archivingId, setArchivingId] = useState<string | null>(null);
   const [restoringId, setRestoringId] = useState<string | null>(null);
-  const [selectedRestId, setSelectedRestId] = useState(localStorage.getItem('selected_restaurant_id') || '');
+  const { selectedRestId, selectionStatus, resolveSelectedRestaurant } = useOwnerWorkspace();
   const [subDetails, setSubDetails] = useState<any>(null);
   const [billingPlans, setBillingPlans] = useState<Plan[]>([]);
   const [isSubLoading, setIsSubLoading] = useState(false);
@@ -144,23 +146,11 @@ export const OwnerDashboard: React.FC = () => {
       const data = await ownerRestaurantService.getMyRestaurants(period);
       setRestaurants(data);
 
-      const storedSelection = localStorage.getItem('selected_restaurant_id') || '';
-      const selectedIsActive = data.some((restaurant) => (restaurant.id || restaurant._id) === storedSelection);
-      if (storedSelection && !selectedIsActive) {
-        const fallbackId = data[0]?.id || data[0]?._id;
-        if (fallbackId) {
-          localStorage.setItem('selected_restaurant_id', fallbackId);
-          setSelectedRestId(fallbackId);
-        } else {
-          localStorage.removeItem('selected_restaurant_id');
-          setSelectedRestId('');
-        }
-        window.location.reload();
-      } else if (data.length > 0 && !storedSelection) {
-        const firstId = data[0].id || data[0]._id;
-        localStorage.setItem('selected_restaurant_id', firstId);
-        setSelectedRestId(firstId);
-      }
+      const resolvedId = resolveOwnerRestaurantSelection(
+        data,
+        window.localStorage.getItem('selected_restaurant_id')
+      );
+      resolveSelectedRestaurant(resolvedId);
     } catch {
       toast.error('Không thể tải danh sách chi nhánh nhà hàng');
     } finally {
@@ -255,8 +245,7 @@ export const OwnerDashboard: React.FC = () => {
       // Reload lists and select the newly created branch
       const newBranchId = response.restaurant?.id || response.restaurant?._id;
       if (newBranchId) {
-        localStorage.setItem('selected_restaurant_id', newBranchId);
-        setSelectedRestId(newBranchId);
+        resolveSelectedRestaurant(newBranchId);
       }
       
       // Full page reload to boot up all sockets & queries correctly for the new tenant workspace
@@ -269,8 +258,7 @@ export const OwnerDashboard: React.FC = () => {
   };
 
   const selectRestaurant = (id: string) => {
-    localStorage.setItem('selected_restaurant_id', id);
-    setSelectedRestId(id);
+    resolveSelectedRestaurant(id);
     toast.success('Đã chuyển đổi không gian làm việc chi nhánh!');
     window.location.reload();
   };
@@ -312,12 +300,10 @@ export const OwnerDashboard: React.FC = () => {
           ? getNextActiveRestaurantId(refreshed.active.value, restaurantId)
           : null;
         if (nextId) {
-          localStorage.setItem('selected_restaurant_id', nextId);
-          setSelectedRestId(nextId);
+          resolveSelectedRestaurant(nextId);
           window.location.assign('/owner?tab=owner-home&view=archived');
         } else {
-          localStorage.removeItem('selected_restaurant_id');
-          setSelectedRestId('');
+          resolveSelectedRestaurant(null);
           navigate('/owner?tab=owner-home&view=archived', { replace: true });
         }
       }
@@ -354,7 +340,7 @@ export const OwnerDashboard: React.FC = () => {
       if (!localStorage.getItem('selected_restaurant_id')) {
         const restoredId = restored.id || restored._id || restaurantId;
         localStorage.setItem('selected_restaurant_id', restoredId);
-        setSelectedRestId(restoredId);
+        resolveSelectedRestaurant(restoredId);
       }
       if (refreshed.active.status === 'rejected' || refreshed.archived.status === 'rejected') {
         toast.error('Chi nhánh đã khôi phục, nhưng danh sách chưa tải mới được. Vui lòng tải lại trang.');
@@ -366,7 +352,17 @@ export const OwnerDashboard: React.FC = () => {
     }
   };
 
-  if (activeTab !== 'owner-home' && activeTab !== 'billing' && activeTab !== 'notifications' && selectedRestId) {
+  const isWorkspaceTab = activeTab !== 'owner-home' && activeTab !== 'billing' && activeTab !== 'notifications';
+
+  if (isWorkspaceTab && selectionStatus === 'loading') {
+    return (
+      <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-neutral-200 bg-white px-6 text-sm font-semibold text-neutral-500" aria-busy="true">
+        Đang chuẩn bị không gian quản trị...
+      </div>
+    );
+  }
+
+  if (isWorkspaceTab && selectedRestId) {
     return <Dashboard ownerRestaurants={restaurants} onCopySuccess={() => loadRestaurants(statsPeriod)} />;
   }
 

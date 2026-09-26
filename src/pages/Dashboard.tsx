@@ -48,6 +48,7 @@ import { EmailChangeOtpModal } from '@/components/dashboard/restaurant/modals/Em
 import { BankChangeOtpModal } from '@/components/dashboard/restaurant/modals/BankChangeOtpModal';
 import { BillPaymentModal } from '@/components/dashboard/restaurant/modals/BillPaymentModal';
 import { CopyMenuModal } from '@/components/dashboard/restaurant/modals/CopyMenuModal';
+import { useOwnerWorkspace } from '@/components/layout/OwnerWorkspaceContext';
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
 
@@ -72,10 +73,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onCopySuccess
 }) => {
   const { user } = useAuth();
+  const { selectedRestId: ownerSelectedRestId } = useOwnerWorkspace();
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
   
   // Resolve restaurantId dynamically for RESTAURANT_OWNER
-  const selectedRestId = localStorage.getItem('selected_restaurant_id') || '';
+  const selectedRestId = ownerSelectedRestId;
   const restaurantId = user?.role === 'RESTAURANT_OWNER' ? selectedRestId : (user?.restaurantId || '');
 
   // Tab State synced with URL query parameter
