@@ -129,6 +129,9 @@ test('offers accessible desktop Insights sections and reuses the shared payload'
   await expect(intelligenceTab).toHaveAttribute('tabindex', '0');
   await expect(workspace.getByRole('tabpanel')).toHaveCount(1);
   await expect(workspace.getByRole('tabpanel').getByText('QDish Intelligence Demo')).toBeVisible();
+  await expect(
+    workspace.getByRole('tabpanel').getByRole('heading', { name: 'Xu hướng từ lượt khảo sát QR' }),
+  ).toHaveCount(0);
 
   const surveyTab = tablist.getByRole('tab', { name: 'Xu hướng khảo sát QR', exact: true });
   await surveyTab.click();
