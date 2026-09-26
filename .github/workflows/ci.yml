@@ -36,6 +36,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Chromium for owner Insights browser tests
+        run: npx playwright install --with-deps chromium
+
       - name: Check source encoding
         run: npm run check:encoding
 
@@ -44,6 +47,9 @@ jobs:
 
       - name: Run unit and policy tests
         run: npm run test:ci
+
+      - name: Run owner Insights browser regression
+        run: npm run test:e2e:owner-insights
 
       - name: Build
         run: npm run build

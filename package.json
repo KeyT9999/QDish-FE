@@ -14,6 +14,7 @@
     "test:dining-profile-ui": "node --experimental-strip-types tests/diningProfileUiPolicy.test.ts",
     "test:e2e:fit-score": "playwright test --config playwright.fit-score.config.ts",
     "test:e2e:recommendation": "playwright test --config playwright.recommendation.config.ts",
+    "test:e2e:owner-insights": "playwright test --config playwright.owner-insights.config.ts",
     "test:dining-visit-token": "node --experimental-strip-types tests/diningVisitToken.test.ts",
     "test:merchant-insight-access": "node --experimental-strip-types tests/merchantInsightAccess.test.ts",
     "test:customer-checkout-contact": "node --experimental-strip-types tests/customerCheckoutContact.test.ts",
