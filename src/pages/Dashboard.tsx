@@ -7,7 +7,8 @@ import {
   startRealtimeOrderAlert,
   stopRealtimeOrderAlert,
   useRealtimeOrders,
-  upsertRealtimeOrder
+  upsertRealtimeOrder,
+  RealtimeTableStatusPayload
 } from '@/hooks/useRealtimeOrders';
 import { NewOrderAlertOverlay } from '@/components/shared/NewOrderAlertOverlay';
 import { ActiveBill, MenuItem, Restaurant, Order, OrderStatus, RestaurantStats, Staff, Role } from '@/types';
@@ -541,6 +542,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   }, [activeTab, loadOrderBillGroups]);
 
+  const handleRealtimeTableStatusUpdated = useCallback((update: RealtimeTableStatusPayload) => {
+    if (!update.status) return;
+
+    setTables((current) => current.map((table) => {
+      const tableId = table._id || table.id;
+      const isSameTable = (update.tableId && tableId === update.tableId) || table.code === update.code;
+      if (!isSameTable) return table;
+
+      return {
+        ...table,
+        status: update.status as RestaurantTable['status'],
+        activeSessionId: update.activeSessionId || undefined,
+        currentSessionCode: update.currentSessionCode || undefined,
+        lastSessionClosedAt: update.lastSessionClosedAt || table.lastSessionClosedAt
+      };
+    }));
+  }, []);
+
   const handleRealtimeSync = useCallback(async (
     changedOrders: Order[],
     { requiresFullRefresh }: { requiresFullRefresh: boolean }
@@ -561,6 +580,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     restaurantId,
     onNewOrder: handleRealtimeNewOrder,
     onOrderUpdated: handleRealtimeOrderUpdated,
+    onTableStatusUpdated: handleRealtimeTableStatusUpdated,
     onRealtimeSync: handleRealtimeSync,
   });
 
