@@ -87,13 +87,19 @@ assert.equal(getMenuAllergenWarning({
   allergens: ['FISH']
 }, ['NUTS']).kind, 'UNKNOWN');
 
+assert.equal(getMenuAllergenWarning({
+  allergenInfoStatus: 'UNKNOWN',
+  allergens: []
+}, ['NUTS']).kind, 'UNKNOWN');
+
 assert.deepEqual(getMenuAllergenWarning({
   allergens: []
-}, []), {
-  kind: 'UNKNOWN',
-  informationIncomplete: true,
-  message: 'Chưa xác minh đầy đủ thông tin dị ứng của món này. Hãy hỏi nhân viên nếu bạn bị dị ứng.'
-});
+}, []), { kind: 'NONE' });
+
+assert.deepEqual(getMenuAllergenWarning({
+  allergenInfoStatus: 'UNKNOWN',
+  allergens: ['TREE_NUTS']
+}, []), { kind: 'NONE' });
 
 assert.equal(formatOrderAllergenWarning({
   allergenInfoStatus: 'REVIEWED',

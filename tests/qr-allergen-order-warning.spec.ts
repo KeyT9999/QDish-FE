@@ -130,12 +130,37 @@ test('free QR guest sees allergen warnings and may still place the order', async
   await page.goto(`/order?r=${restaurantId}&t=1`);
 
   await expect(page.getByRole('heading', { name: 'Tránh chất gây dị ứng' })).toBeVisible({ timeout: 5_000 });
+  await page.getByRole('button', { name: 'Tôi không có dị ứng đã biết' }).click();
+  await page.getByRole('button', { name: /Lưu thông tin dị ứng/ }).click();
+
+  await expect(page.getByText('Chưa xác minh dị ứng')).toHaveCount(0);
+  await expect(page.getByText(/Thông tin của \d+ món còn chưa đầy đủ/)).toHaveCount(0);
+  await expect(page.getByText(/món có thể liên quan đến dị ứng bạn đã khai báo/)).toHaveCount(0);
+  await page.getByText('Brownie óc chó').click();
+  await expect(page.getByText('Cảnh báo dị ứng thực phẩm')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Quay lại danh sách món ăn' }).click();
+
+  await page.getByText('Món đã xác nhận an toàn').click();
+  await expect(page.getByText('Nhà hàng đã rà soát và không khai báo allergen nào trong danh sách hỗ trợ.')).toBeVisible();
+  await page.getByRole('button', { name: 'Quay lại danh sách món ăn' }).click();
+
+  await page.getByRole('button', { name: 'Khai báo hoặc sửa thông tin dị ứng' }).click();
   await page.getByRole('button', { name: /Hạt cây/ }).click();
   await page.getByRole('button', { name: /Lưu thông tin dị ứng/ }).click();
 
   await expect(page.getByText('1 món có thể liên quan đến dị ứng bạn đã khai báo.')).toBeVisible();
   await expect(page.getByText(/Món này có thể chứa hạt cây bạn đã khai báo dị ứng\. Thông tin dị ứng của món chưa được xác minh\./)).toBeVisible();
   await expect(page.getByText('Chưa xác minh dị ứng')).toBeVisible();
+  await page.getByText('Brownie óc chó').click();
+  const dishDetail = page.locator('[data-slot="sheet-content"]');
+  await expect(dishDetail.getByText(/Món này có thể chứa hạt cây bạn đã khai báo dị ứng/)).toHaveCount(1);
+  await page.getByRole('button', { name: 'Quay lại danh sách món ăn' }).click();
+
+  await page.getByText('Món chưa có dữ liệu').click();
+  await expect(dishDetail.getByText('Cảnh báo dị ứng thực phẩm')).toHaveCount(0);
+  await expect(dishDetail.getByText(/Chưa xác minh đầy đủ thông tin dị ứng/)).toHaveCount(1);
+  await page.getByRole('button', { name: 'Quay lại danh sách món ăn' }).click();
+
   await page.getByText('Món đã xác nhận an toàn').click();
   await expect(page.getByText('Nhà hàng đã rà soát và không khai báo allergen nào trong danh sách hỗ trợ.')).toBeVisible();
   await page.getByRole('button', { name: 'Quay lại danh sách món ăn' }).click();
