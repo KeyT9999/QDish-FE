@@ -39,6 +39,10 @@ export const MenuAllergenReviewModal: React.FC<MenuAllergenReviewModalProps> = (
     && item.allergenCoverageStatus === 'COMPLETE'
     && (item.allergenUnverifiedIngredientCount ?? 0) === 0
   );
+  const candidates = useMemo(
+    () => normalizeMenuReviewAllergens(item?.allergens?.map(String)),
+    [item?.allergens]
+  );
   const [method, setMethod] = useState<MenuAllergenReviewMethod>('MANUAL');
   const [contains, setContains] = useState<string[]>([]);
   const [mayContain, setMayContain] = useState<string[]>([]);
@@ -65,7 +69,7 @@ export const MenuAllergenReviewModal: React.FC<MenuAllergenReviewModalProps> = (
     mayContainAllergens: mayContain,
     sourceType,
     sourceNote
-  }, recipeComplete), [method, contains, mayContain, sourceType, sourceNote, recipeComplete]);
+  }, recipeComplete, candidates), [method, contains, mayContain, sourceType, sourceNote, recipeComplete, candidates]);
 
   const toggle = (list: string[], setList: React.Dispatch<React.SetStateAction<string[]>>, code: string) => {
     setList((current) => current.includes(code) ? current.filter((value) => value !== code) : [...current, code]);
@@ -97,9 +101,10 @@ export const MenuAllergenReviewModal: React.FC<MenuAllergenReviewModalProps> = (
       ? 'Nhập nguồn và nội dung đã đối chiếu (tối đa 500 ký tự).'
       : validation.reason === 'LISTS_OVERLAP'
         ? 'Không chọn cùng một allergen ở cả “Có chứa” và “Có thể chứa”.'
-        : 'Xác minh theo công thức cần chọn nguồn “Công thức nhà hàng”.';
+        : validation.reason === 'RECIPE_ALLERGENS_MISSING'
+          ? 'Không thể bỏ allergen đã xác minh từ nguyên liệu của công thức.'
+          : 'Xác minh theo công thức cần chọn nguồn “Công thức nhà hàng”.';
 
-  const candidates = normalizeMenuReviewAllergens(item?.allergens?.map(String));
   const candidateLabels = candidates.map((code) => OPTIONS.find((option) => option.code === code.toUpperCase())?.label ?? code);
 
   return (
@@ -129,6 +134,7 @@ export const MenuAllergenReviewModal: React.FC<MenuAllergenReviewModalProps> = (
                 onClick={() => {
                   setMethod('RECIPE');
                   setSourceType('RESTAURANT_RECIPE');
+                  setContains((current) => normalizeMenuReviewAllergens([...current, ...candidates]));
                 }}
                 disabled={!recipeComplete}
                 aria-pressed={method === 'RECIPE'}
@@ -155,12 +161,17 @@ export const MenuAllergenReviewModal: React.FC<MenuAllergenReviewModalProps> = (
           <section className="space-y-3">
             <div>
               <h3 className="text-sm font-bold text-neutral-800">Có chứa</h3>
-              <p className="text-xs text-neutral-500">Chọn allergen có trong thành phần món ăn.</p>
+              <p className="text-xs text-neutral-500">Chọn allergen có trong thành phần món ăn.{method === 'RECIPE' && candidates.length > 0 ? ' Allergen đã xác minh trong công thức được giữ cố định.' : ''}</p>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {OPTIONS.map((option) => (
                 <label key={`contains-${option.code}`} className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-medium text-neutral-700">
-                  <input type="checkbox" checked={contains.includes(option.code)} onChange={() => toggle(contains, setContains, option.code)} />
+                  <input
+                    type="checkbox"
+                    checked={contains.includes(option.code)}
+                    disabled={method === 'RECIPE' && candidates.includes(option.code)}
+                    onChange={() => toggle(contains, setContains, option.code)}
+                  />
                   {option.label}
                 </label>
               ))}

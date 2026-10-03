@@ -11,7 +11,7 @@ export interface MenuAllergenReviewDraft {
 
 export type MenuAllergenReviewValidation =
   | { valid: true }
-  | { valid: false; reason: 'RECIPE_INCOMPLETE' | 'EVIDENCE_REQUIRED' | 'LISTS_OVERLAP' | 'SOURCE_MISMATCH' };
+  | { valid: false; reason: 'RECIPE_INCOMPLETE' | 'EVIDENCE_REQUIRED' | 'LISTS_OVERLAP' | 'SOURCE_MISMATCH' | 'RECIPE_ALLERGENS_MISSING' };
 
 const MENU_REVIEW_ALLERGEN_ORDER = [
   'GLUTEN', 'DAIRY', 'PEANUT', 'TREE_NUTS', 'SESAME', 'SHELLFISH', 'SOY', 'EGGS', 'FISH'
@@ -42,7 +42,8 @@ export function getInitialMenuReviewContains(
 
 export function validateMenuAllergenReviewDraft(
   draft: MenuAllergenReviewDraft,
-  recipeComplete: boolean
+  recipeComplete: boolean,
+  recipeAllergens: readonly string[] = []
 ): MenuAllergenReviewValidation {
   if (draft.method === 'RECIPE' && !recipeComplete) {
     return { valid: false, reason: 'RECIPE_INCOMPLETE' };
@@ -58,6 +59,13 @@ export function validateMenuAllergenReviewDraft(
   }
   if (draft.containsAllergens.some((code) => draft.mayContainAllergens.includes(code))) {
     return { valid: false, reason: 'LISTS_OVERLAP' };
+  }
+  if (draft.method === 'RECIPE') {
+    const declared = new Set(normalizeMenuReviewAllergens(draft.containsAllergens));
+    const required = normalizeMenuReviewAllergens(recipeAllergens);
+    if (required.some((code) => !declared.has(code))) {
+      return { valid: false, reason: 'RECIPE_ALLERGENS_MISSING' };
+    }
   }
   return { valid: true };
 }

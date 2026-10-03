@@ -35,6 +35,21 @@ assert.deepEqual(validateMenuAllergenReviewDraft({ ...base, method: 'RECIPE' }, 
   valid: false,
   reason: 'SOURCE_MISMATCH'
 });
+assert.deepEqual(validateMenuAllergenReviewDraft({
+  ...base,
+  method: 'RECIPE',
+  sourceType: 'RESTAURANT_RECIPE',
+  containsAllergens: ['GLUTEN']
+}, true, ['PEANUT', 'GLUTEN']), {
+  valid: false,
+  reason: 'RECIPE_ALLERGENS_MISSING'
+});
+assert.deepEqual(validateMenuAllergenReviewDraft({
+  ...base,
+  method: 'RECIPE',
+  sourceType: 'RESTAURANT_RECIPE',
+  containsAllergens: ['PEANUT', 'GLUTEN']
+}, true, ['PEANUT', 'GLUTEN']), { valid: true });
 assert.deepEqual(getInitialMenuReviewContains('UNKNOWN', undefined, ['NUTS', 'SESAME']), [
   'PEANUT', 'TREE_NUTS', 'SESAME'
 ]);
