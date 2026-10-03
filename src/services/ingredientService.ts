@@ -20,6 +20,10 @@ export interface Ingredient {
   sugarPer100g: number;
   sodiumPer100g: number;
   allergens: string[];
+  allergenInfoStatus?: 'UNKNOWN' | 'REVIEWED';
+  allergenInfoSourceType?: 'SUPPLIER_LABEL' | 'RESTAURANT_RECIPE' | 'STAFF_ATTESTATION' | 'CURATED_MENU_DESCRIPTION' | 'CURATED_REFERENCE_CATALOG';
+  allergenInfoSourceNote?: string;
+  allergenReviewedAt?: string;
   isVerified: boolean;
   source: string;
   restaurantId?: string | null;

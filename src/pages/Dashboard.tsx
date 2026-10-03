@@ -12,7 +12,7 @@ import {
 } from '@/hooks/useRealtimeOrders';
 import { NewOrderAlertOverlay } from '@/components/shared/NewOrderAlertOverlay';
 import { ActiveBill, MenuItem, Restaurant, Order, OrderStatus, RestaurantStats, Staff, Role } from '@/types';
-import { menuService } from '@/services/menuService';
+import { menuService, MenuAllergenReviewPayload } from '@/services/menuService';
 import { categoryService, CategoryItem } from '@/services/categoryService';
 import { restaurantService } from '@/services/restaurantService';
 import { orderService } from '@/services/orderService';
@@ -44,6 +44,7 @@ import { RestaurantCustomersTab } from '@/components/dashboard/restaurant/Restau
 
 // Modal Components
 import { MenuItemModal } from '@/components/dashboard/restaurant/modals/MenuItemModal';
+import { MenuAllergenReviewModal } from '@/components/dashboard/restaurant/modals/MenuAllergenReviewModal';
 import { CategoryModal } from '@/components/dashboard/restaurant/modals/CategoryModal';
 import { QRPreviewModal } from '@/components/dashboard/restaurant/modals/QRPreviewModal';
 import { StaffModal } from '@/components/dashboard/restaurant/modals/StaffModal';
@@ -122,6 +123,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Modal States
   const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
   const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
+  const [allergenReviewItem, setAllergenReviewItem] = useState<MenuItem | null>(null);
   const [menuModalInitialTab, setMenuModalInitialTab] = useState<'info' | 'recipe'>('info');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<CategoryItem | null>(null);
@@ -330,13 +332,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
-  const handleConfirmAllergenReview = async (id: string) => {
+  const handleSaveAllergenReview = async (id: string, payload: MenuAllergenReviewPayload) => {
     try {
-      await menuService.update(id, { allergenInfoStatus: 'REVIEWED' });
-      toast.success('Đã xác nhận thông tin dị ứng của món');
-      loadMenu();
+      await menuService.reviewAllergens(id, payload);
+      toast.success('Đã lưu khai báo dị ứng kèm nguồn xác nhận');
+      await loadMenu();
     } catch (err: any) {
-      toast.error(err.message || 'Không thể xác nhận thông tin dị ứng');
+      toast.error(err.message || 'Không thể lưu xác nhận dị ứng');
+      throw err;
     }
   };
 
@@ -755,7 +758,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onOpenMenuModal={handleOpenMenuModal}
             onDeleteMenuItem={handleDeleteMenuItem}
             onToggleAvailable={handleToggleAvailable}
-            onConfirmAllergenReview={handleConfirmAllergenReview}
+            onConfirmAllergenReview={setAllergenReviewItem}
             showCopyButton={user?.role === 'RESTAURANT_OWNER' && ownerRestaurants.length > 1}
             onCopyClick={() => setIsCopyModalOpen(true)}
           />
@@ -821,6 +824,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
         categories={categories}
         onSave={handleSaveMenuItem}
         initialTab={menuModalInitialTab}
+      />
+
+      <MenuAllergenReviewModal
+        open={Boolean(allergenReviewItem)}
+        item={allergenReviewItem}
+        onOpenChange={(open) => { if (!open) setAllergenReviewItem(null); }}
+        onSave={handleSaveAllergenReview}
       />
 
 

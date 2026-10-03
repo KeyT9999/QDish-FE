@@ -43,11 +43,12 @@ function testMigratesPlainProfileAndNormalizesValues() {
     goals: ['BALANCED'],
     preferences: ['VEGAN'],
     allergies: ['SOY'],
-    conditions: ['DIABETES']
+    conditions: ['DIABETES'],
+    allergyDisclosureStatus: 'DECLARED'
   });
-  assert.equal(migrated.schemaVersion, 1);
+  assert.equal(migrated.schemaVersion, 2);
   assert.match(migrated.updatedAt, /^\d{4}-\d{2}-\d{2}T/);
-  assert.equal(JSON.parse(storage.getItem('qdish_dining_profile')!).schemaVersion, 1);
+  assert.equal(JSON.parse(storage.getItem('qdish_dining_profile')!).schemaVersion, 2);
 }
 
 function testMigratesAndRemovesLegacyHealthProfile() {
@@ -65,9 +66,10 @@ function testMigratesAndRemovesLegacyHealthProfile() {
     goals: ['MUSCLE_GAIN'],
     preferences: ['HIGH_PROTEIN'],
     allergies: ['NUTS'],
-    conditions: ['HYPERTENSION']
+    conditions: ['HYPERTENSION'],
+    allergyDisclosureStatus: 'DECLARED'
   });
-  assert.equal(JSON.parse(storage.getItem('qdish_dining_profile')!).schemaVersion, 1);
+  assert.equal(JSON.parse(storage.getItem('qdish_dining_profile')!).schemaVersion, 2);
   assert.equal(storage.getItem('qdish_health_profile'), null);
 }
 
@@ -114,7 +116,7 @@ function testLoadsAValidVersionOneEnvelope() {
 
   assert.equal(loaded.updatedAt, '2026-08-01T12:34:56+00:00');
   assert.deepEqual(loaded.profile, {
-    goals: ['ENERGY_BOOST'], preferences: ['LOW_CARB'], allergies: ['FISH'], conditions: []
+    goals: ['ENERGY_BOOST'], preferences: ['LOW_CARB'], allergies: ['FISH'], conditions: [], allergyDisclosureStatus: 'DECLARED'
   });
 }
 
@@ -126,16 +128,18 @@ function testSavesCanonicalEnvelopeWithIsoTimestamp() {
     goals: ['BALANCED', 'BALANCED'],
     preferences: ['VEGAN', 'UNKNOWN' as never],
     allergies: ['DAIRY', 'DAIRY'],
-    conditions: ['CELIAC', 'UNKNOWN' as never]
+    conditions: ['CELIAC', 'UNKNOWN' as never],
+    allergyDisclosureStatus: 'DECLARED'
   }, timestamp);
 
-  assert.equal(stored.schemaVersion, 1);
+  assert.equal(stored.schemaVersion, 2);
   assert.equal(stored.updatedAt, '2026-08-01T12:34:56.789Z');
   assert.deepEqual(stored.profile, {
     goals: ['BALANCED'],
     preferences: ['VEGAN'],
     allergies: ['DAIRY'],
-    conditions: ['CELIAC']
+    conditions: ['CELIAC'],
+    allergyDisclosureStatus: 'DECLARED'
   });
   assert.deepEqual(JSON.parse(storage.getItem('qdish_dining_profile')!), stored);
 }
@@ -150,7 +154,7 @@ function testUsesFreshEmptyProfilesAndClearsStorage() {
   assert.throws(() => EMPTY_DINING_PROFILE.goals.push('BALANCED'));
 
   saveDiningProfile(storage, {
-    goals: ['BALANCED'], preferences: [], allergies: [], conditions: []
+    goals: ['BALANCED'], preferences: [], allergies: [], conditions: [], allergyDisclosureStatus: 'NOT_ANSWERED'
   });
   storage.setItem('qdish_health_profile', JSON.stringify({
     goals: ['MUSCLE_GAIN'], preferences: [], allergies: [], conditions: []
@@ -190,7 +194,7 @@ function testKeepsLegacyProfileWhenCurrentPlainProfileRewriteFails() {
   const loaded = loadDiningProfile(storage);
 
   assert.deepEqual(loaded.profile, {
-    goals: ['BALANCED'], preferences: [], allergies: [], conditions: []
+    goals: ['BALANCED'], preferences: [], allergies: [], conditions: [], allergyDisclosureStatus: 'NOT_ANSWERED'
   });
   assert.notEqual(storage.getItem('qdish_health_profile'), null);
 }
@@ -203,8 +207,22 @@ function testSelectionDetectionIncludesAllergiesAndConditions() {
     goals: [], preferences: [], allergies: [], conditions: ['DIABETES']
   }), true);
   assert.equal(hasDiningProfileSelections({
+    goals: [], preferences: [], allergies: [], conditions: [], allergyDisclosureStatus: 'NONE_DECLARED'
+  }), true);
+}
+
+function testLegacyEmptyProfileRemainsNotAnsweredAndNewNutCodesAreSupported() {
+  const storage = createMemoryStorage();
+  storage.setItem('qdish_dining_profile', JSON.stringify({
     goals: [], preferences: [], allergies: [], conditions: []
-  }), false);
+  }));
+  assert.equal(loadDiningProfile(storage).profile.allergyDisclosureStatus, 'NOT_ANSWERED');
+
+  const saved = saveDiningProfile(storage, {
+    goals: [], preferences: [], allergies: ['PEANUT', 'TREE_NUTS', 'SESAME'], conditions: [],
+    allergyDisclosureStatus: 'DECLARED'
+  });
+  assert.deepEqual(saved.profile.allergies, ['PEANUT', 'TREE_NUTS', 'SESAME']);
 }
 
 function testOnboardingHandledMarkerFailsClosedWithoutThrowing() {
@@ -227,5 +245,6 @@ testSavesCanonicalEnvelopeWithIsoTimestamp();
 testUsesFreshEmptyProfilesAndClearsStorage();
 testKeepsLegacyProfileWhenCurrentPlainProfileRewriteFails();
 testSelectionDetectionIncludesAllergiesAndConditions();
+testLegacyEmptyProfileRemainsNotAnsweredAndNewNutCodesAreSupported();
 testOnboardingHandledMarkerFailsClosedWithoutThrowing();
 console.log('dining profile storage tests passed');

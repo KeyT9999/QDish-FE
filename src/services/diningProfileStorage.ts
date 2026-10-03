@@ -14,7 +14,7 @@ const PREFERENCES = new Set<DiningPreference>([
   'KETO', 'GLUTEN_FREE', 'LOW_FAT', 'SUGAR_FREE'
 ]);
 const ALLERGIES = new Set<Allergen>([
-  'GLUTEN', 'DAIRY', 'NUTS', 'SHELLFISH', 'SOY', 'EGGS', 'FISH'
+  'GLUTEN', 'DAIRY', 'PEANUT', 'TREE_NUTS', 'SESAME', 'NUTS', 'SHELLFISH', 'SOY', 'EGGS', 'FISH'
 ] as unknown as Allergen[]);
 const CONDITIONS = new Set<DiningProfile['conditions'][number]>([
   'DIABETES', 'HYPERTENSION', 'CELIAC'
@@ -24,7 +24,7 @@ type ProfileStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 type UnknownRecord = Record<string, unknown>;
 
 export interface StoredDiningProfile {
-  schemaVersion: 1;
+  schemaVersion: 2;
   updatedAt: string;
   profile: DiningProfile;
 }
@@ -33,7 +33,8 @@ const emptyProfile: DiningProfile = {
   goals: [],
   preferences: [],
   allergies: [],
-  conditions: []
+  conditions: [],
+  allergyDisclosureStatus: 'NOT_ANSWERED'
 };
 
 Object.freeze(emptyProfile.goals);
@@ -68,11 +69,20 @@ function normalizeProfile(value: unknown): DiningProfile | undefined {
     return undefined;
   }
 
+  const allergies = normalizeValues(value.allergies, ALLERGIES);
+  const requestedDisclosure = value.allergyDisclosureStatus;
+  const allergyDisclosureStatus = requestedDisclosure === 'NONE_DECLARED' && allergies.length === 0
+    ? 'NONE_DECLARED'
+    : requestedDisclosure === 'DECLARED' && allergies.length > 0
+      ? 'DECLARED'
+      : allergies.length > 0 ? 'DECLARED' : 'NOT_ANSWERED';
+
   return {
     goals: normalizeValues(value.goals, GOALS),
     preferences: normalizeValues(value.preferences, PREFERENCES),
-    allergies: normalizeValues(value.allergies, ALLERGIES),
-    conditions: normalizeValues(value.conditions, CONDITIONS)
+    allergies,
+    conditions: normalizeValues(value.conditions, CONDITIONS),
+    allergyDisclosureStatus
   };
 }
 
@@ -81,7 +91,8 @@ function cloneProfile(profile: DiningProfile): DiningProfile {
     goals: [...profile.goals],
     preferences: [...profile.preferences],
     allergies: [...profile.allergies],
-    conditions: [...profile.conditions]
+    conditions: [...profile.conditions],
+    allergyDisclosureStatus: profile.allergyDisclosureStatus ?? (profile.allergies.length > 0 ? 'DECLARED' : 'NOT_ANSWERED')
   };
 }
 
@@ -104,14 +115,14 @@ function isIsoTimestamp(value: unknown): value is string {
 }
 
 function parseStoredProfile(value: unknown): StoredDiningProfile | undefined {
-  if (!isRecord(value) || value.schemaVersion !== 1 || !isIsoTimestamp(value.updatedAt)) {
+  if (!isRecord(value) || (value.schemaVersion !== 1 && value.schemaVersion !== 2) || !isIsoTimestamp(value.updatedAt)) {
     return undefined;
   }
 
   const profile = normalizeProfile(value.profile);
   return profile === undefined
     ? undefined
-    : { schemaVersion: 1, updatedAt: value.updatedAt, profile };
+    : { schemaVersion: 2, updatedAt: value.updatedAt, profile };
 }
 
 function safeRead(storage: ProfileStorage | undefined, key: string): string | null | undefined {
@@ -170,9 +181,10 @@ export function loadDiningProfile(storage?: ProfileStorage): StoredDiningProfile
 
     if (isRecord(storedValue) && 'schemaVersion' in storedValue) {
       const stored = parseStoredProfile(storedValue);
-      return stored === undefined
-        ? emptyStoredProfile()
-        : { ...stored, profile: cloneProfile(stored.profile) };
+      if (!stored) return emptyStoredProfile();
+      const migrated = { ...stored, profile: cloneProfile(stored.profile) };
+      if (storedValue.schemaVersion !== 2) persist(storage, migrated);
+      return migrated;
     }
 
     const legacyProfile = normalizeProfile(storedValue);
@@ -207,7 +219,7 @@ export function saveDiningProfile(
 ): StoredDiningProfile {
   const normalizedProfile = normalizeProfile(profile) ?? createEmptyProfile();
   const stored: StoredDiningProfile = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     updatedAt: safeIsoTimestamp(now),
     profile: normalizedProfile
   };
@@ -220,7 +232,8 @@ export function hasDiningProfileSelections(profile: DiningProfile): boolean {
   return profile.goals.length > 0
     || profile.preferences.length > 0
     || profile.allergies.length > 0
-    || profile.conditions.length > 0;
+    || profile.conditions.length > 0
+    || profile.allergyDisclosureStatus === 'NONE_DECLARED';
 }
 
 export function loadDiningOnboardingHandled(storage?: ProfileStorage): boolean {

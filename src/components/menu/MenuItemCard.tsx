@@ -124,7 +124,9 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
                   : 'text-amber-900 bg-amber-50 border-amber-200/80'
               }`}>
                 <ShieldAlert className={`w-3 h-3 mt-0.5 shrink-0 ${allergenWarning.kind === 'CONFLICT' ? 'text-rose-600' : 'text-amber-700'}`} />
-                <span>{allergenWarning.message}</span>
+                <span>{allergenWarning.kind === 'UNKNOWN'
+                  ? 'Chưa xác minh dị ứng'
+                  : allergenWarning.message}</span>
               </div>
             ) : item.nutrition ? (
               <NutritionBadge nutrition={item.nutrition} />

@@ -284,7 +284,8 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                             {order.items.map((item, index) => {
                               const warning = formatOrderAllergenWarning({
                                 ...item,
-                                reportedAllergies: order.reportedAllergies
+                                reportedAllergies: order.reportedAllergies,
+                                allergyDisclosureStatus: order.allergyDisclosureStatus
                               });
                               return warning ? (
                                 <p key={`${item.menuItemId}-${index}`} className="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-900">

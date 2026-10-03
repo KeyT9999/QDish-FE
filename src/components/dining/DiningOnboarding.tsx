@@ -28,6 +28,9 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
   const [step, setStep] = useState(1);
   const [goals, setGoals] = useState<DiningProfile['goals']>(initialProfile.goals);
   const [allergies, setAllergies] = useState<Allergen[]>(initialProfile.allergies);
+  const [allergyDisclosureStatus, setAllergyDisclosureStatus] = useState<DiningProfile['allergyDisclosureStatus']>(
+    initialProfile.allergyDisclosureStatus ?? (initialProfile.allergies.length > 0 ? 'DECLARED' : 'NOT_ANSWERED')
+  );
   const [preferences, setPreferences] = useState<DiningPreference[]>(initialProfile.preferences);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -36,6 +39,7 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
     setStep(1);
     setGoals(initialProfile.goals);
     setAllergies(initialProfile.allergies);
+    setAllergyDisclosureStatus(initialProfile.allergyDisclosureStatus ?? (initialProfile.allergies.length > 0 ? 'DECLARED' : 'NOT_ANSWERED'));
     setPreferences(initialProfile.preferences);
   }, [initialProfile, open, personalizationEnabled]);
 
@@ -56,7 +60,9 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
   const allergensList = [
     { value: Allergen.GLUTEN, label: '🌾 Lúa mì / Gluten', emoji: '🌾' },
     { value: Allergen.DAIRY, label: '🥛 Sữa & Phô mai', emoji: '🥛' },
-    { value: Allergen.NUTS, label: '🥜 Các loại hạt', emoji: '🥜' },
+    { value: Allergen.PEANUT, label: '🥜 Đậu phộng', emoji: '🥜' },
+    { value: Allergen.TREE_NUTS, label: '🌰 Hạt cây (óc chó, hạnh nhân...)', emoji: '🌰' },
+    { value: Allergen.SESAME, label: '⚪ Mè / vừng', emoji: '⚪' },
     { value: Allergen.SHELLFISH, label: '🦐 Hải sản có vỏ', emoji: '🦐' },
     { value: Allergen.SOY, label: '🫘 Đậu nành', emoji: '🫘' },
     { value: Allergen.EGGS, label: '🥚 Trứng', emoji: '🥚' },
@@ -81,11 +87,16 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
   };
 
   const handleToggleAllergen = (val: Allergen) => {
-    if (allergies.includes(val)) {
-      setAllergies(allergies.filter(a => a !== val));
-    } else {
-      setAllergies([...allergies, val]);
-    }
+    const nextAllergies = allergies.includes(val)
+      ? allergies.filter(a => a !== val)
+      : [...allergies, val];
+    setAllergies(nextAllergies);
+    setAllergyDisclosureStatus(nextAllergies.length > 0 ? 'DECLARED' : 'NOT_ANSWERED');
+  };
+
+  const handleDeclareNoKnownAllergies = () => {
+    setAllergies([]);
+    setAllergyDisclosureStatus('NONE_DECLARED');
   };
 
   const handleTogglePreference = (val: DiningPreference) => {
@@ -113,8 +124,8 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
   const handleSave = () => {
     setIsSaving(true);
     const profileData: DiningProfile = personalizationEnabled
-      ? { goals, allergies, conditions: initialProfile.conditions, preferences }
-      : { ...initialProfile, allergies };
+      ? { goals, allergies, allergyDisclosureStatus, conditions: initialProfile.conditions, preferences }
+      : { ...initialProfile, allergies, allergyDisclosureStatus };
 
     // Local storage is the only profile persistence boundary for anonymous diners.
     onComplete(profileData);
@@ -254,6 +265,18 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
                   );
                 })}
               </div>
+              <button
+                type="button"
+                onClick={handleDeclareNoKnownAllergies}
+                aria-pressed={allergyDisclosureStatus === 'NONE_DECLARED'}
+                className={`w-full rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition-colors ${
+                  allergyDisclosureStatus === 'NONE_DECLARED'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                    : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+                }`}
+              >
+                Tôi không có dị ứng đã biết
+              </button>
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 flex items-start gap-2 text-[10px] text-amber-800 font-medium">
                 <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                 <span>Thông tin này chỉ lưu trên thiết bị của bạn. Nhà hàng sẽ nhận được lựa chọn dị ứng cùng đơn gọi món để nhân viên chú ý.</span>
