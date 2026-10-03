@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CheckCircle2, Eye, Receipt, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
+import { formatOrderAllergenWarning } from '@/services/allergenPresentation';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
 interface RestaurantBillsTabProps {
@@ -298,8 +299,15 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
               <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-400">Món đã gom</h3>
               <div className="space-y-2">
                 {selectedBill.itemsSnapshot.map((item, index) => (
-                  <div key={`${item.menuItemId || item.name}-${index}`} className="flex justify-between rounded-xl border border-neutral-100 bg-neutral-50/50 px-3 py-2 text-sm">
-                    <span className="font-semibold text-neutral-800">{item.name} <span className="text-neutral-400">x{item.quantity}</span></span>
+                  <div key={`${item.menuItemId || item.name}-${index}`} className="flex items-start justify-between gap-3 rounded-xl border border-neutral-100 bg-neutral-50/50 px-3 py-2 text-sm">
+                    <div className="min-w-0">
+                      <span className="font-semibold text-neutral-800">{item.name} <span className="text-neutral-400">x{item.quantity}</span></span>
+                      {formatOrderAllergenWarning(item) && (
+                        <span className="mt-1 block text-[11px] font-semibold text-amber-900">
+                          ⚠ {formatOrderAllergenWarning(item)}
+                        </span>
+                      )}
+                    </div>
                     <span className="font-bold text-neutral-900">{formatCurrency(item.totalPrice)}</span>
                   </div>
                 ))}

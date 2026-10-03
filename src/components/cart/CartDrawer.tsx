@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CartItem as CartItemType } from '@/types';
+import { Allergen, CartItem as CartItemType } from '@/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,6 +16,7 @@ interface CartDrawerProps {
   onClose: () => void;
   cart: CartItemType[];
   cartTotal: number;
+  userAllergies: Allergen[];
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
   onSubmitOrder: (details: {
@@ -32,6 +33,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onClose,
   cart,
   cartTotal,
+  userAllergies,
   onUpdateQuantity,
   onRemove,
   onSubmitOrder
@@ -125,6 +127,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <CartItem 
                       key={item.menuItemId} 
                       item={item} 
+                      userAllergies={userAllergies}
                       onUpdateQuantity={onUpdateQuantity}
                       onRemove={onRemove}
                     />

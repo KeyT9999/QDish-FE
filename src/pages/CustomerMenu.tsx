@@ -83,12 +83,9 @@ export const CustomerMenu: React.FC = () => {
   const { execute: submitOrder, isLoading: isSubmitting } = useApi(orderService.createOrder);
   const fitScoreEnabled = restaurant?.features?.fitScoreEnabled;
 
-  // Automatically trigger premium onboarding for new guest diners
+  // Every QR guest can declare allergies, regardless of restaurant plan.
   useEffect(() => {
     if (isLoading || !restaurant) return;
-    // Chỉ tự động hiển thị bảng khảo sát khi gói dịch vụ nhà hàng cho phép cá nhân hóa thực đơn
-    if (!restaurant.features?.personalizedMenuEnabled) return;
-
     if (!onboardingHandled && !hasDiningProfileSelections(profile)) {
       const timer = setTimeout(() => {
         setIsOnboardingOpen(true);
@@ -373,15 +370,6 @@ export const CustomerMenu: React.FC = () => {
   }, []);
 
   const handleAddToCart = useCallback((item: MenuItem) => {
-    // Prevent ordering items containing allergens
-    const hasAllergen = item.allergens && item.allergens.some(a => userAllergies.includes(a as Allergen));
-    if (hasAllergen) {
-      toast.error(`Món ${item.name} chứa thành phần gây dị ứng của bạn!`, {
-        position: 'top-center'
-      });
-      return;
-    }
-
     addToCart(item);
     toast.success(`Đã thêm ${item.name} vào giỏ`, {
       duration: 2000,
@@ -434,7 +422,8 @@ export const CustomerMenu: React.FC = () => {
         customerPhone: details?.customerPhone || undefined,
         marketingConsent: details?.marketingConsent === true,
         consentVersion: details?.consentVersion || undefined,
-        note: details?.note?.trim() || undefined
+        note: details?.note?.trim() || undefined,
+        reportedAllergies: userAllergies.length > 0 ? [...userAllergies] : undefined
       };
       
       await submitOrder(restaurantId, orderPayload);
@@ -450,7 +439,7 @@ export const CustomerMenu: React.FC = () => {
       toast.error(error.message || 'Có lỗi xảy ra khi đặt món. Vui lòng thử lại.');
       throw error;
     }
-  }, [cart, restaurantId, submitOrder, tableNumber, session]);
+  }, [cart, restaurantId, submitOrder, tableNumber, session, userAllergies]);
 
   const selectedItemId = getMenuItemIdentity(selectedItem ?? undefined);
 
@@ -512,7 +501,7 @@ export const CustomerMenu: React.FC = () => {
       </div>
       
       {/* QDish Smart Quick Action Cards */}
-      <div className={restaurant?.features?.personalizedMenuEnabled ? "grid grid-cols-2 gap-2.5 mb-3.5 mt-1" : "mb-3.5 mt-1"}>
+      <div className="grid grid-cols-2 gap-2.5 mb-3.5 mt-1">
         {restaurant?.features?.personalizedMenuEnabled && (
           <button 
             type="button" 
@@ -532,6 +521,22 @@ export const CustomerMenu: React.FC = () => {
             </div>
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => setIsOnboardingOpen(true)}
+          className="group relative overflow-hidden bg-gradient-to-br from-rose-500/[0.08] via-orange-500/[0.04] to-rose-500/[0.02] hover:from-rose-500/[0.12] border border-rose-200/70 rounded-2xl p-2.5 flex items-center gap-2.5 transition-all duration-200 active:scale-[0.98] shadow-xs text-left cursor-pointer"
+          aria-label="Khai báo hoặc sửa thông tin dị ứng"
+        >
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-rose-500/25">
+            <ShieldAlert className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-slate-800 leading-tight">Dị ứng thực phẩm</div>
+            <p className="text-[10px] text-rose-700 font-medium truncate mt-0.5">
+              {userAllergies.length > 0 ? 'Đã khai báo' : 'Khai báo để xem cảnh báo'}
+            </p>
+          </div>
+        </button>
         <button 
           type="button" 
           onClick={() => setIsHistoryOpen(true)}
@@ -807,7 +812,8 @@ export const CustomerMenu: React.FC = () => {
         fitScore={selectedItemId ? fitScores[selectedItemId] : undefined}
         onEditProfile={() => {
           setIsDetailOpen(false);
-          setIsHealthOpen(true);
+          if (restaurant.features?.personalizedMenuEnabled) setIsHealthOpen(true);
+          else setIsOnboardingOpen(true);
         }}
       />
       
@@ -819,6 +825,7 @@ export const CustomerMenu: React.FC = () => {
         onUpdateQuantity={cart.updateQuantity}
         onRemove={cart.removeFromCart}
         onSubmitOrder={handleSubmitOrder}
+        userAllergies={userAllergies}
       />
 
       {/* Dining Profile Sheet Drawer */}
@@ -859,6 +866,8 @@ export const CustomerMenu: React.FC = () => {
         }}
         restaurantId={restaurantId}
         tableSessionId={sessionId || undefined}
+        personalizationEnabled={Boolean(restaurant.features?.personalizedMenuEnabled)}
+        initialProfile={profile}
       />
     </div>
   );

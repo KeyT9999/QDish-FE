@@ -23,6 +23,7 @@ import { Loader2, RefreshCw, ChefHat, Play, CheckCircle2, Clock, BellRing, Recei
 import { toast } from 'sonner';
 import { BillPaymentModal } from '@/components/dashboard/restaurant/modals/BillPaymentModal';
 import { formatCurrency } from '@/lib/utils';
+import { formatOrderAllergenWarning } from '@/services/allergenPresentation';
 import { getOrderStatusSuccessMessage } from '@/lib/orderStatusMessages';
 import { usePendingOrderUpdates } from '@/hooks/usePendingOrderUpdates';
 
@@ -272,9 +273,16 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId }) => {
         <CardContent className="p-3 space-y-2">
           <ul className="text-xs text-gray-600 space-y-1">
             {getOrderItems(order).map((item, idx) => (
-              <li key={idx} className="flex justify-between">
-                <span>{item.name}</span>
-                <span className="font-bold text-gray-900">x{item.quantity}</span>
+              <li key={idx} className="flex flex-col">
+                <div className="flex justify-between">
+                  <span>{item.name}</span>
+                  <span className="font-bold text-gray-900">x{item.quantity}</span>
+                </div>
+                {formatOrderAllergenWarning({ ...item, reportedAllergies: order.reportedAllergies }) && (
+                  <span className="mt-1 text-[10px] font-semibold text-amber-800">
+                    ⚠ {formatOrderAllergenWarning({ ...item, reportedAllergies: order.reportedAllergies })}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

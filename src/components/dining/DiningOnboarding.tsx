@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DiningProfile, Allergen, DiningPreference } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Sparkles, ShieldAlert, ArrowLeft, ArrowRight, X, Heart, Award } from 'lucide-react';
@@ -12,6 +12,8 @@ interface DiningOnboardingProps {
   onComplete: (profile: DiningProfile) => void;
   restaurantId: string;
   tableSessionId?: string;
+  personalizationEnabled?: boolean;
+  initialProfile?: DiningProfile;
 }
 
 export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
@@ -19,15 +21,28 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
   onClose,
   onComplete,
   restaurantId,
-  tableSessionId
+  tableSessionId,
+  personalizationEnabled = true,
+  initialProfile = { goals: [], allergies: [], preferences: [], conditions: [] }
 }) => {
   const [step, setStep] = useState(1);
-  const [goals, setGoals] = useState<DiningProfile['goals']>([]);
-  const [allergies, setAllergies] = useState<Allergen[]>([]);
-  const [preferences, setPreferences] = useState<DiningPreference[]>([]);
+  const [goals, setGoals] = useState<DiningProfile['goals']>(initialProfile.goals);
+  const [allergies, setAllergies] = useState<Allergen[]>(initialProfile.allergies);
+  const [preferences, setPreferences] = useState<DiningPreference[]>(initialProfile.preferences);
   const [isSaving, setIsSaving] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    setStep(1);
+    setGoals(initialProfile.goals);
+    setAllergies(initialProfile.allergies);
+    setPreferences(initialProfile.preferences);
+  }, [initialProfile, open, personalizationEnabled]);
+
   if (!open) return null;
+
+  const allergyStep = personalizationEnabled ? 2 : 1;
+  const stepCount = personalizationEnabled ? 3 : 1;
 
   const goalsList = [
     { value: 'MUSCLE_GAIN', label: '💪 Ăn tăng cơ', desc: 'Protein dồi dào phục hồi cơ bắp' },
@@ -82,7 +97,7 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
   };
 
   const handleNext = () => {
-    if (step < 3) {
+    if (personalizationEnabled && step < 3) {
       setStep(step + 1);
     } else {
       handleSave();
@@ -97,18 +112,15 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
 
   const handleSave = () => {
     setIsSaving(true);
-    const profileData: DiningProfile = {
-      goals,
-      allergies,
-      conditions: [],
-      preferences
-    };
+    const profileData: DiningProfile = personalizationEnabled
+      ? { goals, allergies, conditions: initialProfile.conditions, preferences }
+      : { ...initialProfile, allergies };
 
     // Local storage is the only profile persistence boundary for anonymous diners.
     onComplete(profileData);
 
     // Analytics is scoped to this restaurant visit and must never block onboarding.
-    if (tableSessionId) {
+    if (personalizationEnabled && tableSessionId) {
       void recordDiningVisit({
         restaurantId,
         tableSessionId,
@@ -126,7 +138,9 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
     else if (goals.includes('LIGHT_MEAL')) personality = 'Mindful Eater 🧘';
     else if (goals.includes('ENERGY_BOOST')) personality = 'Power Charger ⚡';
 
-    toast.success(`Hồ sơ ẩm thực đã sẵn sàng! Bạn thuộc nhóm: ${personality}`, {
+    toast.success(personalizationEnabled
+      ? `Hồ sơ ẩm thực đã sẵn sàng! Bạn thuộc nhóm: ${personality}`
+      : 'Đã lưu thông tin dị ứng trên thiết bị này.', {
       duration: 4000,
       position: 'top-center'
     });
@@ -158,7 +172,10 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
 
           {/* Progress Indicator */}
           <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden flex">
-            <div className={`h-full bg-green-600 transition-all duration-300 ${step === 1 ? 'w-1/3' : step === 2 ? 'w-2/3' : 'w-full'}`} />
+            <div
+              className="h-full bg-green-600 transition-all duration-300"
+              style={{ width: `${(step / stepCount) * 100}%` }}
+            />
           </div>
         </div>
 
@@ -166,7 +183,7 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
         <div className="px-6 py-4 flex-1 min-h-[300px]">
           
           {/* STEP 1: GOALS */}
-          {step === 1 && (
+          {personalizationEnabled && step === 1 && (
             <div className="space-y-4 animate-fadeIn">
               <div>
                 <h2 className="text-xl font-bold text-neutral-900 tracking-tight">Hôm nay bạn muốn gì? 🍽️</h2>
@@ -205,14 +222,14 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
           )}
 
           {/* STEP 2: ALLERGIES */}
-          {step === 2 && (
+          {step === allergyStep && (
             <div className="space-y-4 animate-fadeIn">
               <div>
                 <h2 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-2">
                   Tránh chất gây dị ứng ⚠️
                 </h2>
                 <p className="text-xs text-neutral-500 mt-1">
-                  Chọn các thành phần bạn bị dị ứng. QDish sẽ <strong className="text-red-600 font-bold">khóa cảnh báo</strong> các món ăn chứa thành phần này.
+                  Chọn thành phần bạn bị dị ứng. QDish sẽ hiện cảnh báo cạnh món có thông tin phù hợp; bạn vẫn tự quyết định có gọi món hay không.
                 </p>
               </div>
 
@@ -239,13 +256,13 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
               </div>
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-2.5 flex items-start gap-2 text-[10px] text-amber-800 font-medium">
                 <ShieldAlert className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                <span>Không có chất dị ứng của bạn? Đừng lo, bạn có thể chỉnh sửa lại hồ sơ ẩm thực bất kỳ lúc nào từ thanh tìm kiếm.</span>
+                <span>Thông tin này chỉ lưu trên thiết bị của bạn. Nhà hàng sẽ nhận được lựa chọn dị ứng cùng đơn gọi món để nhân viên chú ý.</span>
               </div>
             </div>
           )}
 
           {/* STEP 3: PREFERENCES */}
-          {step === 3 && (
+          {personalizationEnabled && step === 3 && (
             <div className="space-y-4 animate-fadeIn">
               <div>
                 <h2 className="text-xl font-bold text-neutral-900 tracking-tight">Phong cách ẩm thực của bạn? 🌿</h2>
@@ -282,7 +299,7 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
         {/* Footer Actions */}
         <div className="px-6 py-5 border-t border-neutral-100 bg-neutral-50 shrink-0 flex items-center justify-between gap-3">
           {/* Back button */}
-          {step > 1 ? (
+          {personalizationEnabled && step > 1 ? (
             <Button
               variant="outline"
               onClick={handleBack}
@@ -305,10 +322,10 @@ export const DiningOnboarding: React.FC<DiningOnboardingProps> = ({
             disabled={isSaving}
             className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold h-11 text-xs shadow-md shadow-green-600/10"
           >
-            {step < 3 ? (
+            {personalizationEnabled && step < 3 ? (
               <>Tiếp theo <ArrowRight className="w-3.5 h-3.5 ml-1" /></>
             ) : (
-              <>{isSaving ? 'Đang khởi tạo...' : 'Hoàn tất hồ sơ ✨'}</>
+              <>{isSaving ? 'Đang lưu...' : personalizationEnabled ? 'Hoàn tất hồ sơ ✨' : 'Lưu thông tin dị ứng'}</>
             )}
           </Button>
         </div>

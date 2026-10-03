@@ -3,7 +3,7 @@ import { MenuItem, Allergen, CartItem, FoodAttribute, FOOD_ATTRIBUTE_LABELS, FOO
 import { Minus, Plus, ShieldAlert, Award } from 'lucide-react';
 import { NutritionBadge } from './NutritionBadge';
 import { FitScoreBadge } from './FitScoreBadge';
-import { hasAllergenConflict } from '@/services/allergenSafety';
+import { getMenuAllergenWarning } from '@/services/allergenPresentation';
 import { formatCurrency } from '@/lib/utils';
 import type { FitScoreSummary } from '@/services/fitScorePresentation';
 
@@ -32,7 +32,7 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
   fitScore,
   isFitScoreLoading = false,
 }) => {
-  const hasUserAllergen = hasAllergenConflict(item.allergens, userAllergies);
+  const allergenWarning = getMenuAllergenWarning(item, userAllergies);
   const quantity = cartItem?.quantity || 0;
 
   // Clean redundant descriptions that simply repeat the dish name
@@ -64,8 +64,8 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
   return (
     <div 
       className={`group bg-white rounded-3xl p-3 border shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] transition-all duration-300 flex gap-3.5 items-center relative overflow-hidden cursor-pointer active:scale-[0.99] select-none ${
-        hasUserAllergen 
-          ? 'border-rose-200 bg-rose-50/30 opacity-80' 
+        allergenWarning.kind === 'CONFLICT'
+          ? 'border-rose-200 bg-rose-50/30'
           : isRecommended
             ? 'border-emerald-300/80 bg-gradient-to-r from-emerald-50/25 via-white to-white'
             : 'border-slate-100 hover:border-slate-200/80'
@@ -117,10 +117,14 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
 
           {/* Nutrition Badges (Full width, no overlap) */}
           <div className="pt-0.5">
-            {hasUserAllergen ? (
-              <div className="inline-flex items-center text-[10px] text-rose-700 font-bold bg-rose-50 border border-rose-200/80 px-2 py-0.5 rounded-full shadow-2xs">
-                <ShieldAlert className="w-3 h-3 mr-1 text-rose-600 shrink-0" />
-                Chứa dị ứng của bạn
+            {allergenWarning.kind !== 'NONE' ? (
+              <div className={`inline-flex items-start gap-1 text-[10px] leading-snug font-bold px-2 py-1 rounded-lg border ${
+                allergenWarning.kind === 'CONFLICT'
+                  ? 'text-rose-800 bg-rose-50 border-rose-200/80'
+                  : 'text-amber-900 bg-amber-50 border-amber-200/80'
+              }`}>
+                <ShieldAlert className={`w-3 h-3 mt-0.5 shrink-0 ${allergenWarning.kind === 'CONFLICT' ? 'text-rose-600' : 'text-amber-700'}`} />
+                <span>{allergenWarning.message}</span>
               </div>
             ) : item.nutrition ? (
               <NutritionBadge nutrition={item.nutrition} />
@@ -147,7 +151,7 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
             {formatCurrency(item.price)}
           </span>
 
-          {!hasUserAllergen && item.available && (
+          {item.available && (
             <div className="shrink-0">
               {quantity > 0 ? (
                 <div className="flex items-center bg-slate-100/90 rounded-2xl p-0.5 border border-slate-200/80 shadow-inner">
@@ -173,7 +177,7 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
                 <button 
                   onClick={handlePlus}
                   className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-90 text-white flex items-center justify-center shadow-md shadow-emerald-500/25 transition-all duration-200 cursor-pointer"
-                  aria-label="Thêm món"
+                  aria-label={`Thêm món ${item.name}`}
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                 </button>

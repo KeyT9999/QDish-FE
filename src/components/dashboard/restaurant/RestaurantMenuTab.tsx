@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
-import { Plus, Edit2, Trash2, ClipboardList, MoreHorizontal, Copy } from 'lucide-react';
+import { Plus, Edit2, Trash2, ClipboardList, MoreHorizontal, Copy, ShieldAlert } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
@@ -21,6 +21,7 @@ export interface RestaurantMenuTabProps {
   onOpenMenuModal: (item?: MenuItem) => void;
   onDeleteMenuItem: (id: string) => Promise<void>;
   onToggleAvailable: (id: string, currentAvailable: boolean) => Promise<void>;
+  onConfirmAllergenReview: (id: string) => Promise<void>;
   showCopyButton?: boolean;
   onCopyClick?: () => void;
 }
@@ -31,6 +32,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
   onOpenMenuModal,
   onDeleteMenuItem,
   onToggleAvailable,
+  onConfirmAllergenReview,
   showCopyButton,
   onCopyClick
 }) => {
@@ -84,6 +86,15 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-lg border border-neutral-100 p-1 w-36">
+                          {item.allergenInfoStatus !== 'REVIEWED' && (
+                            <DropdownMenuItem
+                              onClick={() => onConfirmAllergenReview(itemId)}
+                              className="text-amber-800 font-semibold text-xs rounded-lg cursor-pointer h-10 flex items-center"
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5 mr-2" />
+                              Xác nhận dị ứng
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={() => onOpenMenuModal(item)}
                             className="text-neutral-700 font-semibold text-xs rounded-lg cursor-pointer h-10 flex items-center"
@@ -116,6 +127,10 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                         <span>C: {item.nutrition.carbs}g</span>
                       </div>
                     )}
+                    <p className={`text-[10px] font-semibold mt-1.5 ${item.allergenInfoStatus === 'REVIEWED' ? 'text-emerald-700' : 'text-amber-800'}`}>
+                      Dị ứng: {item.allergens?.length ? item.allergens.join(', ') : 'Không có thành phần được khai báo'}
+                      {item.allergenInfoStatus === 'REVIEWED' ? ' · Đã xác nhận' : ' · Chưa xác nhận'}
+                    </p>
                   </div>
 
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-50">
@@ -249,6 +264,10 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                               </span>
                             ))}
                           </div>
+                          <div className={`text-[10px] font-semibold ${item.allergenInfoStatus === 'REVIEWED' ? 'text-emerald-700' : 'text-amber-800'}`}>
+                            Dị ứng: {item.allergens?.length ? item.allergens.join(', ') : 'Không có thành phần được khai báo'}
+                            {item.allergenInfoStatus === 'REVIEWED' ? ' · Đã xác nhận' : ' · Chưa xác nhận'}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="py-4">
@@ -270,6 +289,15 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-lg border border-neutral-100 p-1 w-36">
+                            {item.allergenInfoStatus !== 'REVIEWED' && (
+                              <DropdownMenuItem
+                                onClick={() => onConfirmAllergenReview(itemId)}
+                                className="text-amber-800 font-semibold text-xs rounded-lg cursor-pointer"
+                              >
+                                <ShieldAlert className="w-3.5 h-3.5 mr-2" />
+                                Xác nhận dị ứng
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem 
                               onClick={() => onOpenMenuModal(item)}
                               className="text-neutral-700 font-semibold text-xs rounded-lg cursor-pointer"

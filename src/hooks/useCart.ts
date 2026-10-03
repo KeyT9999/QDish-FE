@@ -48,7 +48,12 @@ export function useCart(restaurantId: string, tableNumber?: string, sessionId?: 
       if (existing) {
         return prev.map(i =>
           i.menuItemId === menuItemId
-            ? { ...i, quantity: i.quantity + 1 }
+            ? {
+                ...i,
+                quantity: i.quantity + 1,
+                allergens: item.allergens || [],
+                allergenInfoStatus: item.allergenInfoStatus || 'UNKNOWN'
+              }
             : i
         );
       }
@@ -56,7 +61,9 @@ export function useCart(restaurantId: string, tableNumber?: string, sessionId?: 
         menuItemId,
         name: item.name,
         price: item.price,
-        quantity: 1
+        quantity: 1,
+        allergens: item.allergens || [],
+        allergenInfoStatus: item.allergenInfoStatus || 'UNKNOWN'
       }];
     });
   }, []);

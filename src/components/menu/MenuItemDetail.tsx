@@ -23,7 +23,7 @@ import {
   Activity,
 } from 'lucide-react';
 import type { FitScoreSummary } from '@/services/fitScorePresentation';
-import { hasAllergenConflict } from '@/services/allergenSafety';
+import { getMenuAllergenWarning } from '@/services/allergenPresentation';
 
 interface MenuItemDetailProps {
   item: MenuItem | null;
@@ -118,7 +118,10 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
     )
   );
 
-  const hasUserAllergen = hasAllergenConflict(item?.allergens, userAllergies);
+  const allergenWarning = item
+    ? getMenuAllergenWarning(item, userAllergies)
+    : { kind: 'NONE' as const };
+  const hasUserAllergen = allergenWarning.kind === 'CONFLICT';
 
   const foodAttributes: string[] = item.foodAttributes?.length
     ? item.foodAttributes
@@ -391,7 +394,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
             )}
 
             {/* ── Food Allergens Safety Notice ───────────────────────────── */}
-            {allergenList.length > 0 && (
+            {(allergenList.length > 0 || allergenWarning.kind === 'UNKNOWN') && (
               <section className="space-y-2">
                 <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
@@ -430,11 +433,14 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                       );
                     })}
                   </div>
-                  {hasUserAllergen && (
-                    <p className="text-xs text-rose-700 font-semibold mt-2.5 flex items-center gap-1">
-                      <span>⚠️ Vì sự an toàn của bạn, món ăn này bị hạn chế thêm vào giỏ hàng.</span>
+                  {allergenWarning.kind !== 'NONE' && (
+                    <p className={`text-xs font-semibold mt-2.5 flex items-start gap-1 ${hasUserAllergen ? 'text-rose-700' : 'text-amber-900'}`}>
+                      <span>{allergenWarning.message} Bạn vẫn có thể gọi món; hãy trao đổi với nhân viên nếu cần.</span>
                     </p>
                   )}
+                  <p className="text-[11px] text-neutral-600 mt-2.5">
+                    Thành phần do nhà hàng khai báo; có thể tồn tại nguy cơ nhiễm chéo trong quá trình chế biến.
+                  </p>
                 </div>
               </section>
             )}
@@ -447,16 +453,16 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
         {/* ─── Sticky CTA Dock ───────────────────────────────────────────── */}
         <footer className="shrink-0 p-4 sm:p-5 bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-xl z-20">
           <div className="max-w-2xl mx-auto space-y-2">
-            {hasUserAllergen && (
-              <div className="bg-rose-50 text-rose-800 p-2.5 rounded-xl flex items-center gap-2 border border-rose-200 text-xs font-semibold">
-                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                Món này chứa chất gây dị ứng theo hồ sơ của bạn!
+            {allergenWarning.kind !== 'NONE' && (
+              <div className={`p-2.5 rounded-xl flex items-start gap-2 border text-xs font-semibold ${hasUserAllergen ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-amber-50 text-amber-900 border-amber-200'}`}>
+                <AlertTriangle className={`w-4 h-4 shrink-0 ${hasUserAllergen ? 'text-rose-600' : 'text-amber-700'}`} />
+                {allergenWarning.message} Bạn vẫn có thể gọi món.
               </div>
             )}
 
             <button
               type="button"
-              disabled={!item.available || Boolean(hasUserAllergen)}
+              disabled={!item.available}
               onClick={() => {
                 onAdd(item);
                 onClose();
@@ -465,8 +471,6 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
             >
               {!item.available ? (
                 'Tạm hết món'
-              ) : hasUserAllergen ? (
-                'Bị khóa do dị ứng'
               ) : (
                 <>
                   <ShoppingBag className="w-5 h-5 shrink-0" />

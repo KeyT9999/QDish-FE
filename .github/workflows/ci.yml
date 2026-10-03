@@ -57,6 +57,9 @@ jobs:
       - name: Run order status feedback browser regression
         run: npm run test:e2e:order-status
 
+      - name: Run QR allergen order warning browser regression
+        run: npm run test:e2e:allergen
+
       - name: Build
         run: npm run build
 
