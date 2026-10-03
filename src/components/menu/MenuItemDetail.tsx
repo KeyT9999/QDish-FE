@@ -23,7 +23,7 @@ import {
   Activity,
 } from 'lucide-react';
 import type { FitScoreSummary } from '@/services/fitScorePresentation';
-import { getMenuAllergenWarning } from '@/services/allergenPresentation';
+import { getMenuAllergenWarning, hasReviewedAllergenDeclaration } from '@/services/allergenPresentation';
 
 interface MenuItemDetailProps {
   item: MenuItem | null;
@@ -54,6 +54,9 @@ function useMacroWidths(item: MenuItem | null) {
 const ALLERGEN_CLEAN_LABELS: Record<string, string> = {
   GLUTEN: 'Gluten ngũ cốc',
   DAIRY: 'Sữa & Chế phẩm sữa',
+  PEANUT: 'Đậu phộng',
+  TREE_NUTS: 'Các loại hạt cây (óc chó, hạnh nhân, hạt điều...)',
+  SESAME: 'Mè',
   NUTS: 'Đậu phộng / Các loại hạt',
   SHELLFISH: 'Hải sản có vỏ',
   SOY: 'Đậu nành',
@@ -127,7 +130,11 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
     ? item.foodAttributes
     : [];
 
-  const allergenList = item.allergens || [];
+  const allergenDataIsReviewed = hasReviewedAllergenDeclaration(item);
+  const allergenList = allergenDataIsReviewed
+    ? item.reviewedAllergens ?? []
+    : item.allergens ?? [];
+  const mayContainList = allergenDataIsReviewed ? item.mayContainAllergens ?? [] : [];
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -394,7 +401,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
             )}
 
             {/* ── Food Allergens Safety Notice ───────────────────────────── */}
-            {(allergenList.length > 0 || allergenWarning.kind === 'UNKNOWN') && (
+            {(allergenList.length > 0 || mayContainList.length > 0 || allergenWarning.kind === 'UNKNOWN' || item.allergenInfoStatus === 'REVIEWED') && (
               <section className="space-y-2">
                 <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
@@ -411,8 +418,13 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                     ) : (
                       <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
                     )}
-                    <span>{hasUserAllergen ? 'Cảnh báo: Chứa thành phần dị ứng theo hồ sơ của bạn!' : 'Món này chứa các thành phần sau:'}</span>
+                    <span>{hasUserAllergen
+                      ? 'Cảnh báo dị ứng theo hồ sơ của bạn'
+                      : allergenDataIsReviewed ? 'Thông tin nhà hàng đã xác nhận' : 'Thông tin hiện có, chưa xác minh'}</span>
                   </p>
+                  {allergenList.length > 0 && <p className="mb-1.5 text-[11px] font-semibold text-neutral-700">
+                    {allergenDataIsReviewed ? 'Có chứa' : 'Ứng viên thành phần có thể chứa'}
+                  </p>}
                   <div className="flex flex-wrap gap-2">
                     {allergenList.map((a) => {
                       const isConflicted = userAllergies.includes(a as Allergen);
@@ -433,6 +445,23 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                       );
                     })}
                   </div>
+                  {mayContainList.length > 0 && (
+                    <div className="mt-2.5">
+                      <p className="mb-1.5 text-[11px] font-semibold text-amber-900">Có thể chứa do nguy cơ nhiễm chéo</p>
+                      <div className="flex flex-wrap gap-2">
+                        {mayContainList.map((a) => (
+                          <span key={String(a)} className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-900">
+                            {ALLERGEN_CLEAN_LABELS[String(a)] || String(a)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {allergenDataIsReviewed && allergenList.length === 0 && mayContainList.length === 0 && (
+                    <p className="text-[11px] leading-5 text-emerald-800">
+                      Nhà hàng đã rà soát và không khai báo allergen nào trong danh sách hỗ trợ.
+                    </p>
+                  )}
                   {allergenWarning.kind !== 'NONE' && (
                     <p className={`text-xs font-semibold mt-2.5 flex items-start gap-1 ${hasUserAllergen ? 'text-rose-700' : 'text-amber-900'}`}>
                       <span>{allergenWarning.message} Bạn vẫn có thể gọi món; hãy trao đổi với nhân viên nếu cần.</span>

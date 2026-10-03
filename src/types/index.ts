@@ -159,6 +159,10 @@ export const FOOD_ATTRIBUTE_COLORS: Record<FoodAttribute, string> = {
 export enum Allergen {
   GLUTEN = 'GLUTEN',
   DAIRY = 'DAIRY',
+  PEANUT = 'PEANUT',
+  TREE_NUTS = 'TREE_NUTS',
+  SESAME = 'SESAME',
+  /** Legacy broad nut code. New profiles should use PEANUT and/or TREE_NUTS. */
   NUTS = 'NUTS',
   SHELLFISH = 'SHELLFISH',
   SOY = 'SOY',
@@ -167,6 +171,7 @@ export enum Allergen {
 }
 
 export type AllergenInfoStatus = 'UNKNOWN' | 'REVIEWED';
+export type AllergyDisclosureStatus = 'NOT_ANSWERED' | 'NONE_DECLARED' | 'DECLARED';
 
 // DiningPreference replaces HealthLabel — non-judgmental, context-based
 export type DiningPreference =
@@ -182,6 +187,7 @@ export type DiningPreference =
 export interface DiningProfile {
   goals: ('MUSCLE_GAIN' | 'ENERGY_BOOST' | 'LIGHT_MEAL' | 'COMFORT' | 'BALANCED' | 'WEIGHT_LOSS' | 'MAINTENANCE' | 'GENERAL_HEALTH')[];
   allergies: Allergen[];
+  allergyDisclosureStatus?: AllergyDisclosureStatus;
   conditions: ('DIABETES' | 'HYPERTENSION' | 'CELIAC')[];
   preferences: DiningPreference[];
 }
@@ -233,6 +239,14 @@ export interface MenuItem {
   missingIngredientCount?: number;
   allergens?: Allergen[] | string[];
   allergenInfoStatus?: AllergenInfoStatus;
+  reviewedAllergens?: Allergen[] | string[];
+  mayContainAllergens?: Allergen[] | string[];
+  allergenCoverageStatus?: 'COMPLETE' | 'INCOMPLETE' | 'UNKNOWN';
+  allergenUnverifiedIngredientCount?: number;
+  allergenReviewMethod?: 'RECIPE' | 'MANUAL';
+  allergenReviewSourceType?: 'SUPPLIER_LABEL' | 'RESTAURANT_RECIPE' | 'STAFF_ATTESTATION';
+  allergenReviewSourceNote?: string;
+  allergenReviewedAt?: string;
   foodAttributes?: string[];     // context-based attribute keys e.g. ['HIGH_PROTEIN', 'POST_WORKOUT']
 
   // QDish Step 1: Recipe
@@ -264,6 +278,10 @@ export interface OrderItem {
   quantity: number;
   allergenInfoStatus?: AllergenInfoStatus;
   allergenWarnings?: Allergen[] | string[];
+  allergenContainsWarnings?: Allergen[] | string[];
+  allergenMayContainWarnings?: Allergen[] | string[];
+  allergenWarningSource?: 'CANDIDATE' | 'CONTAINS' | 'MAY_CONTAIN' | 'MIXED';
+  allergenInformationIncomplete?: boolean;
 }
 
 export interface Order {
@@ -277,6 +295,7 @@ export interface Order {
   timestamp: number;
   note?: string;
   reportedAllergies?: Allergen[] | string[];
+  allergyDisclosureStatus?: AllergyDisclosureStatus;
   customerName?: string; // Tên khách hàng
   paymentMethod?: PaymentMethod; // Hình thức thanh toán
   confirmedByName?: string; // Tên nhân viên đã xác nhận đơn
@@ -296,6 +315,9 @@ export interface Order {
 
 export interface CartItem extends OrderItem {
   allergens?: Allergen[] | string[];
+  reviewedAllergens?: Allergen[] | string[];
+  mayContainAllergens?: Allergen[] | string[];
+  allergenCoverageStatus?: 'UNKNOWN' | 'INCOMPLETE' | 'COMPLETE';
 }
 
 // App state shape
@@ -703,6 +725,11 @@ export interface BillItemSnapshot {
   notes?: string;
   allergenInfoStatus?: AllergenInfoStatus;
   allergenWarnings?: Allergen[] | string[];
+  allergenContainsWarnings?: Allergen[] | string[];
+  allergenMayContainWarnings?: Allergen[] | string[];
+  allergenWarningSource?: 'CANDIDATE' | 'CONTAINS' | 'MAY_CONTAIN' | 'MIXED';
+  allergenInformationIncomplete?: boolean;
+  allergyDisclosureStatus?: AllergyDisclosureStatus;
   reportedAllergies?: Allergen[] | string[];
 }
 

@@ -1,6 +1,14 @@
 import { apiFetch } from './api';
 import { MenuItem } from '@/types';
 
+export interface MenuAllergenReviewPayload {
+  method: 'RECIPE' | 'MANUAL';
+  containsAllergens: string[];
+  mayContainAllergens: string[];
+  sourceType: 'SUPPLIER_LABEL' | 'RESTAURANT_RECIPE' | 'STAFF_ATTESTATION';
+  sourceNote: string;
+}
+
 type BackendMenuItem = MenuItem & {
   _id?: string;
   calories?: number;
@@ -110,6 +118,14 @@ export const menuService = {
       body: JSON.stringify(toBackendMenuPayload(data))
     });
     return normalizeMenuItem(updated);
+  },
+
+  reviewAllergens: async (id: string, data: MenuAllergenReviewPayload) => {
+    const reviewed = await apiFetch<BackendMenuItem>(`/api/menu/${id}/allergen-review`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return normalizeMenuItem(reviewed);
   },
   
   delete: (id: string) => apiFetch<void>(`/api/menu/${id}`, {

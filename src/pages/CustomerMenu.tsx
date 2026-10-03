@@ -13,6 +13,7 @@ import { categoryService } from '@/services/categoryService';
 import { apiFetch } from '@/services/api';
 import { loadBatchFitScores } from '@/services/fitScoreService';
 import { hasDiningProfileSelections } from '@/services/diningProfileStorage';
+import { getMenuAllergenWarning } from '@/services/allergenPresentation';
 import {
   getRecommendationEmptyMessage,
   getRecommendationHeading,
@@ -317,7 +318,7 @@ export const CustomerMenu: React.FC = () => {
             return fib >= 5;
           case 'AVOID_ALLERGENS':
             if (!profile || !profile.allergies || profile.allergies.length === 0) return true;
-            return !item.allergens || !item.allergens.some(a => profile.allergies.includes(a as Allergen));
+            return getMenuAllergenWarning(item, profile.allergies).kind === 'NONE';
           default:
             return true;
         }
@@ -327,13 +328,22 @@ export const CustomerMenu: React.FC = () => {
     return items;
   }, [menuItems, selectedCategory, selectedNutritionFilter, profile, searchQuery]);
 
+  const allergenSummary = useMemo(() => {
+    const warnings = menuItems.map((item) => getMenuAllergenWarning(item, userAllergies));
+    return {
+      conflicts: warnings.filter((warning) => warning.kind === 'CONFLICT').length,
+      unverified: warnings.filter((warning) => warning.kind === 'UNKNOWN' || (
+        warning.kind === 'CONFLICT' && warning.informationIncomplete
+      )).length
+    };
+  }, [menuItems, userAllergies]);
+
   // Check if a menu item matches the health profile goals/diet for recommendations
   const checkIsRecommended = useCallback((item: MenuItem) => {
     if (!profile) return false;
 
     // 0. Do NOT recommend if contains user allergens
-    const hasUserAllergen = item.allergens && item.allergens.some(a => profile.allergies.includes(a as Allergen));
-    if (hasUserAllergen) return false;
+    if (profile.allergies.length > 0 && getMenuAllergenWarning(item, profile.allergies).kind !== 'NONE') return false;
 
     // 1. Matches dining preference via food attributes
     if (profile.preferences && profile.preferences.length > 0 && item.foodAttributes) {
@@ -423,7 +433,8 @@ export const CustomerMenu: React.FC = () => {
         marketingConsent: details?.marketingConsent === true,
         consentVersion: details?.consentVersion || undefined,
         note: details?.note?.trim() || undefined,
-        reportedAllergies: userAllergies.length > 0 ? [...userAllergies] : undefined
+        reportedAllergies: userAllergies.length > 0 ? [...userAllergies] : undefined,
+        allergyDisclosureStatus: profile.allergyDisclosureStatus ?? (userAllergies.length > 0 ? 'DECLARED' : 'NOT_ANSWERED')
       };
       
       await submitOrder(restaurantId, orderPayload);
@@ -731,6 +742,20 @@ export const CustomerMenu: React.FC = () => {
 
       {/* Menu Grid */}
       <div className="py-3">
+        {(allergenSummary.conflicts > 0 || allergenSummary.unverified > 0) && (
+          <div role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-950">
+            <p className="font-bold">
+              {allergenSummary.conflicts > 0
+                ? `${allergenSummary.conflicts} món có thể liên quan đến dị ứng bạn đã khai báo.`
+                : 'Một số món chưa có thông tin dị ứng đã xác minh.'}
+            </p>
+            {allergenSummary.unverified > 0 && (
+              <p className="mt-0.5 text-amber-900">
+                Thông tin của {allergenSummary.unverified} món còn chưa đầy đủ. Hãy hỏi nhân viên nếu bạn cần xác nhận.
+              </p>
+            )}
+          </div>
+        )}
         <div className="grid grid-cols-1 gap-3">
           {filteredItems.map(item => {
             const itemId = getMenuItemIdentity(item);

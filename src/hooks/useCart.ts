@@ -52,7 +52,10 @@ export function useCart(restaurantId: string, tableNumber?: string, sessionId?: 
                 ...i,
                 quantity: i.quantity + 1,
                 allergens: item.allergens || [],
-                allergenInfoStatus: item.allergenInfoStatus || 'UNKNOWN'
+                allergenInfoStatus: item.allergenInfoStatus || 'UNKNOWN',
+                reviewedAllergens: item.reviewedAllergens || [],
+                mayContainAllergens: item.mayContainAllergens || [],
+                allergenCoverageStatus: item.allergenCoverageStatus || 'UNKNOWN'
               }
             : i
         );
@@ -63,7 +66,10 @@ export function useCart(restaurantId: string, tableNumber?: string, sessionId?: 
         price: item.price,
         quantity: 1,
         allergens: item.allergens || [],
-        allergenInfoStatus: item.allergenInfoStatus || 'UNKNOWN'
+        allergenInfoStatus: item.allergenInfoStatus || 'UNKNOWN',
+        reviewedAllergens: item.reviewedAllergens || [],
+        mayContainAllergens: item.mayContainAllergens || [],
+        allergenCoverageStatus: item.allergenCoverageStatus || 'UNKNOWN'
       }];
     });
   }, []);

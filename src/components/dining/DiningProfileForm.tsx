@@ -21,12 +21,16 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
 }) => {
   const [goals, setGoals] = useState<DiningProfile['goals']>(initialProfile.goals || []);
   const [allergies, setAllergies] = useState<Allergen[]>(initialProfile.allergies || []);
+  const [allergyDisclosureStatus, setAllergyDisclosureStatus] = useState<DiningProfile['allergyDisclosureStatus']>(
+    initialProfile.allergyDisclosureStatus ?? (initialProfile.allergies.length > 0 ? 'DECLARED' : 'NOT_ANSWERED')
+  );
   const [preferences, setPreferences] = useState<DiningPreference[]>(initialProfile.preferences || []);
   const hasStoredSelections = [
     ...initialProfile.goals,
     ...initialProfile.preferences,
     ...initialProfile.allergies,
     ...initialProfile.conditions,
+    ...(initialProfile.allergyDisclosureStatus === 'NONE_DECLARED' ? ['NONE_DECLARED'] : []),
   ].length > 0;
 
   const goalsList = [
@@ -43,7 +47,9 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
   const allergensList = [
     { value: Allergen.GLUTEN, label: '🌾 Gluten (Lúa mì)' },
     { value: Allergen.DAIRY, label: '🥛 Sữa & Phô mai' },
-    { value: Allergen.NUTS, label: '🥜 Hạt & Đậu phộng' },
+    { value: Allergen.PEANUT, label: '🥜 Đậu phộng' },
+    { value: Allergen.TREE_NUTS, label: '🌰 Hạt cây (óc chó, hạnh nhân...)' },
+    { value: Allergen.SESAME, label: '⚪ Mè / vừng' },
     { value: Allergen.SHELLFISH, label: '🦐 Hải sản có vỏ' },
     { value: Allergen.SOY, label: '🫘 Đậu nành' },
     { value: Allergen.EGGS, label: '🥚 Trứng' },
@@ -70,11 +76,11 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
   };
 
   const handleToggleAllergen = (value: Allergen) => {
-    if (allergies.includes(value)) {
-      setAllergies(allergies.filter(a => a !== value));
-    } else {
-      setAllergies([...allergies, value]);
-    }
+    const nextAllergies = allergies.includes(value)
+      ? allergies.filter(a => a !== value)
+      : [...allergies, value];
+    setAllergies(nextAllergies);
+    setAllergyDisclosureStatus(nextAllergies.length > 0 ? 'DECLARED' : 'NOT_ANSWERED');
   };
 
   const handleTogglePreference = (value: DiningPreference) => {
@@ -89,6 +95,7 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
     const updatedProfile: DiningProfile = {
       goals,
       allergies,
+      allergyDisclosureStatus,
       conditions: initialProfile.conditions,
       preferences
     };
@@ -103,6 +110,7 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
   const handleReset = () => {
     setGoals([]);
     setAllergies([]);
+    setAllergyDisclosureStatus('NOT_ANSWERED');
     setPreferences([]);
   };
 
@@ -160,8 +168,8 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
               <ShieldAlert className="w-4 h-4 text-red-500" />
               2. Dị ứng & Tránh ăn
             </h3>
-            <p className="text-xs text-red-500 font-medium">
-              * Hệ thống sẽ tự động khóa món có chứa thành phần dị ứng để bảo vệ bạn.
+            <p className="text-xs text-neutral-600 font-medium">
+              Chúng tôi sẽ hiển thị cảnh báo để bạn tham khảo; bạn vẫn tự quyết định món có muốn gọi.
             </p>
             <div className="flex flex-wrap gap-2">
               {allergensList.map((a) => {
@@ -182,6 +190,21 @@ export const DiningProfileForm: React.FC<DiningProfileFormProps> = ({
                 );
               })}
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                setAllergies([]);
+                setAllergyDisclosureStatus('NONE_DECLARED');
+              }}
+              aria-pressed={allergyDisclosureStatus === 'NONE_DECLARED'}
+              className={`rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                allergyDisclosureStatus === 'NONE_DECLARED'
+                  ? 'border-emerald-600 bg-emerald-600 text-white'
+                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              Tôi không có dị ứng đã biết
+            </button>
           </section>
 
           {/* Section 3: Preferences — non-judgmental */}

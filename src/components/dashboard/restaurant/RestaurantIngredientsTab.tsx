@@ -253,12 +253,12 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                         <span className="text-[10px] text-neutral-500 font-medium">
                           Mặc định: {ing.defaultUnit} {ing.defaultUnit === 'piece' && `(≈${ing.gramsPerUnit}g)`}
                         </span>
-                        {ing.allergens && ing.allergens.length > 0 && (
-                          <div className="flex items-center gap-1 text-[9px] text-rose-500 font-bold mt-1">
-                            <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                            <span>Dị ứng: {ing.allergens.join(', ')}</span>
-                          </div>
-                        )}
+                        <div className={`flex items-center gap-1 text-[9px] font-bold mt-1 ${ing.allergenInfoStatus === 'REVIEWED' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                          {ing.allergenInfoStatus === 'REVIEWED' ? <ShieldCheck className="w-2.5 h-2.5 shrink-0" /> : <AlertTriangle className="w-2.5 h-2.5 shrink-0" />}
+                          <span>{ing.allergenInfoStatus === 'REVIEWED'
+                            ? `Đã xác minh: ${ing.allergens?.length ? ing.allergens.join(', ') : 'không có allergen trong danh sách hỗ trợ'}`
+                            : `Ứng viên chưa xác minh: ${ing.allergens?.length ? ing.allergens.join(', ') : 'chưa có dữ liệu'}`}</span>
+                        </div>
                       </div>
                     </TableCell>
 
@@ -376,12 +376,12 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
               </div>
             </div>
 
-            {ing.allergens && ing.allergens.length > 0 && (
-              <div className="flex items-center gap-1 text-[9px] text-rose-500 font-bold">
-                <AlertTriangle className="w-2.5 h-2.5 shrink-0" />
-                <span>Dị ứng: {ing.allergens.join(', ')}</span>
-              </div>
-            )}
+            <div className={`flex items-center gap-1 text-[9px] font-bold ${ing.allergenInfoStatus === 'REVIEWED' ? 'text-emerald-700' : 'text-amber-700'}`}>
+              {ing.allergenInfoStatus === 'REVIEWED' ? <ShieldCheck className="w-2.5 h-2.5 shrink-0" /> : <AlertTriangle className="w-2.5 h-2.5 shrink-0" />}
+              <span>{ing.allergenInfoStatus === 'REVIEWED'
+                ? `Đã xác minh: ${ing.allergens?.length ? ing.allergens.join(', ') : 'không có allergen trong danh sách hỗ trợ'}`
+                : `Ứng viên chưa xác minh: ${ing.allergens?.length ? ing.allergens.join(', ') : 'chưa có dữ liệu'}`}</span>
+            </div>
 
             {/* Mobile Nutrition Grid */}
             <div className="grid grid-cols-2 gap-2 bg-neutral-50 p-2.5 rounded-xl border border-neutral-150">

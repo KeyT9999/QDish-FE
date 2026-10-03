@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { getIngredientAllergenSummary, validateIngredientAllergenConfirmation } from '@/services/ingredientAllergenReviewPolicy';
 import { toast } from 'sonner';
 import { Check, Info } from 'lucide-react';
 
@@ -33,14 +35,23 @@ const UNITS = [
 ];
 
 const ALLERGEN_OPTIONS = [
-  { value: 'gluten', label: 'Gluten', emoji: '🌾' },
-  { value: 'dairy', label: 'Sữa (Dairy)', emoji: '🥛' },
-  { value: 'eggs', label: 'Trứng (Eggs)', emoji: '🥚' },
-  { value: 'soy', label: 'Đậu nành (Soy)', emoji: '🫘' },
-  { value: 'nuts', label: 'Hạt (Nuts)', emoji: '🥜' },
-  { value: 'fish', label: 'Cá (Fish)', emoji: '🐟' },
-  { value: 'shellfish', label: 'Hải sản (Shellfish)', emoji: '🦐' },
+  { value: 'GLUTEN', label: 'Gluten', emoji: '🌾' },
+  { value: 'DAIRY', label: 'Sữa', emoji: '🥛' },
+  { value: 'EGGS', label: 'Trứng', emoji: '🥚' },
+  { value: 'SOY', label: 'Đậu nành', emoji: '🫘' },
+  { value: 'PEANUT', label: 'Đậu phộng', emoji: '🥜' },
+  { value: 'TREE_NUTS', label: 'Hạt cây (óc chó, hạnh nhân, hạt điều...)', emoji: '🌰' },
+  { value: 'SESAME', label: 'Mè', emoji: '🌱' },
+  { value: 'FISH', label: 'Cá', emoji: '🐟' },
+  { value: 'SHELLFISH', label: 'Hải sản có vỏ', emoji: '🦐' },
 ];
+
+type IngredientAllergenSource = NonNullable<Ingredient['allergenInfoSourceType']>;
+
+function normalizeAllergenSelection(values: string[]): string[] {
+  const normalized = values.map((value) => value.trim().toUpperCase());
+  return Array.from(new Set(normalized.flatMap((value) => value === 'NUTS' ? ['PEANUT', 'TREE_NUTS'] : [value])));
+}
 
 function optionalNumber(value: string): number | undefined {
   if (value === '') return undefined;
@@ -69,6 +80,10 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
   const [sugarPer100g, setSugarPer100g] = useState<number | undefined>();
   const [sodiumPer100g, setSodiumPer100g] = useState<number | undefined>();
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>([]);
+  const [confirmAllergenReview, setConfirmAllergenReview] = useState(false);
+  const [clearAllergenReview, setClearAllergenReview] = useState(false);
+  const [allergenSourceType, setAllergenSourceType] = useState<IngredientAllergenSource>('STAFF_ATTESTATION');
+  const [allergenSourceNote, setAllergenSourceNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -86,7 +101,11 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
       setFiberPer100g(editingIngredient.fiberPer100g);
       setSugarPer100g(editingIngredient.sugarPer100g);
       setSodiumPer100g(editingIngredient.sodiumPer100g);
-      setSelectedAllergens(editingIngredient.allergens || []);
+      setSelectedAllergens(normalizeAllergenSelection(editingIngredient.allergens || []));
+      setConfirmAllergenReview(false);
+      setClearAllergenReview(false);
+      setAllergenSourceType(editingIngredient.allergenInfoSourceType || 'STAFF_ATTESTATION');
+      setAllergenSourceNote('');
     } else {
       setName('');
       setCategory('protein');
@@ -100,6 +119,10 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
       setSugarPer100g(undefined);
       setSodiumPer100g(undefined);
       setSelectedAllergens([]);
+      setConfirmAllergenReview(false);
+      setClearAllergenReview(false);
+      setAllergenSourceType('STAFF_ATTESTATION');
+      setAllergenSourceNote('');
     }
   }, [open, editingIngredient]);
 
@@ -120,6 +143,11 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
       toast.error('Vui lòng nhập khối lượng quy đổi cho 1 cái');
       return;
     }
+    if (!validateIngredientAllergenConfirmation({ confirmed: confirmAllergenReview, sourceNote: allergenSourceNote })) {
+      toast.error('Khi xác nhận allergen, cần ghi nguồn và nội dung đã đối chiếu (tối đa 500 ký tự)');
+      setActiveTab('allergens');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -136,6 +164,11 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
         sugarPer100g,
         sodiumPer100g,
         allergens: selectedAllergens,
+        ...(confirmAllergenReview ? {
+          allergenInfoStatus: 'REVIEWED' as const,
+          allergenInfoSourceType: allergenSourceType,
+          allergenInfoSourceNote: allergenSourceNote.trim()
+        } : clearAllergenReview ? { allergenInfoStatus: 'UNKNOWN' as const } : {}),
       };
       await onSave(payload, editingIngredient);
       onOpenChange(false);
@@ -145,6 +178,8 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  const allergenSummary = getIngredientAllergenSummary(editingIngredient?.allergenInfoStatus, selectedAllergens);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -408,6 +443,18 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
           {/* TAB 3: ALLERGEN CHIPS */}
           {activeTab === 'allergens' && (
             <div className="space-y-4">
+              <div className={`rounded-xl border p-3 text-xs leading-5 ${allergenSummary.kind.startsWith('REVIEWED') ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-950'}`}>
+                <strong>{allergenSummary.kind === 'REVIEWED_EMPTY'
+                  ? 'Đã xác nhận: không có allergen trong danh sách hỗ trợ.'
+                  : allergenSummary.kind === 'REVIEWED_WITH_CODES'
+                    ? 'Đã xác nhận allergen được chọn bên dưới.'
+                    : allergenSummary.kind === 'UNKNOWN_WITH_CANDIDATES'
+                      ? 'Các mã bên dưới mới là ứng viên, chưa được xác minh.'
+                      : 'Chưa có dữ liệu allergen được xác minh.'}</strong>
+                {isReadOnly && editingIngredient?.allergenInfoSourceNote && (
+                  <p className="mt-1">Nguồn: {editingIngredient.allergenInfoSourceType || 'không rõ'} · {editingIngredient.allergenInfoSourceNote}</p>
+                )}
+              </div>
               <Label className="text-xs text-neutral-500 font-bold block mb-1">
                 Chọn các chất gây dị ứng có trong nguyên liệu này:
               </Label>
@@ -432,6 +479,59 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                   );
                 })}
               </div>
+              {!isReadOnly && (
+                <div className="space-y-3 rounded-xl border border-neutral-200 p-3">
+                  <label className="flex cursor-pointer items-start gap-2 text-xs leading-5 text-neutral-700">
+                    <input
+                      type="checkbox"
+                      checked={confirmAllergenReview}
+                      onChange={(event) => {
+                        setConfirmAllergenReview(event.target.checked);
+                        if (event.target.checked) setClearAllergenReview(false);
+                      }}
+                    />
+                    <span><strong>Tôi đã kiểm tra và xác nhận danh sách trên.</strong> Nếu để trống, tôi xác nhận nguyên liệu không có allergen nào trong danh sách hỗ trợ.</span>
+                  </label>
+                  {confirmAllergenReview && (
+                    <div className="space-y-2 pl-5">
+                      <Label htmlFor="ingredient-allergen-source" className="text-xs">Nguồn xác nhận</Label>
+                      <Select value={allergenSourceType} onValueChange={(value) => setAllergenSourceType(value as IngredientAllergenSource)}>
+                        <SelectTrigger id="ingredient-allergen-source" className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent className="bg-white">
+                          <SelectItem value="SUPPLIER_LABEL">Nhãn nhà cung cấp</SelectItem>
+                          <SelectItem value="RESTAURANT_RECIPE">Công thức nhà hàng</SelectItem>
+                          <SelectItem value="STAFF_ATTESTATION">Nhân viên đối chiếu</SelectItem>
+                          <SelectItem value="CURATED_MENU_DESCRIPTION">Mô tả thực đơn (cần nhân viên đối chiếu)</SelectItem>
+                          <SelectItem value="CURATED_REFERENCE_CATALOG">Danh mục nguyên liệu tham khảo (chỉ ứng viên)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Label htmlFor="ingredient-allergen-source-note" className="text-xs">Ghi chú nguồn / nội dung đã đối chiếu *</Label>
+                      <Textarea
+                        id="ingredient-allergen-source-note"
+                        value={allergenSourceNote}
+                        maxLength={500}
+                        onChange={(event) => setAllergenSourceNote(event.target.value)}
+                        placeholder="Ví dụ: Theo nhãn nhà cung cấp, thành phần có đậu phộng."
+                        className="min-h-16 text-xs"
+                      />
+                      <p className="text-right text-[10px] text-neutral-500">{allergenSourceNote.trim().length}/500</p>
+                    </div>
+                  )}
+                  {editingIngredient?.allergenInfoStatus === 'REVIEWED' && (
+                    <label className="flex cursor-pointer items-start gap-2 border-t border-neutral-100 pt-3 text-xs leading-5 text-neutral-700">
+                      <input
+                        type="checkbox"
+                        checked={clearAllergenReview}
+                        onChange={(event) => {
+                          setClearAllergenReview(event.target.checked);
+                          if (event.target.checked) setConfirmAllergenReview(false);
+                        }}
+                      />
+                      <span>Gỡ xác nhận hiện tại và đưa nguyên liệu về trạng thái chưa xác minh.</span>
+                    </label>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -278,9 +278,9 @@ const StaffOrdersTab: React.FC<StaffOrdersTabProps> = ({ restaurantId }) => {
                   <span>{item.name}</span>
                   <span className="font-bold text-gray-900">x{item.quantity}</span>
                 </div>
-                {formatOrderAllergenWarning({ ...item, reportedAllergies: order.reportedAllergies }) && (
+                {formatOrderAllergenWarning({ ...item, reportedAllergies: order.reportedAllergies, allergyDisclosureStatus: order.allergyDisclosureStatus }) && (
                   <span className="mt-1 text-[10px] font-semibold text-amber-800">
-                    ⚠ {formatOrderAllergenWarning({ ...item, reportedAllergies: order.reportedAllergies })}
+                    ⚠ {formatOrderAllergenWarning({ ...item, reportedAllergies: order.reportedAllergies, allergyDisclosureStatus: order.allergyDisclosureStatus })}
                   </span>
                 )}
               </li>

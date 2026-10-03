@@ -6,25 +6,44 @@ const menuItems = [
   {
     _id: '507f1f77bcf86cd799439012',
     restaurantId,
-    name: 'Gỏi hạt điều',
-    description: 'Rau thơm và hạt điều rang',
+    name: 'Món đã xác nhận an toàn',
+    description: 'Danh sách allergen đã được nhân viên rà soát',
     price: 42000,
     category: 'Món chính',
     imageUrl: '',
     available: true,
-    allergens: ['NUTS'],
+    allergens: [],
+    reviewedAllergens: [],
+    mayContainAllergens: [],
+    allergenReviewMethod: 'MANUAL',
+    allergenReviewSourceType: 'STAFF_ATTESTATION',
+    allergenReviewSourceNote: 'Đã kiểm tra công thức và nhãn nguyên liệu.',
+    allergenReviewedBy: '507f1f77bcf86cd799439010',
+    allergenReviewedAt: '2026-10-03T10:00:00.000Z',
     allergenInfoStatus: 'REVIEWED',
   },
   {
     _id: '507f1f77bcf86cd799439013',
     restaurantId,
-    name: 'Bánh hạnh nhân',
-    description: 'Món chưa được kiểm tra thông tin dị ứng',
+    name: 'Brownie óc chó',
+    description: 'Ứng viên nguyên liệu từ công thức, chưa được nhà hàng xác minh',
     price: 35000,
     category: 'Tráng miệng',
     imageUrl: '',
     available: true,
-    allergens: ['NUTS'],
+    allergens: ['TREE_NUTS'],
+    allergenInfoStatus: 'UNKNOWN',
+  },
+  {
+    _id: '507f1f77bcf86cd799439014',
+    restaurantId,
+    name: 'Món chưa có dữ liệu',
+    description: 'Chưa có công thức hoặc khai báo allergen',
+    price: 30000,
+    category: 'Tráng miệng',
+    imageUrl: '',
+    available: true,
+    allergens: [],
     allergenInfoStatus: 'UNKNOWN',
   },
 ];
@@ -94,7 +113,7 @@ test('free QR guest sees allergen warnings and may still place the order', async
           restaurantId,
           tableNumber: '1',
           items: [],
-          totalAmount: 42000,
+          totalAmount: 35000,
           status: 'PENDING',
           timestamp: Date.now(),
         }),
@@ -111,22 +130,27 @@ test('free QR guest sees allergen warnings and may still place the order', async
   await page.goto(`/order?r=${restaurantId}&t=1`);
 
   await expect(page.getByRole('heading', { name: 'Tránh chất gây dị ứng' })).toBeVisible({ timeout: 5_000 });
-  await page.getByRole('button', { name: /Các loại hạt/ }).click();
+  await page.getByRole('button', { name: /Hạt cây/ }).click();
   await page.getByRole('button', { name: /Lưu thông tin dị ứng/ }).click();
 
-  await expect(page.getByText('Món này có chứa các loại hạt bạn đã khai báo dị ứng.')).toBeVisible();
-  await expect(page.getByText('Chưa xác nhận thông tin dị ứng của món này. Hãy hỏi nhân viên nếu bạn bị dị ứng.')).toBeVisible();
+  await expect(page.getByText('1 món có thể liên quan đến dị ứng bạn đã khai báo.')).toBeVisible();
+  await expect(page.getByText(/Món này có thể chứa hạt cây bạn đã khai báo dị ứng\. Thông tin dị ứng của món chưa được xác minh\./)).toBeVisible();
+  await expect(page.getByText('Chưa xác minh dị ứng')).toBeVisible();
+  await page.getByText('Món đã xác nhận an toàn').click();
+  await expect(page.getByText('Nhà hàng đã rà soát và không khai báo allergen nào trong danh sách hỗ trợ.')).toBeVisible();
+  await page.getByRole('button', { name: 'Quay lại danh sách món ăn' }).click();
 
-  await page.getByRole('button', { name: 'Thêm món Gỏi hạt điều' }).click();
+  await page.getByRole('button', { name: 'Thêm món Brownie óc chó' }).click();
   await page.getByRole('button', { name: /Xem giỏ hàng/ }).click();
-  await expect(page.getByLabel('Giỏ hàng của bạn').getByText('Món này có chứa các loại hạt bạn đã khai báo dị ứng.')).toBeVisible();
+  await expect(page.getByLabel('Giỏ hàng của bạn').getByText(/Món này có thể chứa hạt cây/)).toBeVisible();
   await page.getByRole('button', { name: /Tiếp tục/ }).click();
   await page.getByRole('button', { name: 'Xác nhận đặt món' }).click();
 
   await expect.poll(() => submittedOrder).toBeDefined();
   expect(submittedOrder).toMatchObject({
-    reportedAllergies: ['NUTS'],
-    items: [{ menuItemId: menuItems[0]._id, quantity: 1 }],
+    reportedAllergies: ['TREE_NUTS'],
+    allergyDisclosureStatus: 'DECLARED',
+    items: [{ menuItemId: menuItems[1]._id, quantity: 1 }],
   });
   expect(JSON.stringify(submittedOrder?.items)).not.toContain('allergenWarnings');
   expect(JSON.stringify(submittedOrder?.items)).not.toContain('allergenInfoStatus');
