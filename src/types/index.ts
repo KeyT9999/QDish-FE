@@ -166,6 +166,8 @@ export enum Allergen {
   FISH = 'FISH',
 }
 
+export type AllergenInfoStatus = 'UNKNOWN' | 'REVIEWED';
+
 // DiningPreference replaces HealthLabel — non-judgmental, context-based
 export type DiningPreference =
   | 'VEGAN'
@@ -230,6 +232,7 @@ export interface MenuItem {
   nutritionComplete?: boolean;
   missingIngredientCount?: number;
   allergens?: Allergen[] | string[];
+  allergenInfoStatus?: AllergenInfoStatus;
   foodAttributes?: string[];     // context-based attribute keys e.g. ['HIGH_PROTEIN', 'POST_WORKOUT']
 
   // QDish Step 1: Recipe
@@ -259,6 +262,8 @@ export interface OrderItem {
   name: string;
   price: number;
   quantity: number;
+  allergenInfoStatus?: AllergenInfoStatus;
+  allergenWarnings?: Allergen[] | string[];
 }
 
 export interface Order {
@@ -271,6 +276,7 @@ export interface Order {
   status: OrderStatus;
   timestamp: number;
   note?: string;
+  reportedAllergies?: Allergen[] | string[];
   customerName?: string; // Tên khách hàng
   paymentMethod?: PaymentMethod; // Hình thức thanh toán
   confirmedByName?: string; // Tên nhân viên đã xác nhận đơn
@@ -288,7 +294,9 @@ export interface Order {
   };
 }
 
-export interface CartItem extends OrderItem {}
+export interface CartItem extends OrderItem {
+  allergens?: Allergen[] | string[];
+}
 
 // App state shape
 export interface AppState {
@@ -693,6 +701,9 @@ export interface BillItemSnapshot {
   unitPrice: number;
   totalPrice: number;
   notes?: string;
+  allergenInfoStatus?: AllergenInfoStatus;
+  allergenWarnings?: Allergen[] | string[];
+  reportedAllergies?: Allergen[] | string[];
 }
 
 export interface Bill {

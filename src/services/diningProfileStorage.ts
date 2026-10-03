@@ -3,6 +3,7 @@ import type { Allergen, DiningPreference, DiningProfile } from '../types/index.t
 const STORAGE_KEY = 'qdish_dining_profile';
 const LEGACY_STORAGE_KEY = 'qdish_health_profile';
 export const DINING_ONBOARDING_HANDLED_STORAGE_KEY = 'qdish_dining_onboarding_handled';
+export const ALLERGY_DISCLOSURE_HANDLED_STORAGE_KEY = 'qdish_allergy_disclosure_handled_v1';
 
 const GOALS = new Set<DiningProfile['goals'][number]>([
   'MUSCLE_GAIN', 'ENERGY_BOOST', 'LIGHT_MEAL', 'COMFORT',
@@ -223,11 +224,13 @@ export function hasDiningProfileSelections(profile: DiningProfile): boolean {
 }
 
 export function loadDiningOnboardingHandled(storage?: ProfileStorage): boolean {
-  return safeRead(storage, DINING_ONBOARDING_HANDLED_STORAGE_KEY) === '1';
+  return safeRead(storage, ALLERGY_DISCLOSURE_HANDLED_STORAGE_KEY) === '1'
+    || safeRead(storage, DINING_ONBOARDING_HANDLED_STORAGE_KEY) === '1';
 }
 
 export function markDiningOnboardingHandled(storage?: ProfileStorage): void {
   try {
+    storage?.setItem(ALLERGY_DISCLOSURE_HANDLED_STORAGE_KEY, '1');
     storage?.setItem(DINING_ONBOARDING_HANDLED_STORAGE_KEY, '1');
   } catch {
     // Storage access is optional and can be blocked by browser privacy settings.

@@ -13,6 +13,7 @@ import {
 import { RefreshCw, Search, ClipboardList, Clock, MoreHorizontal, Receipt, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
+import { formatOrderAllergenWarning } from '@/services/allergenPresentation';
 
 export interface RestaurantOrdersTabProps {
   activeBills: ActiveBill[];
@@ -280,6 +281,17 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                                 Ghi chú: {order.note}
                               </p>
                             )}
+                            {order.items.map((item, index) => {
+                              const warning = formatOrderAllergenWarning({
+                                ...item,
+                                reportedAllergies: order.reportedAllergies
+                              });
+                              return warning ? (
+                                <p key={`${item.menuItemId}-${index}`} className="mt-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-900">
+                                  {item.name}: {warning}
+                                </p>
+                              ) : null;
+                            })}
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2">

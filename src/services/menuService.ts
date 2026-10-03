@@ -41,6 +41,7 @@ const normalizeMenuItem = (item: BackendMenuItem): MenuItem => ({
   cookingMethod: item.cookingMethod ?? 'raw',
   foodAttributes: item.foodAttributes || [],
   allergens: item.allergens || [],
+  allergenInfoStatus: item.allergenInfoStatus === 'REVIEWED' ? 'REVIEWED' : 'UNKNOWN',
   nutritionCompleteness: item.nutritionCompleteness ?? 0,
   nutritionComplete: item.nutritionComplete ?? false,
   missingIngredientCount: item.missingIngredientCount ?? 0,

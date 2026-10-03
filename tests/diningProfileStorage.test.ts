@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 import {
   DINING_ONBOARDING_HANDLED_STORAGE_KEY,
+  ALLERGY_DISCLOSURE_HANDLED_STORAGE_KEY,
   EMPTY_DINING_PROFILE,
   clearDiningProfile,
   hasDiningProfileSelections,
@@ -160,6 +161,7 @@ function testUsesFreshEmptyProfilesAndClearsStorage() {
   assert.equal(storage.getItem('qdish_dining_profile'), null);
   assert.equal(storage.getItem('qdish_health_profile'), null);
   assert.equal(storage.getItem(DINING_ONBOARDING_HANDLED_STORAGE_KEY), '1');
+  assert.equal(storage.getItem(ALLERGY_DISCLOSURE_HANDLED_STORAGE_KEY), '1');
   assert.equal(loadDiningOnboardingHandled(storage), true);
   assert.deepEqual(loadDiningProfile(storage).profile, EMPTY_DINING_PROFILE);
 }
@@ -213,6 +215,7 @@ function testOnboardingHandledMarkerFailsClosedWithoutThrowing() {
 
   assert.equal(loadDiningOnboardingHandled(storage), true);
   assert.equal(storage.getItem(DINING_ONBOARDING_HANDLED_STORAGE_KEY), '1');
+  assert.equal(storage.getItem(ALLERGY_DISCLOSURE_HANDLED_STORAGE_KEY), '1');
 }
 
 testMigratesPlainProfileAndNormalizesValues();

@@ -1,23 +1,32 @@
 import React from 'react';
-import { CartItem as CartItemType } from '@/types';
+import { Allergen, CartItem as CartItemType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { getMenuAllergenWarning } from '@/services/allergenPresentation';
 
 interface CartItemProps {
   item: CartItemType;
+  userAllergies: Allergen[];
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
 }
 
-export const CartItem: React.FC<CartItemProps> = ({ item, onUpdateQuantity, onRemove }) => {
+export const CartItem: React.FC<CartItemProps> = ({ item, userAllergies, onUpdateQuantity, onRemove }) => {
+  const warning = getMenuAllergenWarning(item, userAllergies);
+
   return (
-    <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+    <div className="flex items-center justify-between gap-3 py-3 border-b border-gray-100 last:border-0">
       <div className="flex-1 pr-4">
         <h4 className="font-medium text-gray-900 text-sm line-clamp-2">{item.name}</h4>
         <p className="text-green-600 font-semibold text-sm mt-0.5">
           {formatCurrency(item.price)}
         </p>
+        {warning.kind !== 'NONE' && (
+          <p className={`mt-1.5 text-xs font-semibold ${warning.kind === 'CONFLICT' ? 'text-rose-700' : 'text-amber-800'}`}>
+            {warning.message}
+          </p>
+        )}
       </div>
       
       <div className="flex items-center gap-3">

@@ -12,6 +12,7 @@ import {
 
 import { Bill, BillStatus, Order, TableSession } from '@/types';
 import { formatCurrency } from '@/lib/utils';
+import { formatOrderAllergenWarning } from '@/services/allergenPresentation';
 import {
   Dialog,
   DialogContent,
@@ -165,6 +166,11 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
                           {item.quantity} × {formatCurrency(item.unitPrice)}
                           {item.notes ? ` · ${item.notes}` : ''}
                         </p>
+                        {formatOrderAllergenWarning(item) && (
+                          <p className="mt-1.5 text-xs font-semibold text-amber-900">
+                            ⚠ {formatOrderAllergenWarning(item)}
+                          </p>
+                        )}
                       </div>
                       <p className="shrink-0 text-sm font-extrabold text-neutral-900">{formatCurrency(item.totalPrice)}</p>
                     </div>

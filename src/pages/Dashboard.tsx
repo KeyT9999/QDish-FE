@@ -330,6 +330,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleConfirmAllergenReview = async (id: string) => {
+    try {
+      await menuService.update(id, { allergenInfoStatus: 'REVIEWED' });
+      toast.success('Đã xác nhận thông tin dị ứng của món');
+      loadMenu();
+    } catch (err: any) {
+      toast.error(err.message || 'Không thể xác nhận thông tin dị ứng');
+    }
+  };
+
   // Category
   const handleOpenCategoryModal = (cat?: CategoryItem) => {
     setEditingCategory(cat || null);
@@ -745,6 +755,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onOpenMenuModal={handleOpenMenuModal}
             onDeleteMenuItem={handleDeleteMenuItem}
             onToggleAvailable={handleToggleAvailable}
+            onConfirmAllergenReview={handleConfirmAllergenReview}
             showCopyButton={user?.role === 'RESTAURANT_OWNER' && ownerRestaurants.length > 1}
             onCopyClick={() => setIsCopyModalOpen(true)}
           />
