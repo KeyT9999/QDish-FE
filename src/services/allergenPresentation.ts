@@ -107,6 +107,8 @@ export function getMenuAllergenWarning(
   const reported = new Set(normalizeSupportedAllergens(reportedAllergies));
   const baseUnknownMessage = 'Chưa xác minh đầy đủ thông tin dị ứng của món này. Hãy hỏi nhân viên nếu bạn bị dị ứng.';
 
+  if (reported.size === 0) return { kind: 'NONE' };
+
   const declaration = hasReviewedAllergenDeclaration(item) ? getReviewedDeclaration(item) : undefined;
   if (!declaration) {
     const candidates = normalizeSupportedAllergens(item.allergens);

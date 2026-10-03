@@ -135,6 +135,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
     ? item.reviewedAllergens ?? []
     : item.allergens ?? [];
   const mayContainList = allergenDataIsReviewed ? item.mayContainAllergens ?? [] : [];
+  const showAllergenSection = allergenDataIsReviewed || (allergenWarning.kind !== 'NONE' && allergenList.length > 0);
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -401,7 +402,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
             )}
 
             {/* ── Food Allergens Safety Notice ───────────────────────────── */}
-            {(allergenList.length > 0 || mayContainList.length > 0 || allergenWarning.kind === 'UNKNOWN' || item.allergenInfoStatus === 'REVIEWED') && (
+            {showAllergenSection && (
               <section className="space-y-2">
                 <h2 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
@@ -460,11 +461,6 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                   {allergenDataIsReviewed && allergenList.length === 0 && mayContainList.length === 0 && (
                     <p className="text-[11px] leading-5 text-emerald-800">
                       Nhà hàng đã rà soát và không khai báo allergen nào trong danh sách hỗ trợ.
-                    </p>
-                  )}
-                  {allergenWarning.kind !== 'NONE' && (
-                    <p className={`text-xs font-semibold mt-2.5 flex items-start gap-1 ${hasUserAllergen ? 'text-rose-700' : 'text-amber-900'}`}>
-                      <span>{allergenWarning.message} Bạn vẫn có thể gọi món; hãy trao đổi với nhân viên nếu cần.</span>
                     </p>
                   )}
                   <p className="text-[11px] text-neutral-600 mt-2.5">
