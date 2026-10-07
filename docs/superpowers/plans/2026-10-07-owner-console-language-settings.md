@@ -158,9 +158,10 @@ export interface OwnerConsoleLocaleValue {
 - [x] Scan owner-only render paths for fixed Vietnamese UI labels and keep all English/Chinese entries type-checked against the Vietnamese keys.
 - [x] Check that customer `menuLocale`, non-owner roles, notification/user-entered content and account separation are unchanged.
 - [x] Run FE encoding check, lint, type-check, and `test:ci`; run BE build and `test:ci`.
-- [ ] Confirm the FE build in GitHub Actions and manually exercise persistence, rollback, reload, branch switching, non-owner fallback, and customer menu independence.
+- [x] Confirm FE and BE GitHub Actions checks on the PR heads.
+- [ ] Manually exercise persistence, rollback, reload, branch switching, non-owner fallback, and customer menu independence.
 
-Verification note: FE encoding check, type-check, lint, and `test:ci` pass (lint reports 254 warnings and 0 errors); BE build and `test:ci` pass. The review fixed the ESM-incompatible `__dirname` usage in `vite.config.ts`. The FE build still fails on this Windows environment: the default Vite config loader reports a Rolldown binding error, while `--configLoader runner` loads the config and then Rolldown panics registering a plugin hook. Both repositories have GitHub Actions CI workflows; hosted PR checks and manual browser exercise remain outstanding.
+Verification note: FE encoding check, type-check, lint, and `test:ci` pass (lint reports 254 warnings and 0 errors); BE build and `test:ci` pass. Hosted GitHub Actions pass on FE PR head `3c9d35acb6b1d8e4464305afe8cb2dd26be2aac1` and BE PR head `90181faba1942989485a1d374d4124013d34ebd0`. The review fixed the ESM-incompatible `__dirname` usage in `vite.config.ts`. FE build still panics in Rolldown on this Windows environment, while the hosted Linux build passes. Production deployment jobs are skipped for PR events. Manual browser exercise remains outstanding.
 
 **Acceptance:** Spec success criteria are met with no untranslated fixed owner-console strings or locale leakage across roles/accounts.
 
@@ -187,4 +188,5 @@ Verification note: FE encoding check, type-check, lint, and `test:ci` pass (lint
 - [x] Backend persistence.
 - [x] FE locale provider and settings selector.
 - [x] Owner-console catalogs and screen migration.
-- [ ] Hosted FE build and manual browser verification (local FE tests/lint/encoding and BE tests/build pass; Windows Rolldown build panic remains to check on hosted CI).
+- [x] Hosted FE and BE CI checks pass; local FE tests/lint/encoding and BE tests/build pass.
+- [ ] Manual browser verification (the local Windows Vite build still panics in Rolldown).
