@@ -42,9 +42,12 @@ import { OwnerNotificationForm } from '@/components/notification/OwnerNotificati
 import { NotificationCenter } from '@/components/notification/NotificationCenter';
 import { useOwnerWorkspace } from '@/components/layout/OwnerWorkspaceContext';
 import { resolveOwnerRestaurantSelection } from '@/components/layout/ownerWorkspaceSelection';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export const OwnerDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { t, language } = useOwnerConsoleLocale();
+  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'owner-home';
@@ -78,8 +81,8 @@ export const OwnerDashboard: React.FC = () => {
       setSubDetails(subscriptionData);
       setBillingPlans(plansData);
     } catch (err: any) {
-      setBillingError(err.message || 'Không thể tải thông tin gói dịch vụ');
-      toast.error('Không thể tải thông tin gói dịch vụ của bạn.');
+      setBillingError(t('Không thể tải thông tin gói dịch vụ'));
+      toast.error(t('Không thể tải thông tin gói dịch vụ của bạn.'));
     } finally {
       setIsSubLoading(false);
     }
@@ -88,12 +91,12 @@ export const OwnerDashboard: React.FC = () => {
   const handleBillingCheckout = async (plan: Plan) => {
     const planId = plan.id || plan._id;
     if (!planId) {
-      toast.error('Không xác định được gói dịch vụ');
+      toast.error(t('Không xác định được gói dịch vụ'));
       return;
     }
 
     if (subDetails?.subscription?.planId === planId && subDetails.subscription.status === 'ACTIVE') {
-      toast.info('Bạn đang sử dụng gói này.');
+      toast.info(t('Bạn đang sử dụng gói này.'));
       return;
     }
 
@@ -101,7 +104,7 @@ export const OwnerDashboard: React.FC = () => {
     try {
       const response = await subscriptionService.checkoutSubscription(planId, billingCycle);
       if (response.isFree) {
-        toast.success('Đã kích hoạt gói miễn phí thành công.');
+        toast.success(t('Đã kích hoạt gói miễn phí thành công.'));
         await loadSubscription();
         return;
       }
@@ -109,13 +112,13 @@ export const OwnerDashboard: React.FC = () => {
         if (response.orderCode) {
           localStorage.setItem(PENDING_PAYMENT_ORDER_KEY, String(response.orderCode));
         }
-        toast.loading('Đang chuyển sang cổng thanh toán PayOS...');
+        toast.loading(t('Đang chuyển sang cổng thanh toán PayOS...'));
         window.location.assign(response.checkoutUrl);
         return;
       }
-      toast.error('Không nhận được liên kết thanh toán từ hệ thống.');
+      toast.error(t('Không nhận được liên kết thanh toán từ hệ thống.'));
     } catch (err: any) {
-      toast.error(err.message || 'Không thể khởi tạo thanh toán.');
+      toast.error(err.message || t('Không thể khởi tạo thanh toán.'));
     } finally {
       setCheckoutPlanId(null);
     }
@@ -152,7 +155,7 @@ export const OwnerDashboard: React.FC = () => {
       );
       resolveSelectedRestaurant(resolvedId);
     } catch {
-      toast.error('Không thể tải danh sách chi nhánh nhà hàng');
+      toast.error(t('Không thể tải danh sách chi nhánh nhà hàng'));
     } finally {
       setIsLoading(false);
     }
@@ -163,7 +166,7 @@ export const OwnerDashboard: React.FC = () => {
     try {
       setArchivedRestaurants(await ownerRestaurantService.getArchivedRestaurants(period));
     } catch {
-      toast.error('Không thể tải danh sách chi nhánh đã lưu trữ');
+      toast.error(t('Không thể tải danh sách chi nhánh đã lưu trữ'));
     } finally {
       setIsArchivedLoading(false);
     }
@@ -195,23 +198,23 @@ export const OwnerDashboard: React.FC = () => {
       !form.restaurantPassword ||
       !form.confirmRestaurantPassword
     ) {
-      toast.error('Vui lòng điền đầy đủ tất cả các trường.');
+      toast.error(t('Vui lòng điền đầy đủ tất cả các trường.'));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.restaurantEmail.trim())) {
-      toast.error('Định dạng email không hợp lệ.');
+      toast.error(t('Định dạng email không hợp lệ.'));
       return;
     }
 
     if (form.restaurantPassword.length < 6) {
-      toast.error('Mật khẩu admin cần tối thiểu 6 ký tự.');
+      toast.error(t('Mật khẩu admin cần tối thiểu 6 ký tự.'));
       return;
     }
 
     if (form.restaurantPassword !== form.confirmRestaurantPassword) {
-      toast.error('Xác nhận mật khẩu admin không trùng khớp.');
+      toast.error(t('Xác nhận mật khẩu admin không trùng khớp.'));
       return;
     }
 
@@ -228,7 +231,7 @@ export const OwnerDashboard: React.FC = () => {
         confirmRestaurantPassword: form.confirmRestaurantPassword
       });
 
-      toast.success(response.message || 'Tạo chi nhánh nhà hàng mới thành công!');
+      toast.success(t('Tạo chi nhánh nhà hàng mới thành công!'));
       setIsModalOpen(false);
       
       // Clear form
@@ -251,7 +254,7 @@ export const OwnerDashboard: React.FC = () => {
       // Full page reload to boot up all sockets & queries correctly for the new tenant workspace
       window.location.reload();
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi tạo nhà hàng mới.');
+      toast.error(err.message || t('Lỗi khi tạo nhà hàng mới.'));
     } finally {
       setIsSubmitting(false);
     }
@@ -259,7 +262,7 @@ export const OwnerDashboard: React.FC = () => {
 
   const selectRestaurant = (id: string) => {
     resolveSelectedRestaurant(id);
-    toast.success('Đã chuyển đổi không gian làm việc chi nhánh!');
+    toast.success(t('Đã chuyển đổi không gian làm việc chi nhánh!'));
     window.location.reload();
   };
 
@@ -286,7 +289,7 @@ export const OwnerDashboard: React.FC = () => {
       ]);
       setRestaurantToArchive(null);
       changeRestaurantListView(true);
-      toast.success(`${restaurantName} đã được lưu trữ. Dữ liệu lịch sử vẫn được giữ nguyên.`);
+      toast.success(t('{name} đã được lưu trữ. Dữ liệu lịch sử vẫn được giữ nguyên.', { name: restaurantName }));
 
       const refreshed = await refreshOwnerRestaurantLists(
         () => ownerRestaurantService.getMyRestaurants(statsPeriod),
@@ -308,10 +311,10 @@ export const OwnerDashboard: React.FC = () => {
         }
       }
       if (refreshed.active.status === 'rejected' || refreshed.archived.status === 'rejected') {
-        toast.error('Chi nhánh đã lưu trữ, nhưng danh sách chưa tải mới được. Vui lòng tải lại trang.');
+        toast.error(t('Chi nhánh đã lưu trữ, nhưng danh sách chưa tải mới được. Vui lòng tải lại trang.'));
       }
     } catch (error: any) {
-      toast.error(error.message || 'Không thể lưu trữ chi nhánh.');
+      toast.error(error.message || t('Không thể lưu trữ chi nhánh.'));
     } finally {
       setArchivingId(null);
     }
@@ -328,7 +331,7 @@ export const OwnerDashboard: React.FC = () => {
         ...current.filter((item) => (item.id || item._id) !== restaurantId)
       ]);
       changeRestaurantListView(false);
-      toast.success(`${restaurant.name} đã được khôi phục.`);
+      toast.success(t('{name} đã được khôi phục.', { name: restaurant.name }));
 
       const refreshed = await refreshOwnerRestaurantLists(
         () => ownerRestaurantService.getMyRestaurants(statsPeriod),
@@ -343,10 +346,10 @@ export const OwnerDashboard: React.FC = () => {
         resolveSelectedRestaurant(restoredId);
       }
       if (refreshed.active.status === 'rejected' || refreshed.archived.status === 'rejected') {
-        toast.error('Chi nhánh đã khôi phục, nhưng danh sách chưa tải mới được. Vui lòng tải lại trang.');
+        toast.error(t('Chi nhánh đã khôi phục, nhưng danh sách chưa tải mới được. Vui lòng tải lại trang.'));
       }
     } catch (error: any) {
-      toast.error(error.message || 'Không thể khôi phục chi nhánh.');
+      toast.error(error.message || t('Không thể khôi phục chi nhánh.'));
     } finally {
       setRestoringId(null);
     }
@@ -357,7 +360,7 @@ export const OwnerDashboard: React.FC = () => {
   if (isWorkspaceTab && selectionStatus === 'loading') {
     return (
       <div className="flex min-h-[320px] items-center justify-center rounded-3xl border border-neutral-200 bg-white px-6 text-sm font-semibold text-neutral-500" aria-busy="true">
-        Đang chuẩn bị không gian quản trị...
+        {t('Đang chuẩn bị không gian quản trị...')}
       </div>
     );
   }
@@ -374,9 +377,9 @@ export const OwnerDashboard: React.FC = () => {
             <Bell className="w-80 h-80 text-emerald-500" />
           </div>
           <div className="relative z-10 max-w-2xl">
-            <h1 className="text-3xl md:text-4xl font-heading font-bold mb-2">Trung tâm thông báo</h1>
+            <h1 className="text-3xl md:text-4xl font-heading font-bold mb-2">{t('Trung tâm thông báo')}</h1>
             <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-              Theo dõi tin tức hệ thống, biến động tài khoản thanh toán và các cập nhật tự động từ QDish SaaS.
+              {t('Theo dõi tin tức hệ thống, biến động tài khoản thanh toán và các cập nhật tự động từ QDish SaaS.')}
             </p>
           </div>
         </div>
@@ -402,13 +405,13 @@ export const OwnerDashboard: React.FC = () => {
           </div>
           <div className="relative z-10 max-w-2xl">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4">
-              <Sparkles className="w-4 h-4 animate-pulse" /> Gói Dịch Vụ & Thanh Toán
+              <Sparkles className="w-4 h-4 animate-pulse" /> {t('Gói Dịch Vụ & Thanh Toán')}
             </div>
             <h1 className="text-3xl md:text-4xl font-heading font-bold mb-2">
-              Quản Lý Gói Dịch Vụ SaaS của Bạn
+              {t('Quản Lý Gói Dịch Vụ SaaS của Bạn')}
             </h1>
             <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-              Kiểm tra mức sử dụng tài nguyên, hạn mức tài nguyên và nâng cấp các tính năng cao cấp cho chuỗi nhà hàng của bạn qua cổng PayOS.
+              {t('Kiểm tra mức sử dụng tài nguyên, hạn mức tài nguyên và nâng cấp các tính năng cao cấp cho chuỗi nhà hàng của bạn qua cổng PayOS.')}
             </p>
           </div>
         </div>
@@ -420,9 +423,9 @@ export const OwnerDashboard: React.FC = () => {
         ) : !subDetails ? (
           <div className="text-center py-12 bg-white border rounded-3xl shadow-sm">
             <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-3 animate-pulse" />
-            <h3 className="text-lg font-bold text-slate-800 mb-1">Không thể tải thông tin gói dịch vụ</h3>
-            <p className="text-slate-500 text-sm mb-4">{billingError || 'Hệ thống gặp sự cố trong quá trình đồng bộ hóa gói. Vui lòng bấm thử lại.'}</p>
-            <Button onClick={loadSubscription} className="bg-emerald-600 text-white rounded-xl">Thử lại</Button>
+            <h3 className="text-lg font-bold text-slate-800 mb-1">{t('Không thể tải thông tin gói dịch vụ')}</h3>
+            <p className="text-slate-500 text-sm mb-4">{billingError || t('Hệ thống gặp sự cố trong quá trình đồng bộ hóa gói. Vui lòng bấm thử lại.')}</p>
+            <Button onClick={loadSubscription} className="bg-emerald-600 text-white rounded-xl">{t('Thử lại')}</Button>
           </div>
         ) : (
           <div className="space-y-6">
@@ -441,22 +444,22 @@ export const OwnerDashboard: React.FC = () => {
                   bgClass = 'bg-amber-50';
                   borderClass = 'border-amber-200';
                   textClass = 'text-amber-800';
-                  message = `Gói ${planName} của bạn sẽ hết hạn sau 7 ngày. Vui lòng gia hạn để tránh gián đoạn dịch vụ.`;
+                  message = t('Gói {planName} của bạn sẽ hết hạn sau 7 ngày. Vui lòng gia hạn để tránh gián đoạn dịch vụ.', { planName });
                 } else if (level === '3days') {
                   bgClass = 'bg-orange-50';
                   borderClass = 'border-orange-200';
                   textClass = 'text-orange-900';
-                  message = `Gói ${planName} của bạn sắp hết hạn (còn 3 ngày). Các tính năng cao cấp sẽ bị khóa sau khi hết hạn.`;
+                  message = t('Gói {planName} của bạn sắp hết hạn (còn 3 ngày). Các tính năng cao cấp sẽ bị khóa sau khi hết hạn.', { planName });
                 } else if (level === '1day') {
                   bgClass = 'bg-rose-50 border-rose-200 text-rose-800 animate-pulse';
                   borderClass = 'border-rose-200';
                   textClass = 'text-rose-800';
-                  message = `Gói ${planName} của bạn sẽ bị hạ xuống FREE sau 24 giờ nữa. Hãy gia hạn ngay để giữ tất cả tính năng cao cấp.`;
+                  message = t('Gói {planName} của bạn sẽ bị hạ xuống FREE sau 24 giờ nữa. Hãy gia hạn ngay để giữ tất cả tính năng cao cấp.', { planName });
                 } else if (level === 'expired') {
                   bgClass = 'bg-rose-100 border-rose-300 text-rose-900';
                   borderClass = 'border-rose-300';
                   textClass = 'text-rose-950';
-                  message = `Gói dịch vụ cao cấp đã hết hạn. Hệ thống đã tự động chuyển tài khoản về gói FREE. Các tính năng nâng cao đã bị tạm khóa.`;
+                  message = t('Gói dịch vụ cao cấp đã hết hạn. Hệ thống đã tự động chuyển tài khoản về gói FREE. Các tính năng nâng cao đã bị tạm khóa.');
                 }
 
                 return (
@@ -464,7 +467,7 @@ export const OwnerDashboard: React.FC = () => {
                     <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-extrabold text-sm mb-0.5">
-                        {level === 'expired' ? 'Cảnh báo: Gói dịch vụ đã hết hạn' : 'Thông báo: Gói dịch vụ sắp hết hạn'}
+                        {level === 'expired' ? t('Cảnh báo: Gói dịch vụ đã hết hạn') : t('Thông báo: Gói dịch vụ sắp hết hạn')}
                       </h4>
                       <p className="text-xs font-semibold leading-relaxed">{message}</p>
                     </div>
@@ -479,58 +482,58 @@ export const OwnerDashboard: React.FC = () => {
                 <Card className="rounded-2xl border border-slate-150 bg-white shadow-sm overflow-hidden relative">
                   <div className="absolute top-0 left-0 right-0 h-1.5 bg-emerald-600" />
                   <CardHeader>
-                    <CardTitle className="text-lg font-bold text-slate-800">Gói hiện tại</CardTitle>
-                    <CardDescription className="text-xs">Thông tin chi tiết về gói dịch vụ của bạn</CardDescription>
+                    <CardTitle className="text-lg font-bold text-slate-800">{t('Gói hiện tại')}</CardTitle>
+                    <CardDescription className="text-xs">{t('Thông tin chi tiết về gói dịch vụ của bạn')}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="p-4 rounded-xl bg-emerald-50/40 border border-emerald-500/10 flex items-center justify-between gap-2">
                       <div>
-                        <span className="text-[10px] uppercase font-extrabold text-emerald-700 tracking-wider block mb-1">Gói hoạt động</span>
+                        <span className="text-[10px] uppercase font-extrabold text-emerald-700 tracking-wider block mb-1">{t('Gói hoạt động')}</span>
                         <h3 className="text-2xl font-black text-slate-900">{subDetails.subscription.planName}</h3>
                       </div>
                       <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
-                        <Check className="w-3.5 h-3.5" /> GÓI HIỆN TẠI
+                        <Check className="w-3.5 h-3.5" /> {t('GÓI HIỆN TẠI')}
                       </span>
                     </div>
 
                   <div className="space-y-3 pt-2 text-xs">
                     <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                      <span className="font-semibold text-slate-400">Trạng thái:</span>
+                      <span className="font-semibold text-slate-400">{t('Trạng thái:')}</span>
                       <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
                         subDetails.subscription.status === 'ACTIVE'
                           ? 'bg-emerald-50 text-emerald-700'
                           : 'bg-amber-50 text-amber-700'
                       }`}>
-                        {subDetails.subscription.status === 'ACTIVE' ? 'Đang kích hoạt' : 'Chờ thanh toán'}
+                        {subDetails.subscription.status === 'ACTIVE' ? t('Đang kích hoạt') : t('Chờ thanh toán')}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                      <span className="font-semibold text-slate-400">Chi phí:</span>
+                      <span className="font-semibold text-slate-400">{t('Chi phí:')}</span>
                       <span className="font-bold text-slate-800">
                         {subDetails.subscription.amount === 0 
-                          ? 'Miễn phí (0đ)' 
-                          : `${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(subDetails.subscription.amount)} / ${subDetails.subscription.billingCycle === 'YEARLY' ? 'năm' : 'tháng'}`}
+                          ? t('Miễn phí (0đ)')
+                          : `${new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(subDetails.subscription.amount)} / ${subDetails.subscription.billingCycle === 'YEARLY' ? t('Năm') : t('Tháng')}`}
                       </span>
                     </div>
 
                     {subDetails.subscription.startedAt && (
                       <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                        <span className="font-semibold text-slate-400">Ngày kích hoạt:</span>
+                        <span className="font-semibold text-slate-400">{t('Ngày kích hoạt:')}</span>
                         <span className="font-bold text-slate-850 flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5 text-slate-450" />
-                          {new Date(subDetails.subscription.startedAt).toLocaleDateString('vi-VN')}
+                          {new Date(subDetails.subscription.startedAt).toLocaleDateString(localeTag)}
                         </span>
                       </div>
                     )}
 
                     {subDetails.subscription.expiresAt && (
                       <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                        <span className="font-semibold text-slate-400">Hạn sử dụng:</span>
+                        <span className="font-semibold text-slate-400">{t('Hạn sử dụng:')}</span>
                         <span className="font-bold text-slate-850 flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5 text-slate-455" />
                           {subDetails.subscription.planCode === 'FREE' 
-                            ? 'Vô thời hạn' 
+                            ? t('Vô thời hạn')
                             : new Date(subDetails.subscription.expiresAt).toLocaleDateString('vi-VN')}
                         </span>
                       </div>
@@ -538,12 +541,12 @@ export const OwnerDashboard: React.FC = () => {
 
                     {subDetails.subscription.planCode !== 'FREE' && subDetails.subscription.daysRemaining !== undefined && (
                       <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
-                        <span className="font-semibold text-slate-400">Thời gian còn lại:</span>
+                        <span className="font-semibold text-slate-400">{t('Thời gian còn lại:')}</span>
                         <span className="font-bold text-slate-850 flex items-center gap-1">
                           <Clock className="w-3.5 h-3.5 text-slate-455" />
                           {subDetails.subscription.daysRemaining > 0 
-                            ? `${subDetails.subscription.daysRemaining} ngày` 
-                            : 'Đã hết hạn'}
+                            ? t('Còn {count} ngày', { count: subDetails.subscription.daysRemaining })
+                            : t('Đã hết hạn')}
                         </span>
                       </div>
                     )}
@@ -555,7 +558,7 @@ export const OwnerDashboard: React.FC = () => {
                         onClick={() => navigate('/pricing')}
                         className="w-full bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-md py-6"
                       >
-                        Nâng cấp gói dịch vụ <ArrowUpRight className="w-4 h-4 ml-1" />
+                        {t('Nâng cấp gói dịch vụ')} <ArrowUpRight className="w-4 h-4 ml-1" />
                       </Button>
                     </div>
                   )}
@@ -567,14 +570,14 @@ export const OwnerDashboard: React.FC = () => {
             <div className="lg:col-span-2 space-y-6">
               <Card className="rounded-2xl border border-slate-150 bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg font-bold text-slate-800">Giới hạn sử dụng tài nguyên</CardTitle>
-                  <CardDescription className="text-xs">Số lượng tài nguyên đã tạo so với giới hạn tối đa của gói hiện tại</CardDescription>
+                  <CardTitle className="text-lg font-bold text-slate-800">{t('Giới hạn sử dụng tài nguyên')}</CardTitle>
+                  <CardDescription className="text-xs">{t('Số lượng tài nguyên đã tạo so với giới hạn tối đa của gói hiện tại')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Progress Items list */}
                   {[
                     {
-                      label: 'Lượt quét QR (scans/tháng)',
+                      label: t('Lượt quét QR (scans/tháng)'),
                       count: subDetails.usage.scanCount || 0,
                       limit: subDetails.limits.scanLimitMonthly !== undefined ? subDetails.limits.scanLimitMonthly : -1,
                       icon: QrCode,
@@ -583,7 +586,7 @@ export const OwnerDashboard: React.FC = () => {
                       textColor: 'text-indigo-700'
                     },
                     {
-                      label: 'Chi nhánh / Nhà hàng',
+                      label: t('Chi nhánh / Nhà hàng'),
                       count: subDetails.usage.restaurantCount,
                       limit: subDetails.limits.restaurantLimit,
                       icon: Building2,
@@ -592,7 +595,7 @@ export const OwnerDashboard: React.FC = () => {
                       textColor: 'text-emerald-700'
                     },
                     {
-                      label: 'Bàn ăn hoạt động',
+                      label: t('Bàn ăn hoạt động'),
                       count: subDetails.usage.tableCount,
                       limit: subDetails.limits.tableLimit,
                       icon: QrCode,
@@ -601,7 +604,7 @@ export const OwnerDashboard: React.FC = () => {
                       textColor: 'text-green-700'
                     },
                     {
-                      label: 'Món ăn trong thực đơn',
+                      label: t('Món ăn trong thực đơn'),
                       count: subDetails.usage.menuItemCount,
                       limit: subDetails.limits.menuItemLimit,
                       icon: UtensilsCrossed,
@@ -610,7 +613,7 @@ export const OwnerDashboard: React.FC = () => {
                       textColor: 'text-emerald-800'
                     },
                     {
-                      label: 'Nhân viên (Staff)',
+                      label: t('Nhân viên (Staff)'),
                       count: subDetails.usage.staffCount,
                       limit: subDetails.limits.staffLimit,
                       icon: Users,
@@ -637,7 +640,7 @@ export const OwnerDashboard: React.FC = () => {
                           <div className="text-right">
                             <span className="font-extrabold text-slate-900 text-sm">{resItem.count}</span>
                             <span className="text-slate-400 mx-1">/</span>
-                            <span className="text-slate-500 font-bold">{isUnlimited ? 'Không giới hạn' : resItem.limit}</span>
+                            <span className="text-slate-500 font-bold">{isUnlimited ? t('Không giới hạn') : resItem.limit}</span>
                           </div>
                         </div>
 
@@ -652,7 +655,7 @@ export const OwnerDashboard: React.FC = () => {
                             </div>
                             {isAtLimit && (
                               <span className="text-[9px] font-bold text-rose-500 mt-1 block">
-                                Đã đạt giới hạn tối đa! Vui lòng nâng cấp gói để tiếp tục sử dụng thêm.
+                                {t('Đã đạt giới hạn tối đa! Vui lòng nâng cấp gói để tiếp tục sử dụng thêm.')}
                               </span>
                             )}
                           </div>
@@ -670,7 +673,7 @@ export const OwnerDashboard: React.FC = () => {
               {/* Package Features List */}
               <Card className="rounded-2xl border border-slate-150 bg-white shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg font-bold text-slate-800">Tính năng gói sở hữu</CardTitle>
+                  <CardTitle className="text-lg font-bold text-slate-800">{t('Tính năng gói sở hữu')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -686,16 +689,16 @@ export const OwnerDashboard: React.FC = () => {
 
                   {/* AI Feature Flags */}
                   <div className="border-t border-slate-100 pt-4 mt-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Tính năng AI & phân tích dữ liệu</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">{t('Tính năng AI & phân tích dữ liệu')}</span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       {[
-                        { label: 'Cá nhân hóa Fit Score', enabled: subDetails.limits.fitScoreEnabled || false },
-                        { label: 'Hồ sơ dinh dưỡng món ăn', enabled: subDetails.limits.foodAttributesEnabled || false },
-                        { label: 'Gợi ý món ăn AI (AI Recommendation)', enabled: subDetails.limits.recommendationEnabled || false },
-                        { label: 'Cá nhân hóa thực đơn (Personalized Menu)', enabled: subDetails.limits.personalizedMenuEnabled || false },
-                        { label: 'Báo cáo phân tích chuyên sâu', enabled: subDetails.limits.advancedAnalyticsEnabled || false },
-                        { label: 'Phân tích hành vi khách hàng', enabled: subDetails.limits.customerInsightsEnabled || false },
-                        { label: 'CRM khách hàng & lịch sử gọi món', enabled: subDetails.limits.customerCrmEnabled || false }
+                        { label: t('Cá nhân hóa Fit Score'), enabled: subDetails.limits.fitScoreEnabled || false },
+                        { label: t('Hồ sơ dinh dưỡng món ăn'), enabled: subDetails.limits.foodAttributesEnabled || false },
+                        { label: t('Gợi ý món ăn AI (AI Recommendation)'), enabled: subDetails.limits.recommendationEnabled || false },
+                        { label: t('Cá nhân hóa thực đơn (Personalized Menu)'), enabled: subDetails.limits.personalizedMenuEnabled || false },
+                        { label: t('Báo cáo phân tích chuyên sâu'), enabled: subDetails.limits.advancedAnalyticsEnabled || false },
+                        { label: t('Phân tích hành vi khách hàng'), enabled: subDetails.limits.customerInsightsEnabled || false },
+                        { label: t('CRM khách hàng & lịch sử gọi món'), enabled: subDetails.limits.customerCrmEnabled || false }
                       ].map((item, idx) => (
                         <div key={idx} className="flex items-center gap-2.5 text-xs">
                           <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${
@@ -723,8 +726,8 @@ export const OwnerDashboard: React.FC = () => {
                 <Card className="rounded-2xl border border-slate-150 bg-white shadow-sm">
                   <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <CardTitle className="text-lg font-bold text-slate-800">Gói có thể nâng cấp</CardTitle>
-                      <CardDescription className="text-xs">Danh sách gói đang được Super Admin kích hoạt</CardDescription>
+                      <CardTitle className="text-lg font-bold text-slate-800">{t('Gói có thể nâng cấp')}</CardTitle>
+                      <CardDescription className="text-xs">{t('Danh sách gói đang được Super Admin kích hoạt')}</CardDescription>
                     </div>
                     <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
                       <button
@@ -773,7 +776,7 @@ export const OwnerDashboard: React.FC = () => {
                           >
                             {plan.code === 'PRO' && (
                               <div className="absolute top-0 right-4 -translate-y-1/2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-extrabold text-[8px] uppercase px-2 py-0.5 rounded-full shadow-md">
-                                Khuyên dùng
+                                {t('Khuyên dùng')}
                               </div>
                             )}
                             <div>
@@ -797,17 +800,17 @@ export const OwnerDashboard: React.FC = () => {
 
                             <div>
                               <div className="text-xl font-black text-slate-900">
-                                {price === 0 ? '0đ' : new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price)}
+                                {price === 0 ? '0đ' : new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(price)}
                               </div>
                               <div className="text-[10px] font-bold text-slate-400 uppercase">
-                                / {billingCycle === BillingCycle.YEARLY ? 'năm' : 'tháng'}
+                              / {billingCycle === BillingCycle.YEARLY ? t('Năm') : t('Tháng')}
                               </div>
                             </div>
 
                             <div className="space-y-1.5 text-[11px] text-slate-600 flex-1 border-t border-slate-100 pt-3">
-                              <div>Lượt quét: <strong>{plan.scanLimitMonthly === -1 ? 'Vô hạn' : `${plan.scanLimitMonthly?.toLocaleString('vi-VN')} scans/tháng`}</strong></div>
-                              <div>Chi nhánh: <strong>{plan.restaurantLimit === -1 ? 'Không giới hạn' : `${plan.restaurantLimit} chi nhánh`}</strong></div>
-                              <div>AI & Analytics: <strong>{plan.code === 'FREE' ? 'Cơ bản' : plan.code === 'PLUS' ? 'AI Fit Score & Cá nhân hóa' : 'Full AI & Phân tích chuyên sâu'}</strong></div>
+              <div>{t('Lượt quét QR (scans/tháng)')}: <strong>{plan.scanLimitMonthly === -1 ? t('Vô hạn') : `${plan.scanLimitMonthly?.toLocaleString(localeTag)} ${language === 'vi' ? 'lượt quét/tháng' : language === 'zh-CN' ? '次/月' : 'scans/month'}`}</strong></div>
+                              <div>{t('Chi nhánh')}: <strong>{plan.restaurantLimit === -1 ? t('Không giới hạn') : `${plan.restaurantLimit} ${t('Chi nhánh').toLowerCase()}`}</strong></div>
+                              <div>AI & Analytics: <strong>{plan.code === 'FREE' ? t('Cơ bản') : plan.code === 'PLUS' ? t('AI Fit Score & Cá nhân hóa') : t('Full AI & Phân tích chuyên sâu')}</strong></div>
                             </div>
 
                             <Button
@@ -817,13 +820,13 @@ export const OwnerDashboard: React.FC = () => {
                               className={`rounded-xl text-xs font-bold transition-all duration-200 ${btnClass}`}
                             >
                               {checkoutPlanId === planId ? (
-                                <span className="flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Đang xử lý</span>
+                                <span className="flex items-center gap-2"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t('Đang xử lý')}</span>
                               ) : isCurrent ? (
-                                'Gói hiện tại'
+                                t('Gói hiện tại')
                               ) : price === 0 ? (
-                                'Chọn FREE'
+                                t('Chọn FREE')
                               ) : (
-                                `Nâng cấp ${plan.code}`
+                                t('Nâng cấp {code}', { code: plan.code })
                               )}
                             </Button>
                           </div>
@@ -853,13 +856,13 @@ export const OwnerDashboard: React.FC = () => {
         </div>
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-xs font-bold uppercase tracking-wider mb-4 backdrop-blur-md">
-            <ShieldCheck className="w-4 h-4" /> Tài khoản Chủ nhà hàng (Owner)
+            <ShieldCheck className="w-4 h-4" /> {t('Tài khoản Chủ nhà hàng (Owner)')}
           </div>
           <h1 className="text-3xl md:text-4xl font-heading font-bold mb-2">
-            Xin chào, {user?.username}!
+            {t('Xin chào, {username}!', { username: user?.username || '' })}
           </h1>
           <p className="text-emerald-50 text-sm md:text-base leading-relaxed">
-            Quản lý các chuỗi cửa hàng, thiết lập thực đơn QR và theo dõi doanh thu của các chi nhánh tại QDish.
+            {t('Quản lý các chuỗi cửa hàng, thiết lập thực đơn QR và theo dõi doanh thu của các chi nhánh tại QDish.')}
           </p>
         </div>
       </div>
@@ -871,21 +874,21 @@ export const OwnerDashboard: React.FC = () => {
             <div className="flex flex-col">
               <h2 className="text-xl font-heading font-bold text-slate-800 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-emerald-600 animate-pulse" />
-                Hiệu suất kinh doanh toàn chuỗi
+                {t('Hiệu suất kinh doanh toàn chuỗi')}
               </h2>
               <p className="text-slate-400 text-xs mt-0.5">
-                Số liệu tổng hợp cộng dồn từ tất cả {restaurants.length} chi nhánh nhà hàng thuộc sở hữu của bạn.
+                {t('Số liệu tổng hợp cộng dồn từ tất cả {count} chi nhánh nhà hàng thuộc sở hữu của bạn.', { count: restaurants.length })}
               </p>
             </div>
             
             {/* Period Switcher */}
             <div className="inline-flex rounded-xl border border-slate-150 bg-slate-50 p-1 self-start sm:self-center shrink-0">
               {[
-                { id: 'all', label: 'Tất cả' },
-                { id: 'today', label: 'Hôm nay' },
-                { id: 'week', label: 'Tuần này' },
-                { id: 'month', label: 'Tháng này' },
-                { id: 'year', label: 'Năm nay' }
+                { id: 'all', label: t('Tất cả') },
+                { id: 'today', label: t('Hôm nay') },
+                { id: 'week', label: t('Tuần này') },
+                { id: 'month', label: t('Tháng này') },
+                { id: 'year', label: t('Năm nay') }
               ].map(item => (
                 <button
                   key={item.id}
@@ -910,13 +913,13 @@ export const OwnerDashboard: React.FC = () => {
               <CardContent className="p-5 flex items-center justify-between">
                 <div className="space-y-1">
                   <span className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider block">
-                    Tổng doanh thu toàn chuỗi
+                    {t('Tổng doanh thu toàn chuỗi')}
                   </span>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalRevenue)}
+                    {new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(totalRevenue)}
                   </h3>
                   <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                    Doanh thu gộp (All branches)
+                    {t('Doanh thu gộp (All branches)')}
                   </span>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-650 flex items-center justify-center font-bold shrink-0">
@@ -931,13 +934,13 @@ export const OwnerDashboard: React.FC = () => {
               <CardContent className="p-5 flex items-center justify-between">
                 <div className="space-y-1">
                   <span className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider block">
-                    Tổng đơn hoàn thành
+                    {t('Tổng đơn hoàn thành')}
                   </span>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                    {totalOrders.toLocaleString('vi-VN')} đơn
+                    {t('{count} đơn', { count: totalOrders.toLocaleString(localeTag) })}
                   </h3>
                   <span className="text-[9px] font-semibold text-blue-650 bg-blue-50 px-1.5 py-0.5 rounded">
-                    Số đơn phục vụ thành công
+                    {t('Số đơn phục vụ thành công')}
                   </span>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
@@ -952,13 +955,13 @@ export const OwnerDashboard: React.FC = () => {
               <CardContent className="p-5 flex items-center justify-between">
                 <div className="space-y-1">
                   <span className="text-[10px] uppercase font-extrabold text-slate-400 tracking-wider block">
-                    Quy mô chi nhánh
+                    {t('Quy mô chi nhánh')}
                   </span>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                    {totalBranches} nhà hàng
+                    {t('{count} nhà hàng', { count: totalBranches })}
                   </h3>
                   <span className="text-[9px] font-semibold text-purple-650 bg-purple-50 px-1.5 py-0.5 rounded">
-                    Tổng chi nhánh đăng ký
+                    {t('Tổng chi nhánh đăng ký')}
                   </span>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
@@ -978,15 +981,15 @@ export const OwnerDashboard: React.FC = () => {
         /* Empty State Landing Page */
         <div className="text-center py-16 bg-white border border-dashed border-slate-200 rounded-3xl p-8 max-w-lg mx-auto shadow-sm">
           <Building2 className="w-16 h-16 text-emerald-600 mx-auto mb-4 opacity-80" />
-          <h3 className="text-xl font-bold text-slate-800 mb-2">Bạn chưa đăng ký chi nhánh nào</h3>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">{t('Bạn chưa đăng ký chi nhánh nào')}</h3>
           <p className="text-slate-500 text-sm mb-6 leading-relaxed">
-            Để bắt đầu sử dụng các tính năng quản lý thực đơn QR, gọi món, quản lý bàn ăn, nhân viên bếp của QDish, hãy tạo chi nhánh đầu tiên của bạn.
+            {t('Để bắt đầu sử dụng các tính năng quản lý thực đơn QR, gọi món, quản lý bàn ăn, nhân viên bếp của QDish, hãy tạo chi nhánh đầu tiên của bạn.')}
           </p>
           <Button 
             onClick={() => setIsModalOpen(true)}
             className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-6 py-2.5 font-bold shadow-md shadow-emerald-600/15"
           >
-            <Plus className="w-4 h-4 mr-2" /> Tạo chi nhánh đầu tiên
+            <Plus className="w-4 h-4 mr-2" /> {t('Tạo chi nhánh đầu tiên')}
           </Button>
         </div>
       ) : (
@@ -995,12 +998,12 @@ export const OwnerDashboard: React.FC = () => {
           <div className="flex flex-col gap-4 lg:flex-row lg:justify-between lg:items-center">
             <div>
               <h2 className="text-xl font-heading font-bold text-slate-800">
-                {showArchived ? 'Chi nhánh đã lưu trữ' : 'Danh sách chi nhánh của bạn'}
+                {showArchived ? t('Chi nhánh đã lưu trữ') : t('Danh sách chi nhánh của bạn')}
               </h2>
               <p className="text-slate-500 text-sm mt-1">
                 {showArchived
-                  ? 'Chi nhánh lưu trữ không nhận đơn mới; dữ liệu cũ vẫn được giữ và có thể khôi phục.'
-                  : 'Chọn chi nhánh để vào quản trị hoặc lưu trữ chi nhánh không còn hoạt động.'}
+                  ? t('Chi nhánh lưu trữ không nhận đơn mới; dữ liệu cũ vẫn được giữ và có thể khôi phục.')
+                  : t('Chọn chi nhánh để vào quản trị hoặc lưu trữ chi nhánh không còn hoạt động.')}
               </p>
             </div>
             {!showArchived && (
@@ -1008,12 +1011,12 @@ export const OwnerDashboard: React.FC = () => {
                 onClick={() => setIsModalOpen(true)}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md self-start"
               >
-                <Plus className="w-3.5 h-3.5 mr-1" /> Thêm chi nhánh mới
+                <Plus className="w-3.5 h-3.5 mr-1" /> {t('Thêm chi nhánh mới')}
               </Button>
             )}
           </div>
 
-          <div className="inline-flex max-w-full rounded-xl border border-slate-200 bg-slate-50 p-1" role="tablist" aria-label="Lọc chi nhánh">
+          <div className="inline-flex max-w-full rounded-xl border border-slate-200 bg-slate-50 p-1" role="tablist" aria-label={t('Lọc chi nhánh')}>
             <button
               type="button"
               role="tab"
@@ -1021,7 +1024,7 @@ export const OwnerDashboard: React.FC = () => {
               onClick={() => changeRestaurantListView(false)}
               className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200 ${!showArchived ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              Đang hoạt động <span className="ml-1 text-xs opacity-70">{restaurants.length}</span>
+              {t('Đang hoạt động')} <span className="ml-1 text-xs opacity-70">{restaurants.length}</span>
             </button>
             <button
               type="button"
@@ -1030,7 +1033,7 @@ export const OwnerDashboard: React.FC = () => {
               onClick={() => changeRestaurantListView(true)}
               className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-semibold transition-colors duration-200 ${showArchived ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
             >
-              Đã lưu trữ <span className="ml-1 text-xs opacity-70">{archivedRestaurants.length}</span>
+              {t('Đã lưu trữ')} <span className="ml-1 text-xs opacity-70">{archivedRestaurants.length}</span>
             </button>
           </div>
 
@@ -1038,8 +1041,8 @@ export const OwnerDashboard: React.FC = () => {
             archivedRestaurants.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center">
                 <Archive className="mx-auto mb-3 h-9 w-9 text-slate-400" />
-                <h3 className="font-semibold text-slate-800">Chưa có chi nhánh lưu trữ</h3>
-                <p className="mt-1 text-sm text-slate-500">Các chi nhánh đã lưu trữ sẽ xuất hiện ở đây để bạn khôi phục khi cần.</p>
+                <h3 className="font-semibold text-slate-800">{t('Chưa có chi nhánh lưu trữ')}</h3>
+                <p className="mt-1 text-sm text-slate-500">{t('Các chi nhánh đã lưu trữ sẽ xuất hiện ở đây để bạn khôi phục khi cần.')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -1058,7 +1061,7 @@ export const OwnerDashboard: React.FC = () => {
                               <CardDescription className="mt-1 truncate font-mono text-xs">Admin: {rest.username}</CardDescription>
                             </div>
                           </div>
-                          <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">Đã lưu trữ</span>
+                          <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{t('Đã lưu trữ')}</span>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3 pt-0 text-sm text-slate-600">
@@ -1067,7 +1070,7 @@ export const OwnerDashboard: React.FC = () => {
                         <div className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0 text-slate-400" /><span className="truncate">{rest.email}</span></div>
                         <div className="flex items-center gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500">
                           <Archive className="h-3.5 w-3.5" />
-                          Lưu trữ ngày {rest.archivedAt ? new Date(rest.archivedAt).toLocaleDateString('vi-VN') : 'Không rõ'}
+                          {t('Lưu trữ ngày {date}', { date: rest.archivedAt ? new Date(rest.archivedAt).toLocaleDateString(localeTag) : t('Không rõ') })}
                         </div>
                         <Button
                           type="button"
@@ -1077,7 +1080,7 @@ export const OwnerDashboard: React.FC = () => {
                           className="mt-1 w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800"
                         >
                           {restoringId === id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
-                          Khôi phục chi nhánh
+                          {t('Khôi phục chi nhánh')}
                         </Button>
                       </CardContent>
                     </Card>
@@ -1088,14 +1091,14 @@ export const OwnerDashboard: React.FC = () => {
           ) : restaurants.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center">
               <Store className="mx-auto mb-3 h-9 w-9 text-slate-400" />
-              <h3 className="font-semibold text-slate-800">Không có chi nhánh đang hoạt động</h3>
-              <p className="mt-1 text-sm text-slate-500">Khôi phục một chi nhánh đã lưu trữ hoặc tạo chi nhánh mới để tiếp tục.</p>
+              <h3 className="font-semibold text-slate-800">{t('Không có chi nhánh đang hoạt động')}</h3>
+              <p className="mt-1 text-sm text-slate-500">{t('Khôi phục một chi nhánh đã lưu trữ hoặc tạo chi nhánh mới để tiếp tục.')}</p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Button type="button" variant="outline" onClick={() => changeRestaurantListView(true)}>
-                  <Archive className="mr-2 h-4 w-4" /> Xem chi nhánh lưu trữ
+                  <Archive className="mr-2 h-4 w-4" /> {t('Xem chi nhánh lưu trữ')}
                 </Button>
                 <Button type="button" onClick={() => setIsModalOpen(true)} className="bg-emerald-600 text-white hover:bg-emerald-700">
-                  <Plus className="mr-2 h-4 w-4" /> Tạo chi nhánh
+                  <Plus className="mr-2 h-4 w-4" /> {t('Tạo chi nhánh')}
                 </Button>
               </div>
             </div>
@@ -1117,10 +1120,10 @@ export const OwnerDashboard: React.FC = () => {
                           </div>
                         </div>
                         {isSelected ? (
-                          <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Đang chọn</span>
+                          <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">{t('Đang chọn')}</span>
                         ) : (
                           <button type="button" onClick={() => selectRestaurant(id)} className="shrink-0 cursor-pointer rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors duration-200 hover:bg-emerald-50 hover:text-emerald-700">
-                            Chọn
+                            {t('Chọn')}
                           </button>
                         )}
                       </div>
@@ -1131,21 +1134,21 @@ export const OwnerDashboard: React.FC = () => {
                       <div className="flex items-center gap-2"><Mail className="h-4 w-4 shrink-0 text-slate-400" /><span className="truncate">{rest.email}</span></div>
                       <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
                         <span className={`rounded-full px-2.5 py-1 font-semibold ${rest.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-                          {rest.status === 'ACTIVE' ? 'Đang hoạt động' : 'Tạm khóa'}
+                          {rest.status === 'ACTIVE' ? t('Đang hoạt động') : t('Tạm khóa')}
                         </span>
-                        <span className="text-slate-500">Doanh thu</span>
-                        <strong className="text-slate-800">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(rest.revenue || 0)}</strong>
+                        <span className="text-slate-500">{t('Doanh thu gộp (All branches)')}</span>
+                        <strong className="text-slate-800">{new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(rest.revenue || 0)}</strong>
                       </div>
                       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                        <button type="button" onClick={() => navigate(`/owner/restaurant/${id}`)} className="cursor-pointer text-xs font-semibold text-slate-600 transition-colors duration-200 hover:text-emerald-700">Xem chi tiết</button>
+                        <button type="button" onClick={() => navigate(`/owner/restaurant/${id}`)} className="cursor-pointer text-xs font-semibold text-slate-600 transition-colors duration-200 hover:text-emerald-700">{t('Xem chi tiết')}</button>
                         <div className="flex flex-wrap items-center gap-3">
                           {isSelected && (
                             <button type="button" onClick={() => setSearchParams({ tab: 'overview' })} className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-emerald-700 transition-colors duration-200 hover:text-emerald-800">
-                              Vào quản trị <ExternalLink className="h-3.5 w-3.5" />
+                              {t('Vào quản trị')} <ExternalLink className="h-3.5 w-3.5" />
                             </button>
                           )}
-                          <button type="button" onClick={() => setRestaurantToArchive(rest)} className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-slate-500 transition-colors duration-200 hover:text-rose-700" aria-label={`Lưu trữ ${rest.name}`}>
-                            <Archive className="h-3.5 w-3.5" /> Lưu trữ
+                          <button type="button" onClick={() => setRestaurantToArchive(rest)} className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-slate-500 transition-colors duration-200 hover:text-rose-700" aria-label={`${t('Lưu trữ')} ${rest.name}`}>
+                            <Archive className="h-3.5 w-3.5" /> {t('Lưu trữ')}
                           </button>
                         </div>
                       </div>
@@ -1162,19 +1165,19 @@ export const OwnerDashboard: React.FC = () => {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-lg bg-white rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-800">Đăng ký chi nhánh mới</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-slate-800">{t('Đăng ký chi nhánh mới')}</DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Điền các thông tin dưới đây để tạo chi nhánh và tài khoản đăng nhập cho quản lý chi nhánh.
+              {t('Điền các thông tin dưới đây để tạo chi nhánh và tài khoản đăng nhập cho quản lý chi nhánh.')}
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleCreateRestaurant} className="space-y-4 py-3">
             {/* Name */}
             <div className="space-y-1">
-              <Label htmlFor="resName" className="text-xs text-gray-600 font-semibold">Tên chi nhánh nhà hàng *</Label>
+              <Label htmlFor="resName" className="text-xs text-gray-600 font-semibold">{t('Tên chi nhánh nhà hàng *')}</Label>
               <Input 
                 id="resName" 
-                placeholder="Ví dụ: QDish Buffet Hải Sản Cầu Giấy"
+                placeholder={t('Ví dụ: QDish Buffet Hải Sản Cầu Giấy')}
                 value={form.restaurantName} 
                 onChange={(e) => setForm({ ...form, restaurantName: e.target.value })} 
                 className="rounded-xl" 
@@ -1185,7 +1188,7 @@ export const OwnerDashboard: React.FC = () => {
             {/* Email & Phone */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label htmlFor="resEmail" className="text-xs text-gray-600 font-semibold">Email nhà hàng *</Label>
+                <Label htmlFor="resEmail" className="text-xs text-gray-600 font-semibold">{t('Email nhà hàng *')}</Label>
                 <Input 
                   id="resEmail" 
                   type="email" 
@@ -1197,7 +1200,7 @@ export const OwnerDashboard: React.FC = () => {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="resPhone" className="text-xs text-gray-600 font-semibold">Số điện thoại *</Label>
+                <Label htmlFor="resPhone" className="text-xs text-gray-600 font-semibold">{t('Số điện thoại *')}</Label>
                 <Input 
                   id="resPhone" 
                   placeholder="09xxxxxxxx"
@@ -1211,10 +1214,10 @@ export const OwnerDashboard: React.FC = () => {
 
             {/* Address */}
             <div className="space-y-1">
-              <Label htmlFor="resAddr" className="text-xs text-gray-600 font-semibold">Địa chỉ chi nhánh *</Label>
+              <Label htmlFor="resAddr" className="text-xs text-gray-600 font-semibold">{t('Địa chỉ chi nhánh *')}</Label>
               <Input 
                 id="resAddr" 
-                placeholder="Số nhà, tên đường, quận/huyện, thành phố"
+                placeholder={t('Số nhà, tên đường, quận/huyện, thành phố')}
                 value={form.address} 
                 onChange={(e) => setForm({ ...form, address: e.target.value })} 
                 className="rounded-xl" 
@@ -1224,7 +1227,7 @@ export const OwnerDashboard: React.FC = () => {
 
             <div className="border-t border-slate-100 my-4 pt-3">
               <span className="text-xs font-bold text-slate-800 block mb-2.5">
-                Thiết lập tài khoản Admin đăng nhập chi nhánh
+                {t('Thiết lập tài khoản Admin đăng nhập chi nhánh')}
               </span>
               
               {/* Username */}
@@ -1243,11 +1246,11 @@ export const OwnerDashboard: React.FC = () => {
               {/* Passwords */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="resPw" className="text-xs text-gray-600 font-semibold">Mật khẩu *</Label>
+                <Label htmlFor="resPw" className="text-xs text-gray-600 font-semibold">{t('Mật khẩu *')}</Label>
                   <Input 
                     id="resPw" 
                     type="password" 
-                    placeholder="Tối thiểu 6 ký tự"
+                    placeholder={t('Tối thiểu 6 ký tự')}
                     value={form.restaurantPassword} 
                     onChange={(e) => setForm({ ...form, restaurantPassword: e.target.value })} 
                     className="rounded-xl" 
@@ -1255,11 +1258,11 @@ export const OwnerDashboard: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="confirmResPw" className="text-xs text-gray-600 font-semibold">Nhập lại mật khẩu *</Label>
+                  <Label htmlFor="confirmResPw" className="text-xs text-gray-600 font-semibold">{t('Nhập lại mật khẩu *')}</Label>
                   <Input 
                     id="confirmResPw" 
                     type="password" 
-                    placeholder="Nhập lại mật khẩu"
+                    placeholder={t('Nhập lại mật khẩu')}
                     value={form.confirmRestaurantPassword} 
                     onChange={(e) => setForm({ ...form, confirmRestaurantPassword: e.target.value })} 
                     className="rounded-xl" 
@@ -1270,13 +1273,13 @@ export const OwnerDashboard: React.FC = () => {
             </div>
 
             <DialogFooter className="pt-3">
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className="rounded-xl">Hủy</Button>
+              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} className="rounded-xl">{t('Hủy')}</Button>
               <Button 
                 type="submit" 
                 disabled={isSubmitting}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-md shadow-emerald-600/10"
               >
-                {isSubmitting ? 'Đang tạo...' : 'Tạo nhà hàng'}
+                {isSubmitting ? t('Đang tạo...') : t('Tạo nhà hàng')}
               </Button>
             </DialogFooter>
           </form>
@@ -1290,20 +1293,19 @@ export const OwnerDashboard: React.FC = () => {
         <DialogContent className="sm:max-w-md rounded-2xl bg-white p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
-              <Archive className="h-5 w-5 text-amber-600" /> Lưu trữ chi nhánh?
+              <Archive className="h-5 w-5 text-amber-600" /> {t('Lưu trữ chi nhánh?')}
             </DialogTitle>
             <DialogDescription className="text-sm leading-relaxed text-slate-600">
-              {restaurantToArchive?.name} sẽ ngừng nhận đơn mới và không còn được tính vào giới hạn số chi nhánh.
-              Đơn hàng, hóa đơn, bàn, thực đơn và lịch sử liên quan vẫn được giữ nguyên.
+              {t('{name} sẽ ngừng nhận đơn mới và không còn được tính vào giới hạn số chi nhánh. Đơn hàng, hóa đơn, bàn, thực đơn và lịch sử liên quan vẫn được giữ nguyên.', { name: restaurantToArchive?.name || '' })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>Hãy đóng các phiên bàn và thanh toán hết hóa đơn trước. Bạn có thể khôi phục chi nhánh sau, nếu gói hiện tại còn hạn mức.</p>
+            <p>{t('Hãy đóng các phiên bàn và thanh toán hết hóa đơn trước. Bạn có thể khôi phục chi nhánh sau, nếu gói hiện tại còn hạn mức.')}</p>
           </div>
           <DialogFooter className="mt-2 gap-2 sm:justify-end">
             <Button type="button" variant="outline" disabled={!!archivingId} onClick={() => setRestaurantToArchive(null)}>
-              Hủy
+              {t('Hủy')}
             </Button>
             <Button
               type="button"
@@ -1312,7 +1314,7 @@ export const OwnerDashboard: React.FC = () => {
               className="bg-amber-700 text-white hover:bg-amber-800"
             >
               {archivingId ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Archive className="mr-2 h-4 w-4" />}
-              {archivingId ? 'Đang lưu trữ...' : 'Lưu trữ chi nhánh'}
+              {archivingId ? t('Đang lưu trữ...') : t('Lưu trữ chi nhánh')}
             </Button>
           </DialogFooter>
         </DialogContent>

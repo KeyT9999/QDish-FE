@@ -34,9 +34,11 @@ import { toast } from 'sonner';
 import { NotificationBell } from '../notification/NotificationBell';
 import { OwnerWorkspaceProvider, useOwnerWorkspace } from './OwnerWorkspaceContext';
 import { resolveOwnerRestaurantSelection } from './ownerWorkspaceSelection';
+import { OwnerConsoleLocaleProvider, useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 const DashboardLayoutContent: React.FC = () => {
   const { user, logout } = useAuth();
+  const { t } = useOwnerConsoleLocale();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -75,7 +77,7 @@ const DashboardLayoutContent: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    toast.success('Đăng xuất thành công');
+    toast.success(t('Đăng xuất thành công'));
     navigate('/login');
   };
 
@@ -121,26 +123,26 @@ const DashboardLayoutContent: React.FC = () => {
     } else if (user?.role === Role.RESTAURANT_OWNER) {
       if (selectedRestId) {
         return [
-          { id: 'owner-home', label: 'Trang chủ', icon: LayoutDashboard },
-          { id: 'billing', label: 'Gói sử dụng', icon: CreditCard },
-          { id: 'notifications', label: 'Thông báo', icon: Bell },
-          { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
-          { id: 'insights', label: 'Phân tích thực đơn', icon: Sparkles },
-          { id: 'customers', label: 'Khách hàng', icon: Users },
-          { id: 'orders', label: 'Đơn hàng', icon: ClipboardList },
-          { id: 'bills', label: 'Hóa đơn', icon: FileText },
-          { id: 'menu', label: 'Thực đơn', icon: UtensilsCrossed },
-          { id: 'categories', label: 'Danh mục', icon: Tags },
-          { id: 'ingredients', label: 'Nguyên liệu', icon: Apple },
-          { id: 'tables', label: 'Bàn & QR', icon: QrCode },
-          { id: 'staff', label: 'Nhân viên', icon: Users },
-          { id: 'settings', label: 'Thiết lập', icon: Settings },
+          { id: 'owner-home', label: t('Trang chủ'), icon: LayoutDashboard },
+          { id: 'billing', label: t('Gói sử dụng'), icon: CreditCard },
+          { id: 'notifications', label: t('Thông báo'), icon: Bell },
+          { id: 'overview', label: t('Tổng quan'), icon: LayoutDashboard },
+          { id: 'insights', label: t('Phân tích thực đơn'), icon: Sparkles },
+          { id: 'customers', label: t('Khách hàng'), icon: Users },
+          { id: 'orders', label: t('Đơn hàng'), icon: ClipboardList },
+          { id: 'bills', label: t('Hóa đơn'), icon: FileText },
+          { id: 'menu', label: t('Thực đơn'), icon: UtensilsCrossed },
+          { id: 'categories', label: t('Danh mục'), icon: Tags },
+          { id: 'ingredients', label: t('Nguyên liệu'), icon: Apple },
+          { id: 'tables', label: t('Bàn & QR'), icon: QrCode },
+          { id: 'staff', label: t('Nhân viên'), icon: Users },
+          { id: 'settings', label: t('Thiết lập'), icon: Settings },
         ];
       }
       return [
-        { id: 'owner-home', label: 'Trang chủ', icon: LayoutDashboard },
-        { id: 'billing', label: 'Gói sử dụng', icon: CreditCard },
-        { id: 'notifications', label: 'Thông báo', icon: Bell },
+        { id: 'owner-home', label: t('Trang chủ'), icon: LayoutDashboard },
+        { id: 'billing', label: t('Gói sử dụng'), icon: CreditCard },
+        { id: 'notifications', label: t('Thông báo'), icon: Bell },
       ];
     }
     return [];
@@ -170,15 +172,15 @@ const DashboardLayoutContent: React.FC = () => {
     if (activeItem) return activeItem.label;
     
     // Default fallback based on path
-    if (location.pathname === '/staff') return 'Đơn chế biến';
-    if (location.pathname === '/super-admin') return 'Quản lý SaaS';
-    if (location.pathname === '/owner') return 'Trang chủ Chủ nhà hàng';
-    if (location.pathname.startsWith('/owner/restaurant/')) return 'Chi tiết nhà hàng';
-    return 'Tổng quan';
+    if (location.pathname === '/staff') return t('Đơn chế biến');
+    if (location.pathname === '/super-admin') return t('Quản lý SaaS');
+    if (location.pathname === '/owner') return t('Trang chủ Chủ nhà hàng');
+    if (location.pathname.startsWith('/owner/restaurant/')) return t('Chi tiết nhà hàng');
+    return t('Tổng quan');
   };
 
   const roleName = user?.role === Role.SUPER_ADMIN ? 'Super Admin' 
-                 : user?.role === Role.RESTAURANT_OWNER ? 'Chủ nhà hàng (Owner)'
+                 : user?.role === Role.RESTAURANT_OWNER ? t('Chủ nhà hàng (Owner)')
                  : user?.role === Role.RESTAURANT_ADMIN ? 'Chủ nhà hàng'
                  : user?.role === Role.STAFF ? 'Nhân viên Bếp'
                  : 'Người dùng';
@@ -241,8 +243,8 @@ const DashboardLayoutContent: React.FC = () => {
                 <Building2 className="w-4 h-4 text-emerald-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <span className="block text-xs font-bold text-gray-900 truncate leading-snug">{restaurantName || 'Chọn chi nhánh...'}</span>
-                <span className="block text-[10px] text-emerald-600 font-medium">Đang quản trị</span>
+                <span className="block text-xs font-bold text-gray-900 truncate leading-snug">{restaurantName || t('Chọn chi nhánh...')}</span>
+                <span className="block text-[10px] text-emerald-600 font-medium">{t('Đang quản trị')}</span>
               </div>
             </div>
             {ownerRestaurants.length > 1 && (
@@ -252,7 +254,7 @@ const DashboardLayoutContent: React.FC = () => {
 
           {showBranches && ownerRestaurants.length > 1 && (
             <div className="absolute left-4 right-4 mt-1 bg-white border border-neutral-150 rounded-xl shadow-lg z-50 p-1.5 space-y-1 max-h-60 overflow-y-auto">
-              <div className="p-1 px-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Chuyển chi nhánh</div>
+              <div className="p-1 px-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('Chuyển chi nhánh')}</div>
               {ownerRestaurants.map(rest => {
                 const restId = rest.id || rest._id;
                 const isCurrent = restId === selectedRestId;
@@ -263,13 +265,13 @@ const DashboardLayoutContent: React.FC = () => {
                     onClick={() => {
                       setShowBranches(false);
                       localStorage.setItem('selected_restaurant_id', restId);
-                      toast.success(`Đã chuyển sang chi nhánh ${rest.name}`);
+                      toast.success(t('Đã chuyển sang chi nhánh {name}', { name: rest.name }));
                       window.location.reload();
                     }}
                     className="w-full text-left p-2 rounded-lg text-xs font-semibold text-neutral-700 hover:bg-neutral-50 flex items-center justify-between"
                   >
                     <span className="truncate mr-2">{rest.name}</span>
-                    <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium shrink-0">Chọn</span>
+                    <span className="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-medium shrink-0">{t('Chọn')}</span>
                   </button>
                 );
               })}
@@ -280,7 +282,7 @@ const DashboardLayoutContent: React.FC = () => {
 
       {/* Navigation Links */}
       <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
-        <div className="px-3 mb-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Chức năng</div>
+        <div className="px-3 mb-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('Chức năng')}</div>
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -322,7 +324,7 @@ const DashboardLayoutContent: React.FC = () => {
           className="w-full bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 border-neutral-200 rounded-xl text-xs font-bold py-2 shadow-sm transition-colors duration-200"
         >
           <LogOut className="w-3.5 h-3.5 mr-1.5" />
-          Đăng xuất
+          {t('Đăng xuất')}
         </Button>
       </div>
     </div>
@@ -372,13 +374,13 @@ const DashboardLayoutContent: React.FC = () => {
             {/* Breadcrumbs / Restaurant Name */}
             <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-semibold min-w-0">
               {/* Desktop breadcrumbs */}
-              <span className="hidden lg:inline">{user?.role === Role.SUPER_ADMIN ? 'Hệ thống' : 'Quản lý'}</span>
+              <span className="hidden lg:inline">{user?.role === Role.SUPER_ADMIN ? t('Hệ thống') : t('Quản lý')}</span>
               <span className="hidden lg:inline text-neutral-300">/</span>
               <span className="hidden lg:inline text-gray-900 font-bold">{getActiveTabLabel()}</span>
               
               {/* Mobile Restaurant Name / Super Admin status */}
               <span className="lg:hidden text-gray-900 font-extrabold text-sm truncate max-w-[140px] sm:max-w-[200px]">
-                {user?.role === Role.SUPER_ADMIN ? 'Quản lý SaaS' : restaurantName}
+                {user?.role === Role.SUPER_ADMIN ? t('Quản lý SaaS') : (restaurantName || t('Nhà hàng QDish'))}
               </span>
               <span className="lg:hidden text-neutral-300">/</span>
               <span className="lg:hidden text-neutral-600 font-bold text-xs truncate max-w-[100px]">
@@ -396,7 +398,7 @@ const DashboardLayoutContent: React.FC = () => {
                 rel="noreferrer"
                 className="hidden sm:flex items-center gap-1 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200/40 rounded-xl px-3 py-1.5 text-xs font-bold transition-colors duration-200 shadow-sm shadow-green-600/5"
               >
-                <span>Xem Menu khách</span>
+                <span>{t('Xem Menu khách')}</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
@@ -422,6 +424,8 @@ const DashboardLayoutContent: React.FC = () => {
 
 export const DashboardLayout: React.FC = () => (
   <OwnerWorkspaceProvider>
-    <DashboardLayoutContent />
+    <OwnerConsoleLocaleProvider>
+      <DashboardLayoutContent />
+    </OwnerConsoleLocaleProvider>
   </OwnerWorkspaceProvider>
 );

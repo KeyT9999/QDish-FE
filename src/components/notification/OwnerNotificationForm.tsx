@@ -8,29 +8,31 @@ import {
   NotificationTargetType,
 } from '@/types';
 import type { OwnerNotificationTargets } from '@/types';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 const typeOptions = [
   { value: NotificationType.INFO, label: 'Thông tin' },
   { value: NotificationType.SUCCESS, label: 'Thành công' },
   { value: NotificationType.WARNING, label: 'Cảnh báo' },
   { value: NotificationType.SYSTEM, label: 'Hệ thống' },
-];
+] as const;
 
 const priorityOptions = [
   { value: NotificationPriority.LOW, label: 'Thấp' },
   { value: NotificationPriority.NORMAL, label: 'Bình thường' },
   { value: NotificationPriority.HIGH, label: 'Quan trọng' },
   { value: NotificationPriority.URGENT, label: 'Khẩn cấp' },
-];
+] as const;
 
 const targetOptions = [
   { value: NotificationTargetType.OWNER_RESTAURANTS, label: 'Tất cả nhà hàng của tôi', needsSelector: false },
   { value: NotificationTargetType.RESTAURANT, label: 'Một nhà hàng cụ thể', needsSelector: 'restaurant' },
   { value: NotificationTargetType.OWNER_STAFF, label: 'Tất cả nhân viên', needsSelector: false },
   { value: NotificationTargetType.RESTAURANT_STAFF, label: 'Nhân viên một nhà hàng', needsSelector: 'restaurant' },
-];
+] as const;
 
 export const OwnerNotificationForm: React.FC = () => {
+  const { t } = useOwnerConsoleLocale();
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [type, setType] = useState<NotificationType>(NotificationType.INFO);
@@ -53,12 +55,12 @@ export const OwnerNotificationForm: React.FC = () => {
     e.preventDefault();
 
     if (!title.trim() || !message.trim()) {
-      toast.error('Vui lòng nhập đầy đủ tiêu đề và nội dung');
+      toast.error(t('Vui lòng nhập đầy đủ tiêu đề và nội dung'));
       return;
     }
 
     if (needsSelector && !selectedRestaurantId) {
-      toast.error('Vui lòng chọn nhà hàng');
+      toast.error(t('Vui lòng chọn nhà hàng'));
       return;
     }
 
@@ -78,12 +80,12 @@ export const OwnerNotificationForm: React.FC = () => {
       }
 
       const result = await notificationService.ownerCreateNotification(payload);
-      toast.success(`Đã gửi thông báo tới ${result.recipientCount} người nhận`);
+      toast.success(t('Đã gửi thông báo tới {count} người nhận', { count: result.recipientCount }));
       setTitle('');
       setMessage('');
       setSelectedRestaurantId('');
     } catch (err: any) {
-      toast.error(err.message || 'Không thể gửi thông báo');
+      toast.error(err.message || t('Không thể gửi thông báo'));
     } finally {
       setSending(false);
     }
@@ -92,33 +94,33 @@ export const OwnerNotificationForm: React.FC = () => {
   return (
     <div className="bg-white border border-neutral-200/60 rounded-2xl p-6 space-y-5 max-w-2xl">
       <div>
-        <h3 className="text-base font-bold text-gray-900">Gửi thông báo</h3>
-        <p className="text-xs text-neutral-500 mt-0.5">Gửi thông báo đến nhà hàng hoặc nhân viên của bạn</p>
+        <h3 className="text-base font-bold text-gray-900">{t('Gửi thông báo')}</h3>
+        <p className="text-xs text-neutral-500 mt-0.5">{t('Gửi thông báo đến nhà hàng hoặc nhân viên của bạn')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Title */}
         <div>
-          <label className="block text-xs font-bold text-neutral-700 mb-1.5">Tiêu đề</label>
+          <label className="block text-xs font-bold text-neutral-700 mb-1.5">{t('Tiêu đề')}</label>
           <input
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
             maxLength={200}
-            placeholder="Nhập tiêu đề thông báo..."
+            placeholder={t('Nhập tiêu đề thông báo...')}
             className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition-colors"
           />
         </div>
 
         {/* Message */}
         <div>
-          <label className="block text-xs font-bold text-neutral-700 mb-1.5">Nội dung</label>
+          <label className="block text-xs font-bold text-neutral-700 mb-1.5">{t('Nội dung')}</label>
           <textarea
             value={message}
             onChange={e => setMessage(e.target.value)}
             maxLength={2000}
             rows={4}
-            placeholder="Nhập nội dung thông báo..."
+            placeholder={t('Nhập nội dung thông báo...')}
             className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 transition-colors resize-none"
           />
         </div>
@@ -126,26 +128,26 @@ export const OwnerNotificationForm: React.FC = () => {
         {/* Type & Priority */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-neutral-700 mb-1.5">Loại thông báo</label>
+            <label className="block text-xs font-bold text-neutral-700 mb-1.5">{t('Loại thông báo')}</label>
             <select
               value={type}
               onChange={e => setType(e.target.value as NotificationType)}
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 bg-white"
             >
               {typeOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value}>{t(opt.label)}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-neutral-700 mb-1.5">Mức ưu tiên</label>
+            <label className="block text-xs font-bold text-neutral-700 mb-1.5">{t('Mức ưu tiên')}</label>
             <select
               value={priority}
               onChange={e => setPriority(e.target.value as NotificationPriority)}
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 bg-white"
             >
               {priorityOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value}>{t(opt.label)}</option>
               ))}
             </select>
           </div>
@@ -153,14 +155,14 @@ export const OwnerNotificationForm: React.FC = () => {
 
         {/* Target Type */}
         <div>
-          <label className="block text-xs font-bold text-neutral-700 mb-1.5">Gửi tới</label>
+          <label className="block text-xs font-bold text-neutral-700 mb-1.5">{t('Gửi tới')}</label>
           <select
             value={targetType}
             onChange={e => { setTargetType(e.target.value as NotificationTargetType); setSelectedRestaurantId(''); }}
             className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 bg-white"
           >
             {targetOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+              <option key={opt.value} value={opt.value}>{t(opt.label)}</option>
             ))}
           </select>
         </div>
@@ -168,13 +170,13 @@ export const OwnerNotificationForm: React.FC = () => {
         {/* Dynamic Restaurant Selector */}
         {needsSelector && (targets?.restaurants?.length || 0) > 0 && (
           <div>
-            <label className="block text-xs font-bold text-neutral-700 mb-1.5">Chọn nhà hàng</label>
+            <label className="block text-xs font-bold text-neutral-700 mb-1.5">{t('Chọn nhà hàng')}</label>
             <select
               value={selectedRestaurantId}
               onChange={e => setSelectedRestaurantId(e.target.value)}
               className="w-full px-3 py-2 text-sm border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-400 bg-white"
             >
-              <option value="">-- Chọn nhà hàng --</option>
+              <option value="">{t('-- Chọn nhà hàng --')}</option>
               {targets?.restaurants.map(r => (
                 <option key={r.id} value={r.id}>{r.name}</option>
               ))}
@@ -193,7 +195,7 @@ export const OwnerNotificationForm: React.FC = () => {
           ) : (
             <Send className="w-4 h-4" />
           )}
-          {sending ? 'Đang gửi...' : 'Gửi thông báo'}
+          {sending ? t('Đang gửi...') : t('Gửi thông báo')}
         </button>
       </form>
     </div>

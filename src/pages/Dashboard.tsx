@@ -54,6 +54,7 @@ import { BankChangeOtpModal } from '@/components/dashboard/restaurant/modals/Ban
 import { BillPaymentModal } from '@/components/dashboard/restaurant/modals/BillPaymentModal';
 import { CopyMenuModal } from '@/components/dashboard/restaurant/modals/CopyMenuModal';
 import { useOwnerWorkspace } from '@/components/layout/OwnerWorkspaceContext';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
 
@@ -78,6 +79,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onCopySuccess
 }) => {
   const { user } = useAuth();
+  const { t } = useOwnerConsoleLocale();
   const { selectedRestId: ownerSelectedRestId } = useOwnerWorkspace();
   const [isCopyModalOpen, setIsCopyModalOpen] = useState(false);
   
@@ -163,7 +165,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         bankAccount: data.bankAccount || ''
       });
     } catch (err) {
-      toast.error('Không thể tải thông tin nhà hàng');
+      toast.error(t('Không thể tải thông tin nhà hàng'));
     }
   };
 
@@ -174,7 +176,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const data = await restaurantService.getMeStats(statsPeriod);
       setStats(data);
     } catch (err) {
-      toast.error('Không thể tải thống kê doanh thu');
+      toast.error(t('Không thể tải thống kê doanh thu'));
     } finally {
       setIsLoadingStats(false);
     }
@@ -187,7 +189,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const data = await menuService.getAll(restaurantId);
       setMenuItems(data);
     } catch (err) {
-      toast.error('Không thể tải thực đơn');
+      toast.error(t('Không thể tải thực đơn'));
     } finally {
       setIsLoadingMenu(false);
     }
@@ -200,7 +202,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const data = await categoryService.getManagement();
       setCategories(data);
     } catch (err) {
-      toast.error('Không thể tải danh mục');
+      toast.error(t('Không thể tải danh mục'));
     } finally {
       setIsLoadingCategories(false);
     }
@@ -266,7 +268,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       setActiveBills(data.bills);
       setOrders(data.bills.flatMap((bill) => bill.orders));
     } catch (err) {
-      toast.error('Không thể tải danh sách bill');
+      toast.error(t('Không thể tải danh sách bill'));
     } finally {
       setIsLoadingOrders(false);
     }
@@ -279,7 +281,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const data = await staffService.getAll();
       setStaff(data);
     } catch (err) {
-      toast.error('Không thể tải danh sách nhân viên');
+      toast.error(t('Không thể tải danh sách nhân viên'));
     } finally {
       setIsLoadingStaff(false);
     }
@@ -348,46 +350,46 @@ export const Dashboard: React.FC<DashboardProps> = ({
     try {
       if (editingItem) {
         await menuService.update(editingItem.id || (editingItem as any)._id, payload);
-        toast.success('Đã cập nhật món ăn thành công');
+        toast.success(t('Đã cập nhật món ăn thành công'));
       } else {
         await menuService.create(payload);
-        toast.success('Đã thêm món ăn mới thành công');
+        toast.success(t('Đã thêm món ăn mới thành công'));
       }
       setIsMenuModalOpen(false);
       loadMenu();
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi lưu món ăn');
+      toast.error(err.message || t('Lỗi khi lưu món ăn'));
     }
   };
 
   const handleDeleteMenuItem = async (id: string) => {
-    if (!window.confirm('Bạn có chắc muốn xóa món ăn này vĩnh viễn?')) return;
+    if (!window.confirm(t('Bạn có chắc muốn xóa món ăn này vĩnh viễn?'))) return;
     try {
       await menuService.delete(id);
-      toast.success('Đã xóa món ăn thành công');
+      toast.success(t('Đã xóa món ăn thành công'));
       loadMenu();
     } catch (err) {
-      toast.error('Không thể xóa món ăn');
+      toast.error(t('Không thể xóa món ăn'));
     }
   };
 
   const handleToggleAvailable = async (id: string, currentAvailable: boolean) => {
     try {
       await menuService.update(id, { available: !currentAvailable });
-      toast.success('Đã thay đổi trạng thái món ăn');
+      toast.success(t('Đã thay đổi trạng thái món ăn'));
       loadMenu();
     } catch (err) {
-      toast.error('Lỗi khi cập nhật trạng thái món ăn');
+      toast.error(t('Lỗi khi cập nhật trạng thái món ăn'));
     }
   };
 
   const handleSaveAllergenReview = async (id: string, payload: MenuAllergenReviewPayload) => {
     try {
       await menuService.reviewAllergens(id, payload);
-      toast.success('Đã lưu khai báo dị ứng kèm nguồn xác nhận');
+      toast.success(t('Đã lưu khai báo dị ứng kèm nguồn xác nhận'));
       await loadMenu();
     } catch (err: any) {
-      toast.error(err.message || 'Không thể lưu xác nhận dị ứng');
+      toast.error(err.message || t('Không thể lưu xác nhận dị ứng'));
       throw err;
     }
   };
@@ -402,31 +404,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
     try {
       if (editingCat) {
         await categoryService.update(editingCat._id, name);
-        toast.success('Đã cập nhật danh mục thành công');
+        toast.success(t('Đã cập nhật danh mục thành công'));
       } else {
         await categoryService.create(name);
-        toast.success('Đã tạo danh mục mới thành công');
+        toast.success(t('Đã tạo danh mục mới thành công'));
       }
       setIsCategoryModalOpen(false);
       loadCategories();
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi lưu danh mục');
+      toast.error(err.message || t('Lỗi khi lưu danh mục'));
     }
   };
 
   const handleDeleteCategory = async (id: string, name: string) => {
     const dishesInCat = menuItems.filter(item => item.category === name);
     if (dishesInCat.length > 0) {
-      toast.error(`Danh mục đang chứa ${dishesInCat.length} món ăn. Vui lòng di chuyển hoặc xóa các món ăn trước.`);
+      toast.error(t('Danh mục đang chứa {count} món ăn. Vui lòng di chuyển hoặc xóa các món ăn trước.', { count: dishesInCat.length }));
       return;
     }
-    if (!window.confirm('Bạn có chắc muốn xóa danh mục này?')) return;
+    if (!window.confirm(t('Bạn có chắc muốn xóa danh mục này?'))) return;
     try {
       await categoryService.delete(id);
-      toast.success('Đã xóa danh mục thành công');
+      toast.success(t('Đã xóa danh mục thành công'));
       loadCategories();
     } catch (err) {
-      toast.error('Lỗi khi xóa danh mục');
+      toast.error(t('Lỗi khi xóa danh mục'));
     }
   };
 
@@ -434,7 +436,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handleSyncTables = async () => {
     const count = parseInt(tableCountInput, 10);
     if (isNaN(count) || count <= 0) {
-      toast.error('Vui lòng nhập số lượng bàn hợp lệ');
+      toast.error(t('Vui lòng nhập số lượng bàn hợp lệ'));
       return;
     }
     try {
@@ -442,10 +444,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         const tableCode = i < 10 ? `0${i}` : `${i}`;
         await tableService.createOrSync(tableCode);
       }
-      toast.success(`Đã đồng bộ thành công ${count} bàn ăn`);
+      toast.success(t('Đã đồng bộ thành công {count} bàn ăn', { count }));
       loadTables();
     } catch (err) {
-      toast.error('Lỗi khi đồng bộ bàn ăn');
+      toast.error(t('Lỗi khi đồng bộ bàn ăn'));
     }
   };
 
@@ -469,29 +471,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
           name: data.name,
           password: data.password || undefined
         });
-        toast.success('Đã cập nhật thông tin nhân viên');
+        toast.success(t('Đã cập nhật thông tin nhân viên'));
       } else {
         await staffService.create({
           username: data.username,
           name: data.name,
           password: data.password
         });
-        toast.success('Đã thêm nhân viên mới thành công');
+        toast.success(t('Đã thêm nhân viên mới thành công'));
       }
       setIsStaffModalOpen(false);
       loadStaff();
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi lưu nhân viên');
+      toast.error(err.message || t('Lỗi khi lưu nhân viên'));
     }
   };
 
   const handleToggleStaffActive = async (id: string) => {
     try {
       await staffService.toggleActive(id);
-      toast.success('Đã cập nhật trạng thái hoạt động của nhân viên');
+      toast.success(t('Đã cập nhật trạng thái hoạt động của nhân viên'));
       loadStaff();
     } catch (err) {
-      toast.error('Lỗi khi toggle trạng thái hoạt động nhân viên');
+      toast.error(t('Lỗi khi toggle trạng thái hoạt động nhân viên'));
     }
   };
 
@@ -512,7 +514,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       toast.success(getOrderStatusSuccessMessage(newStatus));
       void loadOrderBillGroups();
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi cập nhật trạng thái đơn hàng');
+      toast.error(err.message || t('Lỗi khi cập nhật trạng thái đơn hàng'));
     } finally {
       finishOrderUpdate(id);
     }
@@ -521,7 +523,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const handlePayBill = async (billId: string) => {
     const bill = activeBills.find((item) => item.billId === billId);
     if (!bill) {
-      toast.error('Không tìm thấy bill cần thanh toán');
+      toast.error(t('Không tìm thấy bill cần thanh toán'));
       return;
     }
     setSelectedPaymentBill(bill);
@@ -530,7 +532,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Settings & OTP
   const handleSaveGeneralSettings = async () => {
     if (!generalSettingsForm.name.trim() || !generalSettingsForm.phone.trim()) {
-      toast.error('Tên nhà hàng và số điện thoại không được để trống');
+      toast.error(t('Tên nhà hàng và số điện thoại không được để trống'));
       return;
     }
     try {
@@ -540,10 +542,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
         address: generalSettingsForm.address.trim(),
         phone: generalSettingsForm.phone.trim()
       });
-      toast.success('Đã lưu thông tin cấu hình nhà hàng');
+      toast.success(t('Đã lưu thông tin cấu hình nhà hàng'));
       loadRestaurantProfile();
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi lưu cấu hình');
+      toast.error(err.message || t('Lỗi khi lưu cấu hình'));
     }
   };
 
@@ -557,11 +559,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         email,
         emailChangeOtp: otp
       });
-      toast.success('Đã thay đổi email thành công');
+      toast.success(t('Đã thay đổi email thành công'));
       setIsEmailChangeModalOpen(false);
       loadRestaurantProfile();
     } catch (err: any) {
-      toast.error(err.message || 'OTP không hợp lệ hoặc hết hạn');
+      toast.error(err.message || t('OTP không hợp lệ hoặc hết hạn'));
     }
   };
 
@@ -576,11 +578,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
         bankName,
         bankChangeOtp: otp
       });
-      toast.success('Đã cập nhật thông tin tài khoản nhận tiền');
+      toast.success(t('Đã cập nhật thông tin tài khoản nhận tiền'));
       setIsBankChangeModalOpen(false);
       loadRestaurantProfile();
     } catch (err: any) {
-      toast.error(err.message || 'OTP không hợp lệ hoặc hết hạn');
+      toast.error(err.message || t('OTP không hợp lệ hoặc hết hạn'));
     }
   };
 
@@ -653,7 +655,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       startRealtimeOrderAlert(activeRealtimeOrder);
     }
     toast[enabled ? 'success' : 'error'](
-      enabled ? 'Đã bật âm báo đơn mới' : 'Trình duyệt chưa cho phép bật âm báo'
+      enabled ? t('Đã bật âm báo đơn mới') : t('Trình duyệt chưa cho phép bật âm báo')
     );
   }, [activeRealtimeOrder]);
 
@@ -707,11 +709,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const updatedOrder = await orderService.updateStatus(orderId, OrderStatus.CONFIRMED);
       setOrders((current) => upsertRealtimeOrder(current, updatedOrder));
       clearRealtimeAlert(orderId);
-      toast.success('Đã xác nhận đơn mới');
+      toast.success(t('Đã xác nhận đơn mới'));
       loadOrderBillGroups();
     } catch (err: any) {
       setIsConfirmingRealtimeOrder(false);
-      toast.error(err.message || 'Không thể xác nhận đơn mới');
+      toast.error(err.message || t('Không thể xác nhận đơn mới'));
     }
   };
 
@@ -725,7 +727,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         startedAt={realtimeAlertStartedAt}
         isAudioReady={isRealtimeAudioReady}
         isConfirming={isConfirmingRealtimeOrder}
-        confirmLabel="Xác nhận đơn"
+        confirmLabel={t('Xác nhận đơn')}
         onConfirm={handleConfirmRealtimeOrder}
         onEnableAudio={handleEnableRealtimeAudio}
       />
@@ -733,9 +735,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-neutral-200/50 pb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Bảng điều khiển</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">{t('Bảng điều khiển')}</h1>
           <p className="text-neutral-500 text-sm mt-1">
-            Chào mừng quay lại, quản lý <span className="font-semibold text-neutral-800">{restaurant?.ownerName}</span>! Chúc {restaurant?.name} ngày mới kinh doanh phát đạt.
+            {t('Chào mừng quay lại, quản lý')} <span className="font-semibold text-neutral-800">{restaurant?.ownerName}</span>! {t('Chúc {restaurant} ngày mới kinh doanh phát đạt.', { restaurant: restaurant?.name || '' })}
           </p>
         </div>
         <Button
@@ -745,15 +747,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
           className="rounded-xl text-xs font-semibold"
         >
           <BellRing className="w-4 h-4 mr-1.5" />
-          {isRealtimeAudioReady ? 'Chuông đã bật' : 'Bật chuông'}
+          {isRealtimeAudioReady ? t('Chuông đã bật') : t('Bật chuông')}
         </Button>
       </div>
 
       {lastRealtimeOrder && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-sm">
-          <div className="font-bold">Đơn mới vừa được đặt</div>
+          <div className="font-bold">{t('Đơn mới vừa được đặt')}</div>
           <div className="mt-1 text-xs font-medium">
-            Bàn {lastRealtimeOrder.tableNumber} • {lastRealtimeOrder.items.length} dòng món • {formatCurrency(lastRealtimeOrder.totalAmount)}
+            {t('Bàn {table} • {items} dòng món • {amount}', { table: lastRealtimeOrder.tableNumber, items: lastRealtimeOrder.items.length, amount: formatCurrency(lastRealtimeOrder.totalAmount) })}
           </div>
         </div>
       )}

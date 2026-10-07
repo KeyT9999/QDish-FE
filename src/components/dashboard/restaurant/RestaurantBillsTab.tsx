@@ -8,15 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CheckCircle2, Eye, Receipt, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatCurrency } from '@/lib/utils';
 import { formatOrderAllergenWarning } from '@/services/allergenPresentation';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
+import type { OwnerConsoleTranslationKey } from '@/i18n/ownerConsoleCatalog';
 
 interface RestaurantBillsTabProps {
   restaurantId: string;
 }
 
-const statusLabel: Record<BillStatus, string> = {
+const statusLabel: Record<BillStatus, OwnerConsoleTranslationKey> = {
   [BillStatus.UNPAID]: 'Chưa thanh toán',
   [BillStatus.PAYMENT_REQUESTED]: 'Chờ thanh toán',
   [BillStatus.PAID]: 'Đã thanh toán',
@@ -32,17 +33,20 @@ const statusClass: Record<BillStatus, string> = {
 
 const getBillId = (bill: Bill) => bill.id || (bill as any)._id || '';
 
-const formatDate = (value?: string) => {
+const formatDate = (value: string | undefined, localeTag: string) => {
   if (!value) return '-';
   try {
     const date = new Date(value);
-    return `${date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ${date.toLocaleDateString('vi-VN')}`;
+    return `${date.toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' })} ${date.toLocaleDateString(localeTag)}`;
   } catch {
     return '-';
   }
 };
 
 export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaurantId }) => {
+  const { t, language } = useOwnerConsoleLocale();
+  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const formatBillCurrency = (amount: number) => new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(amount);
   const isMobile = useIsMobile(640);
   const [bills, setBills] = useState<Bill[]>([]);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
@@ -65,11 +69,11 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
       });
       setBills(result.bills);
     } catch (error: any) {
-      toast.error(error.message || 'Không thể tải lịch sử hóa đơn');
+      toast.error(error.message || t('Không thể tải lịch sử hóa đơn'));
     } finally {
       setIsLoading(false);
     }
-  }, [restaurantId, status, tableNumber]);
+  }, [restaurantId, status, tableNumber, t]);
 
   useEffect(() => {
     loadBills();
@@ -84,7 +88,7 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
       setSelectedBill(detail.bill);
       setSelectedOrders(detail.orders);
     } catch (error: any) {
-      toast.error(error.message || 'Không thể tải chi tiết hóa đơn');
+      toast.error(error.message || t('Không thể tải chi tiết hóa đơn'));
     } finally {
       setIsDetailLoading(false);
     }
@@ -100,18 +104,18 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-900">Hóa đơn / Bill</h2>
-          <p className="mt-0.5 text-xs text-neutral-500">Theo dõi bill gom nhiều lần đặt món trong cùng một phiên bàn.</p>
+          <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('Hóa đơn / Bill')}</h2>
+          <p className="mt-0.5 text-xs text-neutral-500">{t('Theo dõi bill gom nhiều lần đặt món trong cùng một phiên bàn.')}</p>
         </div>
         <Button size="sm" onClick={loadBills} disabled={isLoading} className="h-9 rounded-xl bg-neutral-900 text-xs font-semibold text-white hover:bg-black">
           <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          Làm mới
+          {t('Làm mới')}
         </Button>
       </div>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200/60 bg-white p-4 shadow-sm md:flex-row md:items-center">
         <Input
-          placeholder="Lọc theo bàn"
+          placeholder={t('Lọc theo bàn')}
           value={tableNumber}
           onChange={(event) => setTableNumber(event.target.value)}
           className="h-10 rounded-xl border-neutral-200 text-sm md:w-48"
@@ -121,11 +125,11 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
           onChange={(event) => setStatus(event.target.value)}
           className="h-10 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-semibold text-neutral-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 md:w-52"
         >
-          <option value="ALL">Tất cả trạng thái</option>
-          <option value={BillStatus.UNPAID}>Chưa thanh toán</option>
-          <option value={BillStatus.PAYMENT_REQUESTED}>Chờ thanh toán</option>
-          <option value={BillStatus.PAID}>Đã thanh toán</option>
-          <option value={BillStatus.CANCELLED}>Đã hủy</option>
+          <option value="ALL">{t('Tất cả trạng thái')}</option>
+          <option value={BillStatus.UNPAID}>{t('Chưa thanh toán')}</option>
+          <option value={BillStatus.PAYMENT_REQUESTED}>{t('Chờ thanh toán')}</option>
+          <option value={BillStatus.PAID}>{t('Đã thanh toán')}</option>
+          <option value={BillStatus.CANCELLED}>{t('Đã hủy')}</option>
         </select>
       </div>
 
@@ -142,17 +146,17 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 block">Bàn ăn</span>
-                    <span className="text-base font-bold text-neutral-900">Bàn {bill.tableNumber}</span>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 block">{t('Bàn ăn')}</span>
+                    <span className="text-base font-bold text-neutral-900">{t('Bàn {table}', { table: bill.tableNumber })}</span>
                   </div>
                   <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${statusClass[bill.status]}`}>
-                    {statusLabel[bill.status]}
+                    {t(statusLabel[bill.status])}
                   </span>
                 </div>
 
                 <div className="border-t border-neutral-100 pt-3 grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">Mã Hóa Đơn</span>
+                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">{t('Mã Hóa Đơn')}</span>
                     <span className="font-mono font-bold text-neutral-800 text-xs break-all">{bill.billCode}</span>
                   </div>
                   <div>
@@ -160,17 +164,17 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
                     <span className="font-mono text-neutral-600 text-xs break-all">{bill.sessionCode || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">Tổng số món</span>
-                    <span className="font-bold text-neutral-800">{bill.totalItems} món</span>
+                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">{t('Tổng số món')}</span>
+                    <span className="font-bold text-neutral-800">{t('{count} món', { count: bill.totalItems })}</span>
                   </div>
                   <div>
-                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">Tổng tiền</span>
-                    <span className="font-black text-emerald-600 text-sm">{formatCurrency(bill.totalAmount)}</span>
+                    <span className="text-neutral-400 block text-[10px] font-bold uppercase tracking-wider mb-0.5">{t('Tổng tiền')}</span>
+                    <span className="font-black text-emerald-600 text-sm">{formatBillCurrency(bill.totalAmount)}</span>
                   </div>
                 </div>
 
                 <div className="text-[11px] text-neutral-400 font-medium pt-2 border-t border-neutral-100 flex items-center gap-1">
-                  <span>🕒 Thanh toán: {formatDate(bill.paidAt)}</span>
+                  <span>🕒 {t('Thanh toán:')} {formatDate(bill.paidAt, localeTag)}</span>
                 </div>
 
                 <div className="flex gap-2.5 pt-1">
@@ -180,7 +184,7 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
                     className="flex-1 h-11 text-xs font-bold rounded-xl border-neutral-200 hover:bg-neutral-50"
                   >
                     <Eye className="mr-1.5 h-4 w-4" />
-                    Xem chi tiết
+                    {t('Xem chi tiết')}
                   </Button>
                   {canPay && (
                     <Button
@@ -188,7 +192,7 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
                       className="flex-1 h-11 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
                       <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                      Thanh toán
+                      {t('Thanh toán')}
                     </Button>
                   )}
                 </div>
@@ -203,8 +207,8 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
                   <Receipt className="h-6 w-6 text-neutral-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-neutral-800">Chưa có bill phù hợp</h3>
-                  <p className="mt-1 text-xs text-neutral-400">Bill sẽ xuất hiện sau khi khách bắt đầu đặt món.</p>
+                  <h3 className="text-sm font-bold text-neutral-800">{t('Chưa có bill phù hợp')}</h3>
+                  <p className="mt-1 text-xs text-neutral-400">{t('Bill sẽ xuất hiện sau khi khách bắt đầu đặt món.')}</p>
                 </div>
               </div>
             </div>
@@ -216,14 +220,14 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
             <Table>
               <TableHeader>
                 <TableRow className="border-neutral-100 hover:bg-transparent">
-                  <TableHead className="w-[140px] pl-6 text-xs font-bold text-neutral-400">Mã bill</TableHead>
-                  <TableHead className="w-[90px] text-xs font-bold text-neutral-400">Bàn</TableHead>
+                  <TableHead className="w-[140px] pl-6 text-xs font-bold text-neutral-400">{t('Mã bill')}</TableHead>
+                  <TableHead className="w-[90px] text-xs font-bold text-neutral-400">{t('Bàn')}</TableHead>
                   <TableHead className="w-[140px] text-xs font-bold text-neutral-400">Session</TableHead>
-                  <TableHead className="w-[100px] text-xs font-bold text-neutral-400">Tổng món</TableHead>
-                  <TableHead className="w-[130px] text-xs font-bold text-neutral-400">Tổng tiền</TableHead>
-                  <TableHead className="w-[140px] text-xs font-bold text-neutral-400">Trạng thái</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400">Thanh toán lúc</TableHead>
-                  <TableHead className="w-[210px] pr-6 text-right text-xs font-bold text-neutral-400">Thao tác</TableHead>
+                  <TableHead className="w-[100px] text-xs font-bold text-neutral-400">{t('Tổng món')}</TableHead>
+                  <TableHead className="w-[130px] text-xs font-bold text-neutral-400">{t('Tổng tiền')}</TableHead>
+                  <TableHead className="w-[140px] text-xs font-bold text-neutral-400">{t('Trạng thái')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400">{t('Thanh toán lúc')}</TableHead>
+                  <TableHead className="w-[210px] pr-6 text-right text-xs font-bold text-neutral-400">{t('Thao tác')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -234,21 +238,21 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
                   return (
                     <TableRow key={billId} className="border-neutral-100 hover:bg-neutral-50/40">
                       <TableCell className="pl-6 font-mono text-xs font-bold text-neutral-700">{bill.billCode}</TableCell>
-                      <TableCell className="text-xs font-bold text-neutral-900">Bàn {bill.tableNumber}</TableCell>
+                      <TableCell className="text-xs font-bold text-neutral-900">{t('Bàn {table}', { table: bill.tableNumber })}</TableCell>
                       <TableCell className="font-mono text-[11px] text-neutral-500">{bill.sessionCode || '-'}</TableCell>
                       <TableCell className="text-xs font-semibold text-neutral-700">{bill.totalItems}</TableCell>
-                      <TableCell className="text-xs font-bold text-neutral-900">{formatCurrency(bill.totalAmount)}</TableCell>
+                      <TableCell className="text-xs font-bold text-neutral-900">{formatBillCurrency(bill.totalAmount)}</TableCell>
                       <TableCell>
                         <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold ${statusClass[bill.status]}`}>
-                          {statusLabel[bill.status]}
+                          {t(statusLabel[bill.status])}
                         </span>
                       </TableCell>
-                      <TableCell className="text-xs font-medium text-neutral-500">{formatDate(bill.paidAt)}</TableCell>
+                      <TableCell className="text-xs font-medium text-neutral-500">{formatDate(bill.paidAt, localeTag)}</TableCell>
                       <TableCell className="pr-6 text-right">
                         <div className="flex justify-end gap-1.5">
                           <Button size="sm" variant="outline" onClick={() => handleViewDetail(bill)} className="h-8 rounded-lg text-xs font-semibold">
                             <Eye className="mr-1 h-3.5 w-3.5" />
-                            Chi tiết
+                            {t('Chi tiết')}
                           </Button>
                           {canPay && (
                             <Button
@@ -257,7 +261,7 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
                               className="h-8 rounded-lg bg-emerald-600 text-xs font-semibold text-white hover:bg-emerald-700"
                             >
                               <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                              Thanh toán
+                              {t('Thanh toán')}
                             </Button>
                           )}
                         </div>
@@ -273,8 +277,8 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
                           <Receipt className="h-6 w-6 text-neutral-400" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-bold text-neutral-800">Chưa có bill phù hợp</h3>
-                          <p className="mt-1 text-xs text-neutral-400">Bill sẽ xuất hiện sau khi khách bắt đầu đặt món trong phiên bàn.</p>
+                          <h3 className="text-sm font-bold text-neutral-800">{t('Chưa có bill phù hợp')}</h3>
+                          <p className="mt-1 text-xs text-neutral-400">{t('Bill sẽ xuất hiện sau khi khách bắt đầu đặt món trong phiên bàn.')}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -290,13 +294,13 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
         <Card className="rounded-2xl border-neutral-200/50 bg-white shadow-sm">
           <CardHeader className="border-b border-neutral-100">
             <CardTitle className="text-sm font-bold text-neutral-900">
-              Chi tiết bill {selectedBill.billCode}
-              {isDetailLoading && <span className="ml-2 text-xs font-medium text-neutral-400">Đang tải...</span>}
+              {t('Chi tiết bill {billCode}', { billCode: selectedBill.billCode })}
+              {isDetailLoading && <span className="ml-2 text-xs font-medium text-neutral-400">{t('Đang tải...')}</span>}
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_1fr]">
             <div>
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-400">Món đã gom</h3>
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-400">{t('Món đã gom')}</h3>
               <div className="space-y-2">
                 {selectedBill.itemsSnapshot.map((item, index) => (
                   <div key={`${item.menuItemId || item.name}-${index}`} className="flex items-start justify-between gap-3 rounded-xl border border-neutral-100 bg-neutral-50/50 px-3 py-2 text-sm">
@@ -308,19 +312,19 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
                         </span>
                       )}
                     </div>
-                    <span className="font-bold text-neutral-900">{formatCurrency(item.totalPrice)}</span>
+                    <span className="font-bold text-neutral-900">{formatBillCurrency(item.totalPrice)}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div>
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-400">Các order trong bill</h3>
+              <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-400">{t('Các order trong bill')}</h3>
               <div className="space-y-2">
                 {selectedOrders.map((order) => (
                   <div key={order.id || (order as any)._id} className="rounded-xl border border-neutral-100 px-3 py-2 text-sm">
                     <div className="flex justify-between">
                       <span className="font-mono text-xs font-bold text-neutral-500">#{String(order.id || (order as any)._id).slice(-6)}</span>
-                      <span className="font-bold text-neutral-900">{formatCurrency(order.totalAmount)}</span>
+                      <span className="font-bold text-neutral-900">{formatBillCurrency(order.totalAmount)}</span>
                     </div>
                     <p className="mt-1 truncate text-xs text-neutral-500" title={order.items.map((item) => `${item.name} x${item.quantity}`).join(', ')}>
                       {order.items.map((item) => `${item.name} x${item.quantity}`).join(', ')}
@@ -330,8 +334,8 @@ export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaura
               </div>
             </div>
             <div className="lg:col-span-2 border-t border-neutral-100 pt-4 text-right">
-              <span className="text-sm font-semibold text-neutral-500">Tổng thanh toán: </span>
-              <span className="text-xl font-bold text-emerald-700">{formatCurrency(selectedBill.totalAmount)}</span>
+              <span className="text-sm font-semibold text-neutral-500">{t('Tổng thanh toán:')} </span>
+              <span className="text-xl font-bold text-emerald-700">{formatBillCurrency(selectedBill.totalAmount)}</span>
             </div>
           </CardContent>
         </Card>

@@ -33,6 +33,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import {
   downloadSingleTableQR,
@@ -58,7 +59,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
   tables,
   tableCountInput,
   restaurantId,
-  restaurantName = 'Nhà hàng',
+  restaurantName,
   isLoadingTables,
   onSetTableCountInput,
   onSyncTables,
@@ -67,6 +68,8 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
   onDeleteTable
 }) => {
   const isCompact = useIsMobile(1024);
+  const { t } = useOwnerConsoleLocale();
+  const resolvedRestaurantName = restaurantName || t('Nhà hàng');
 
   // Table deletion state
   const [tableToDelete, setTableToDelete] = useState<RestaurantTable | null>(null);
@@ -98,14 +101,14 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-            Đang dùng
+            {t('Đang dùng')}
           </span>
         );
       case TableStatus.PAYMENT_PENDING:
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200/80 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-ping" />
-            Chờ thanh toán
+            {t('Chờ thanh toán')}
           </span>
         );
       case TableStatus.AVAILABLE:
@@ -113,7 +116,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
         return (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Bàn trống
+            {t('Bàn trống')}
           </span>
         );
     }
@@ -122,7 +125,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
   const executeDeleteTable = async () => {
     if (!tableToDelete) return;
     if (tableToDelete.status === TableStatus.OCCUPIED || tableToDelete.status === TableStatus.PAYMENT_PENDING) {
-      toast.error(`Bàn ${tableToDelete.code} đang có khách hoặc chờ thanh toán, không thể xoá!`);
+      toast.error(t('Bàn {code} đang có khách hoặc chờ thanh toán, không thể xoá!', { code: tableToDelete.code }));
       return;
     }
 
@@ -135,10 +138,10 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
         await tableService.delete(idOrCode);
         await onRefreshTables?.();
       }
-      toast.success(`Đã xoá Bàn ${tableToDelete.code} thành công`);
+      toast.success(t('Đã xoá Bàn {code} thành công', { code: tableToDelete.code }));
       setTableToDelete(null);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Lỗi khi xoá bàn ăn');
+      toast.error(err instanceof Error ? err.message : t('Lỗi khi xoá bàn ăn'));
     } finally {
       setIsDeletingTable(false);
     }
@@ -146,7 +149,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
 
   const handleCopyOrderUrl = (code: string, url: string) => {
     navigator.clipboard.writeText(url);
-    toast.success(`Đã sao chép link đặt món Bàn ${code}`);
+    toast.success(t('Đã sao chép link đặt món Bàn {code}', { code }));
   };
 
   // ────────────────────────────────────────────────────
@@ -156,10 +159,10 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
     const fileName = getTableFileName(tableCode);
     setDownloadingTableCode(tableCode);
     try {
-      await downloadSingleTableQR(restaurantId, tableCode, restaurantName);
-      toast.success(`Đã tải thành công ảnh ${fileName}`);
+      await downloadSingleTableQR(restaurantId, tableCode, resolvedRestaurantName);
+      toast.success(t('Đã tải thành công ảnh {fileName}', { fileName }));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Lỗi khi tải ảnh mã QR');
+      toast.error(err instanceof Error ? err.message : t('Lỗi khi tải ảnh mã QR'));
     } finally {
       setDownloadingTableCode(null);
     }
@@ -167,7 +170,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
 
   const handleDownloadAllZip = async () => {
     if (!tables.length) {
-      toast.warning('Chưa có bàn nào để tải mã QR');
+      toast.warning(t('Chưa có bàn nào để tải mã QR'));
       return;
     }
     setIsDownloadingAll(true);
@@ -177,14 +180,14 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
       await downloadAllTablesQRAsZip(
         restaurantId,
         tables,
-        restaurantName,
+        resolvedRestaurantName,
         (current, total, fileName) => {
           setDownloadProgress({ current, total, fileName, mode: 'zip' });
         }
       );
-      toast.success(`Đã tải thành công trọn bộ ZIP ${tables.length} mã QR bàn!`);
+      toast.success(t('Đã tải thành công trọn bộ ZIP {count} mã QR bàn!', { count: tables.length }));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Lỗi khi nén và tải mã QR');
+      toast.error(err instanceof Error ? err.message : t('Lỗi khi nén và tải mã QR'));
     } finally {
       setIsDownloadingAll(false);
       setDownloadProgress(null);
@@ -193,7 +196,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
 
   const handleDownloadAllIndividual = async () => {
     if (!tables.length) {
-      toast.warning('Chưa có bàn nào để tải mã QR');
+      toast.warning(t('Chưa có bàn nào để tải mã QR'));
       return;
     }
     setIsDownloadingAll(true);
@@ -203,14 +206,14 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
       await downloadAllTablesQRIndividual(
         restaurantId,
         tables,
-        restaurantName,
+        resolvedRestaurantName,
         (current, total, fileName) => {
           setDownloadProgress({ current, total, fileName, mode: 'individual' });
         }
       );
-      toast.success(`Đã tải xong ${tables.length} file ảnh mã QR!`);
+      toast.success(t('Đã tải xong {count} file ảnh mã QR!', { count: tables.length }));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Lỗi khi tải mã QR');
+      toast.error(err instanceof Error ? err.message : t('Lỗi khi tải mã QR'));
     } finally {
       setIsDownloadingAll(false);
       setDownloadProgress(null);
@@ -229,12 +232,12 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
             {isDownloadingAll ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Đang xử lý...</span>
+                <span>{t('Đang xử lý...')}</span>
               </>
             ) : (
               <>
                 <Download className="h-4 w-4" />
-                <span>Tải tất cả mã QR</span>
+                <span>{t('Tải tất cả mã QR')}</span>
                 <ChevronDown className="h-3.5 w-3.5 opacity-70 ml-0.5" />
               </>
             )}
@@ -251,13 +254,13 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
             </div>
             <div>
               <div className="text-xs font-bold text-neutral-900 flex items-center gap-1.5">
-                Tải file nén ZIP
+                {t('Tải file nén ZIP')}
                 <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.5 rounded-md">
-                  Khuyên dùng
+                  {t('Khuyên dùng')}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-500 mt-0.5 leading-snug">
-                Gói toàn bộ {tables.length} ảnh (ban1.jpg, ban2.jpg...) trong 1 tệp ZIP duy nhất.
+                {t('Gói toàn bộ {count} ảnh (ban1.jpg, ban2.jpg...) trong 1 tệp ZIP duy nhất.', { count: tables.length })}
               </p>
             </div>
           </DropdownMenuItem>
@@ -272,10 +275,10 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
             </div>
             <div>
               <div className="text-xs font-bold text-neutral-900">
-                Tải từng file rời (.jpg)
+                {t('Tải từng file rời (.jpg)')}
               </div>
               <p className="text-[11px] text-neutral-500 mt-0.5 leading-snug">
-                Tự động lưu lần lượt từng ảnh ban1.jpg, ban2.jpg trực tiếp vào máy.
+                {t('Tự động lưu lần lượt từng ảnh ban1.jpg, ban2.jpg trực tiếp vào máy.')}
               </p>
             </div>
           </DropdownMenuItem>
@@ -288,9 +291,9 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold tracking-tight text-neutral-900">Đồng bộ bàn ăn & Sinh mã QR</h2>
+        <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('Đồng bộ bàn ăn & Sinh mã QR')}</h2>
         <p className="text-neutral-500 text-xs mt-0.5">
-          Sinh mã QR code dán bàn. Khách quét QR để xem thực đơn & đặt món tại chỗ mà không cần gọi nhân viên.
+          {t('Sinh mã QR code dán bàn. Khách quét QR để xem thực đơn & đặt món tại chỗ mà không cần gọi nhân viên.')}
         </p>
       </div>
 
@@ -299,12 +302,12 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
         <CardContent className="p-6 flex flex-col sm:flex-row gap-4 items-end bg-neutral-50/50 border-b border-neutral-100">
           <div className="space-y-2 flex-1 w-full">
             <Label htmlFor="tableCount" className="text-xs font-bold text-neutral-600">
-              Số lượng bàn hoạt động tại nhà hàng
+              {t('Số lượng bàn hoạt động tại nhà hàng')}
             </Label>
             <Input
               id="tableCount"
               type="number"
-              placeholder="Nhập tổng số bàn (VD: 15)"
+              placeholder={t('Nhập tổng số bàn (VD: 15)')}
               value={tableCountInput}
               onChange={(e) => onSetTableCountInput(e.target.value)}
               className="rounded-xl border-neutral-200 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 text-sm bg-white"
@@ -316,20 +319,20 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
             aria-busy={isLoadingTables}
             className="h-10 w-full rounded-xl bg-neutral-900 px-6 font-bold text-white shadow-sm hover:bg-black sm:w-auto"
           >
-            {isLoadingTables ? 'Đang đồng bộ...' : 'Đồng bộ số bàn'}
+            {isLoadingTables ? t('Đang đồng bộ...') : t('Đồng bộ số bàn')}
           </Button>
         </CardContent>
       </Card>
 
       {/* Table Status Summary Cards */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Tổng quan trạng thái bàn">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3" aria-label={t('Tổng quan trạng thái bàn')}>
         <div className="min-w-0 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-3 sm:p-4">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 sm:h-9 sm:w-9">
               <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-emerald-700 sm:text-xs">Bàn trống</p>
+              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-emerald-700 sm:text-xs">{t('Bàn trống')}</p>
               <p className="mt-0.5 text-lg font-extrabold leading-none text-emerald-900 sm:text-xl">{tableSummary.available}</p>
             </div>
           </div>
@@ -340,7 +343,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
               <Users className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-amber-700 sm:text-xs">Đang dùng</p>
+              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-amber-700 sm:text-xs">{t('Đang dùng')}</p>
               <p className="mt-0.5 text-lg font-extrabold leading-none text-amber-900 sm:text-xl">{tableSummary.occupied}</p>
             </div>
           </div>
@@ -351,7 +354,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
               <Clock3 className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-rose-700 sm:text-xs">Chờ thanh toán</p>
+              <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-rose-700 sm:text-xs">{t('Chờ thanh toán')}</p>
               <p className="mt-0.5 text-lg font-extrabold leading-none text-rose-900 sm:text-xl">{tableSummary.paymentPending}</p>
             </div>
           </div>
@@ -365,12 +368,12 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
           <div className="flex items-center justify-between gap-3 p-4 bg-white border border-neutral-200/60 rounded-2xl shadow-sm">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-neutral-800">Danh sách bàn</span>
+                <span className="text-sm font-bold text-neutral-800">{t('Danh sách bàn')}</span>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-neutral-100 text-neutral-700">
                   {tables.length}
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-500">Mã QR đặt món định danh từng bàn</p>
+              <p className="text-[11px] text-neutral-500">{t('Mã QR đặt món định danh từng bàn')}</p>
             </div>
             {renderDownloadAllControl()}
           </div>
@@ -390,7 +393,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                       </div>
                       <div className="min-w-0">
                         <span className="block text-sm font-extrabold text-neutral-900 leading-tight">
-                          Bàn {tbl.code}
+                          {t('Bàn {code}', { code: tbl.code })}
                         </span>
                         <span className="text-[10px] font-mono font-medium text-neutral-400">
                           {fileName}
@@ -402,7 +405,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
 
                   <div className="border-t border-neutral-100 pt-3 text-xs">
                     <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                      Đường dẫn gọi món
+                      {t('Đường dẫn gọi món')}
                     </span>
                     <div className="flex items-center gap-1.5">
                       <a
@@ -419,7 +422,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                         variant="outline"
                         onClick={() => handleCopyOrderUrl(tbl.code, orderUrl)}
                         className="h-9 w-9 shrink-0 rounded-xl border-neutral-200 hover:bg-neutral-50"
-                        title="Sao chép link"
+                        title={t('Sao chép link')}
                       >
                         <Copy className="h-3.5 w-3.5 text-neutral-600" />
                       </Button>
@@ -431,11 +434,11 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => onSelectTableQR(tbl.code)}
-                      aria-label={`Hiển thị mã QR bàn ${tbl.code}`}
+                      aria-label={t('Hiển thị mã QR bàn {code}', { code: tbl.code })}
                       className="h-10 rounded-xl border-neutral-200 text-xs font-bold hover:bg-neutral-50"
                     >
                       <QrCode className="h-4 w-4 text-neutral-500" />
-                      Xem QR
+                      {t('Xem QR')}
                     </Button>
 
                     <Button
@@ -443,7 +446,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                       variant="outline"
                       onClick={() => handleDownloadSingle(tbl.code)}
                       disabled={isDownloadingThis || isDownloadingAll}
-                      aria-label={`Tải ảnh ${fileName}`}
+                      aria-label={t('Tải ảnh {fileName}', { fileName })}
                       className="h-10 rounded-xl border-emerald-200 bg-emerald-50/50 text-xs font-bold text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 transition-colors"
                     >
                       {isDownloadingThis ? (
@@ -451,18 +454,18 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                       ) : (
                         <Download className="h-4 w-4 text-emerald-600" />
                       )}
-                      Tải ảnh
+                      {t('Tải ảnh')}
                     </Button>
 
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setTableToDelete(tbl)}
-                      aria-label={`Xoá bàn ${tbl.code}`}
+                      aria-label={t('Xoá bàn {code}', { code: tbl.code })}
                       className="h-10 rounded-xl border-rose-200 bg-rose-50/50 text-xs font-bold text-rose-700 hover:bg-rose-100 hover:text-rose-800 transition-colors"
                     >
                       <Trash2 className="h-4 w-4 text-rose-600" />
-                      Xoá bàn
+                      {t('Xoá bàn')}
                     </Button>
                   </div>
                 </div>
@@ -476,8 +479,8 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                     <QrCode className="w-6 h-6 text-neutral-400" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-neutral-800">Chưa có bàn ăn nào được lưu</h3>
-                    <p className="text-xs text-neutral-400 mt-1">Đồng bộ số lượng bàn hoạt động phía trên để tạo mã QR tự động.</p>
+                    <h3 className="text-sm font-bold text-neutral-800">{t('Chưa có bàn ăn nào được lưu')}</h3>
+                    <p className="text-xs text-neutral-400 mt-1">{t('Đồng bộ số lượng bàn hoạt động phía trên để tạo mã QR tự động.')}</p>
                   </div>
                 </div>
               </div>
@@ -490,13 +493,13 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 border-b border-neutral-100 bg-white">
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-neutral-900">Danh sách bàn & mã QR dẫn bàn</h3>
+                <h3 className="text-base font-bold text-neutral-900">{t('Danh sách bàn & mã QR dẫn bàn')}</h3>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-neutral-100 text-neutral-700">
-                  {tables.length} bàn
+                  {t('{count} bàn', { count: tables.length })}
                 </span>
               </div>
               <p className="text-xs text-neutral-500 mt-0.5">
-                Mỗi bàn có mã QR riêng biệt. Tải ảnh JPG độ phân giải cao sẵn sàng in ấn standee để bàn.
+                {t('Mỗi bàn có mã QR riêng biệt. Tải ảnh JPG độ phân giải cao sẵn sàng in ấn standee để bàn.')}
               </p>
             </div>
             {renderDownloadAllControl()}
@@ -512,10 +515,10 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
               </colgroup>
               <TableHeader>
                 <TableRow className="border-neutral-100 hover:bg-transparent">
-                  <TableHead className="pl-6 text-xs font-bold text-neutral-400">Mã bàn</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400">Trạng thái</TableHead>
-                  <TableHead className="min-w-0 text-xs font-bold text-neutral-400">Đường dẫn đặt món tại bàn</TableHead>
-                  <TableHead className="pr-6 text-right text-xs font-bold text-neutral-400">Thao tác</TableHead>
+                  <TableHead className="pl-6 text-xs font-bold text-neutral-400">{t('Mã bàn')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400">{t('Trạng thái')}</TableHead>
+                  <TableHead className="min-w-0 text-xs font-bold text-neutral-400">{t('Đường dẫn đặt món tại bàn')}</TableHead>
+                  <TableHead className="pr-6 text-right text-xs font-bold text-neutral-400">{t('Thao tác')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -534,7 +537,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                           </div>
                           <div className="min-w-0">
                             <span className="block text-xs font-extrabold text-neutral-900 leading-tight">
-                              Bàn {tbl.code}
+                              {t('Bàn {code}', { code: tbl.code })}
                             </span>
                             <span className="mt-0.5 inline-flex font-mono text-[10px] font-medium text-neutral-400">
                               {fileName}
@@ -565,7 +568,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                             size="icon"
                             variant="ghost"
                             onClick={() => handleCopyOrderUrl(tbl.code, orderUrl)}
-                            title="Sao chép link"
+                            title={t('Sao chép link')}
                             className="h-7 w-7 shrink-0 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
                           >
                             <Copy className="h-3.5 w-3.5" />
@@ -581,12 +584,12 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                             size="sm"
                             variant="outline"
                             onClick={() => onSelectTableQR(tbl.code)}
-                            aria-label={`Hiển thị mã QR bàn ${tbl.code}`}
-                            title="Xem mã QR lớn"
+                            aria-label={t('Hiển thị mã QR bàn {code}', { code: tbl.code })}
+                            title={t('Xem mã QR lớn')}
                             className="h-8.5 w-[76px] shrink-0 justify-center rounded-lg border-neutral-200 px-2 text-xs font-semibold hover:bg-neutral-50"
                           >
                             <QrCode className="h-3.5 w-3.5 text-neutral-500" />
-                            <span>Xem</span>
+                            <span>{t('Xem')}</span>
                           </Button>
 
                           {/* Slot 2: Download Single Table JPG - fixed width */}
@@ -595,8 +598,8 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                             variant="outline"
                             onClick={() => handleDownloadSingle(tbl.code)}
                             disabled={isDownloadingThis || isDownloadingAll}
-                            aria-label={`Tải ảnh ${fileName}`}
-                            title={`Tải ảnh ${fileName}`}
+                            aria-label={t('Tải ảnh {fileName}', { fileName })}
+                            title={t('Tải ảnh {fileName}', { fileName })}
                             className="h-8.5 w-[96px] shrink-0 justify-center rounded-lg border-emerald-200 bg-emerald-50/60 px-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 transition-colors"
                           >
                             {isDownloadingThis ? (
@@ -604,7 +607,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                             ) : (
                               <Download className="h-3.5 w-3.5 text-emerald-600" />
                             )}
-                            <span>Tải ảnh</span>
+                            <span>{t('Tải ảnh')}</span>
                           </Button>
 
                           {/* Slot 3: Actions Popover Menu with Xoá bàn */}
@@ -613,8 +616,8 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                               <Button
                                 size="icon"
                                 variant="outline"
-                                aria-label={`Mở thao tác bàn ${tbl.code}`}
-                                title="Thao tác khác"
+                                aria-label={t('Mở thao tác bàn {code}', { code: tbl.code })}
+                                title={t('Thao tác khác')}
                                 className="h-8.5 w-8.5 shrink-0 rounded-lg border-neutral-200 hover:bg-neutral-50"
                               >
                                 <MoreHorizontal className="h-4 w-4 text-neutral-500" />
@@ -626,7 +629,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                                 className="min-h-9 cursor-pointer gap-2 text-rose-600 focus:bg-rose-50 focus:text-rose-700 font-semibold rounded-lg"
                               >
                                 <Trash2 className="h-4 w-4 text-rose-600" />
-                                <span>Xoá bàn</span>
+                                <span>{t('Xoá bàn')}</span>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -643,8 +646,8 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                           <QrCode className="w-6 h-6 text-neutral-400" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-bold text-neutral-800">Chưa có bàn ăn nào được lưu</h3>
-                          <p className="text-xs text-neutral-400 mt-1">Đồng bộ số lượng bàn hoạt động phía trên để tạo mã QR tự động.</p>
+                          <h3 className="text-sm font-bold text-neutral-800">{t('Chưa có bàn ăn nào được lưu')}</h3>
+                          <p className="text-xs text-neutral-400 mt-1">{t('Đồng bộ số lượng bàn hoạt động phía trên để tạo mã QR tự động.')}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -666,10 +669,10 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
 
             <div className="space-y-1">
               <DialogTitle className="text-lg font-extrabold text-neutral-900">
-                Đang xuất mã QR bàn ăn
+                {t('Đang xuất mã QR bàn ăn')}
               </DialogTitle>
               <DialogDescription className="text-xs text-neutral-500">
-                Hệ thống đang kết xuất file ảnh JPG độ phân giải cao cho từng bàn...
+                {t('Hệ thống đang kết xuất file ảnh JPG độ phân giải cao cho từng bàn...')}
               </DialogDescription>
             </div>
 
@@ -677,7 +680,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
               <div className="w-full space-y-2 pt-2">
                 <div className="flex items-center justify-between text-xs font-bold">
                   <span className="text-neutral-700 truncate max-w-[240px]">
-                    {downloadProgress.fileName ? `Đang tạo: ${downloadProgress.fileName}` : 'Đang xử lý tệp nén...'}
+                    {downloadProgress.fileName ? t('Đang tạo: {fileName}', { fileName: downloadProgress.fileName }) : t('Đang xử lý tệp nén...')}
                   </span>
                   <span className="text-emerald-700 font-mono">
                     {downloadProgress.current} / {downloadProgress.total} ({Math.round((downloadProgress.current / Math.max(downloadProgress.total, 1)) * 100)}%)
@@ -697,7 +700,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
             )}
 
             <p className="text-[11px] text-neutral-400">
-              Vui lòng không đóng trang. File sẽ tự động tải xuống sau khi hoàn tất.
+              {t('Vui lòng không đóng trang. File sẽ tự động tải xuống sau khi hoàn tất.')}
             </p>
           </div>
         </DialogContent>
@@ -713,16 +716,16 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
 
             <div className="space-y-1">
               <DialogTitle className="text-lg font-extrabold text-neutral-900">
-                Xác nhận xoá Bàn {tableToDelete?.code}
+                {t('Xác nhận xoá Bàn {code}', { code: tableToDelete?.code || '' })}
               </DialogTitle>
               <DialogDescription className="text-xs text-neutral-500">
-                Bạn có chắc chắn muốn xoá bàn này không? Mã QR và thông tin bàn sẽ bị xoá khỏi hệ thống.
+                {t('Bạn có chắc chắn muốn xoá bàn này không? Mã QR và thông tin bàn sẽ bị xoá khỏi hệ thống.')}
               </DialogDescription>
             </div>
 
             {tableToDelete && (tableToDelete.status === TableStatus.OCCUPIED || tableToDelete.status === TableStatus.PAYMENT_PENDING) && (
               <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-800 text-left">
-                ⚠️ Bàn này đang có phiên khách hoạt động ({tableToDelete.status === TableStatus.OCCUPIED ? 'Đang dùng' : 'Chờ thanh toán'}). Bạn cần đóng phiên trước khi có thể xoá bàn.
+                ⚠️ {t('Bàn này đang có phiên khách hoạt động ({status}). Bạn cần đóng phiên trước khi có thể xoá bàn.', { status: tableToDelete.status === TableStatus.OCCUPIED ? t('Đang dùng') : t('Chờ thanh toán') })}
               </div>
             )}
 
@@ -734,7 +737,7 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                 disabled={isDeletingTable}
                 className="flex-1 h-10 rounded-xl border-neutral-200 text-xs font-semibold hover:bg-neutral-50"
               >
-                Huỷ
+                {t('Huỷ')}
               </Button>
               <Button
                 type="button"
@@ -745,12 +748,12 @@ export const RestaurantTablesTab: React.FC<RestaurantTablesTabProps> = ({
                 {isDeletingTable ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-                    Đang xoá...
+                    {t('Đang xoá...')}
                   </>
                 ) : (
                   <>
                     <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                    Xác nhận xoá
+                    {t('Xác nhận xoá')}
                   </>
                 )}
               </Button>

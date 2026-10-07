@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export interface CategoryModalProps {
   open: boolean;
@@ -19,6 +20,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
   editingCategory,
   onSave
 }) => {
+  const { t } = useOwnerConsoleLocale();
   const [categoryNameInput, setCategoryNameInput] = useState('');
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
 
   const handleSave = async () => {
     if (!categoryNameInput.trim()) {
-      toast.error('Vui lòng nhập tên danh mục');
+      toast.error(t('Vui lòng nhập tên danh mục'));
       return;
     }
     await onSave(categoryNameInput.trim(), editingCategory);
@@ -42,18 +44,18 @@ export const CategoryModal: React.FC<CategoryModalProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-white rounded-2xl p-6">
         <DialogHeader>
-          <DialogTitle>{editingCategory ? 'Sửa danh mục' : 'Thêm danh mục mới'}</DialogTitle>
-          <DialogDescription className="text-xs text-gray-500">Tạo tên danh mục duy nhất trong thực đơn.</DialogDescription>
+          <DialogTitle>{editingCategory ? t('Sửa danh mục') : t('Thêm danh mục mới')}</DialogTitle>
+          <DialogDescription className="text-xs text-gray-500">{t('Tạo tên danh mục duy nhất trong thực đơn.')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-3">
           <div className="space-y-1">
-            <Label htmlFor="catName" className="text-xs text-gray-600 font-semibold">Tên danh mục *</Label>
-            <Input id="catName" value={categoryNameInput} onChange={(e) => setCategoryNameInput(e.target.value)} className="rounded-xl" placeholder="VD: Khai vị, Healthy Bread" />
+            <Label htmlFor="catName" className="text-xs text-gray-600 font-semibold">{t('Tên danh mục *')}</Label>
+            <Input id="catName" value={categoryNameInput} onChange={(e) => setCategoryNameInput(e.target.value)} className="rounded-xl" placeholder={t('VD: Khai vị, Healthy Bread')} />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Hủy</Button>
-          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-sm">Lưu danh mục</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">{t('Hủy')}</Button>
+          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-sm">{t('Lưu danh mục')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

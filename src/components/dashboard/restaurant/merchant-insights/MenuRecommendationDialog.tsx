@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 interface MenuRecommendationDialogProps {
   open: boolean;
@@ -22,20 +23,22 @@ export const MenuRecommendationDialog = ({
   onOpenChange,
   onOpenRecipeBuilder,
   onOpenMenu,
-}: MenuRecommendationDialogProps) => (
+}: MenuRecommendationDialogProps) => {
+  const { t } = useOwnerConsoleLocale();
+  return (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="sm:max-w-lg">
       <DialogHeader>
-        <DialogTitle>Gợi ý tối ưu thực đơn</DialogTitle>
+        <DialogTitle>{t('Gợi ý tối ưu thực đơn')}</DialogTitle>
         <DialogDescription>
           {recommendations.length > 0
-            ? 'Gợi ý dựa trên thuộc tính thực đơn đã khai báo. Trong Recipe Builder, bạn sẽ tự chọn món và nguyên liệu từ cơ sở dữ liệu QDish; hệ thống không tự tạo hay lưu món.'
-            : 'Hiện không có khoảng trống thực đơn cần xử lý theo các thuộc tính đang được theo dõi.'}
+            ? t('Gợi ý dựa trên thuộc tính thực đơn đã khai báo. Trong Recipe Builder, bạn tự chọn món và nguyên liệu từ cơ sở dữ liệu QDish; hệ thống không tự tạo hoặc lưu món.')
+            : t('Hiện không có khoảng trống thực đơn cần xử lý theo các thuộc tính đang theo dõi.')}
         </DialogDescription>
       </DialogHeader>
 
       {recommendations.length > 0 ? (
-        <ul className="space-y-3" aria-label="Danh sách gợi ý thực đơn">
+        <ul className="space-y-3" aria-label={t('Danh sách gợi ý thực đơn')}>
           {recommendations.map((recommendation, index) => (
             <li
               key={`${recommendation}-${index}`}
@@ -53,18 +56,19 @@ export const MenuRecommendationDialog = ({
         </ul>
       ) : (
         <p role="status" className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-600">
-          Không có khoảng trống thực đơn cần xử lý. Các nhóm thuộc tính đang được theo dõi đã có món phù hợp.
+          {t('Không có khoảng trống thực đơn cần xử lý. Các nhóm thuộc tính đang theo dõi đã có món phù hợp.')}
         </p>
       )}
 
       <DialogFooter>
-        <Button variant="outline" onClick={() => onOpenChange(false)}>Đóng</Button>
+        <Button variant="outline" onClick={() => onOpenChange(false)}>{t('Đóng')}</Button>
         {recommendations.length > 0 ? (
-          <Button onClick={onOpenRecipeBuilder}>Mở Recipe Builder</Button>
+          <Button onClick={onOpenRecipeBuilder}>{t('Mở Recipe Builder')}</Button>
         ) : (
-          <Button onClick={onOpenMenu}>Xem thực đơn</Button>
+          <Button onClick={onOpenMenu}>{t('Xem thực đơn')}</Button>
         )}
       </DialogFooter>
     </DialogContent>
   </Dialog>
-);
+  );
+};

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Download, Loader2, Printer, Sparkles } from 'lucide-react';
 import { downloadSingleTableQR, getTableFileName } from '@/utils/qrDownload';
 import { toast } from 'sonner';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 const QRCode = React.lazy(() =>
   import('qrcode.react').then((module) => ({ default: module.QRCodeSVG }))
@@ -22,6 +23,7 @@ export const QRPreviewModal: React.FC<QRPreviewModalProps> = ({
   restaurantName,
   onClose
 }) => {
+  const { t } = useOwnerConsoleLocale();
   const [isDownloading, setIsDownloading] = useState(false);
 
   const fileName = tableCode ? getTableFileName(tableCode) : '';
@@ -31,9 +33,9 @@ export const QRPreviewModal: React.FC<QRPreviewModalProps> = ({
     setIsDownloading(true);
     try {
       await downloadSingleTableQR(restaurantId, tableCode, restaurantName);
-      toast.success(`Đã tải thành công ảnh ${fileName}`);
+      toast.success(t('Đã tải thành công ảnh {fileName}', { fileName }));
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Lỗi khi tải ảnh mã QR');
+      toast.error(err instanceof Error ? err.message : t('Lỗi khi tải ảnh mã QR'));
     } finally {
       setIsDownloading(false);
     }
@@ -47,10 +49,10 @@ export const QRPreviewModal: React.FC<QRPreviewModalProps> = ({
             <Sparkles className="h-5 w-5" />
           </div>
           <DialogTitle className="text-lg font-extrabold text-neutral-900">
-            Mã QR Bàn {tableCode}
+            {t('Mã QR bàn {table}', { table: tableCode || '' })}
           </DialogTitle>
           <DialogDescription className="text-xs text-neutral-500">
-            Khách quét mã để xem thực đơn & đặt món tại chỗ.
+            {t('Khách quét mã để xem thực đơn và đặt món tại chỗ.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -69,10 +71,10 @@ export const QRPreviewModal: React.FC<QRPreviewModalProps> = ({
 
             <div className="space-y-1">
               <p className="text-sm font-bold text-neutral-800">
-                Bàn {tableCode} {restaurantName ? `• ${restaurantName}` : ''}
+                {t('Bàn {table}', { table: tableCode || '' })} {restaurantName ? `• ${restaurantName}` : ''}
               </p>
               <p className="text-[11px] font-mono font-medium text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full inline-block">
-                Tên file xuất: {fileName}
+                {t('Tên file xuất: {fileName}', { fileName })}
               </p>
             </div>
 
@@ -85,12 +87,12 @@ export const QRPreviewModal: React.FC<QRPreviewModalProps> = ({
                 {isDownloading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Đang tạo ảnh {fileName}...
+                    {t('Đang tạo ảnh {fileName}...', { fileName })}
                   </>
                 ) : (
                   <>
                     <Download className="h-4 w-4" />
-                    Tải ảnh ({fileName})
+                    {t('Tải ảnh ({fileName})', { fileName })}
                   </>
                 )}
               </Button>
@@ -101,7 +103,7 @@ export const QRPreviewModal: React.FC<QRPreviewModalProps> = ({
                 className="w-full h-10 border-neutral-200 text-neutral-700 hover:bg-neutral-50 rounded-xl font-semibold flex items-center justify-center gap-2 text-xs"
               >
                 <Printer className="h-4 w-4 text-neutral-500" />
-                In trực tiếp mã QR
+                {t('In trực tiếp mã QR')}
               </Button>
             </div>
           </div>

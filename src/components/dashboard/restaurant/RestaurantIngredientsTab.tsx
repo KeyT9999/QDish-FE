@@ -23,45 +23,52 @@ import { toast } from 'sonner';
 import { IngredientModal } from './modals/IngredientModal';
 import { useAuth } from '@/hooks/useAuth';
 import { Role } from '@/types';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export interface RestaurantIngredientsTabProps {
   restaurantId: string;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  protein: '🥩 Đạm',
-  tinh_bot: '🌾 Tinh bột',
-  chat_beo: '🫒 Chất béo',
-  rau_cu: '🥦 Rau củ',
-  gia_vi: '🧂 Gia vị',
-  sua: '🥛 Sữa & Dairy',
-};
-
-const CATEGORIES = [
-  { value: 'all', label: 'Tất cả loại' },
-  { value: 'protein', label: '🥩 Đạm (Protein)' },
-  { value: 'tinh_bot', label: '🌾 Tinh bột' },
-  { value: 'chat_beo', label: '🫒 Chất béo' },
-  { value: 'rau_cu', label: '🥦 Rau củ' },
-  { value: 'gia_vi', label: '🧂 Gia vị' },
-  { value: 'sua', label: '🥛 Sữa & Dairy' },
-];
-
-const SOURCE_TYPES = [
-  { value: 'all', label: 'Tất cả nguồn' },
-  { value: 'global', label: '🌐 Hệ thống' },
-  { value: 'custom', label: '🏪 Tùy chỉnh' },
-];
-
 export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> = ({ restaurantId }) => {
   const { user } = useAuth();
+  const { t } = useOwnerConsoleLocale();
+  const categoryLabel = (value: string) => {
+    const categoryKeys: Record<string, Parameters<typeof t>[0]> = {
+      protein: 'Loại nguyên liệu · Đạm',
+      tinh_bot: 'Loại nguyên liệu · Tinh bột',
+      chat_beo: 'Loại nguyên liệu · Chất béo',
+      rau_cu: 'Loại nguyên liệu · Rau củ',
+      gia_vi: 'Loại nguyên liệu · Gia vị',
+      sua: 'Loại nguyên liệu · Sữa & Dairy',
+    };
+    return value === 'all' ? t('Tất cả loại') : categoryKeys[value] ? t(categoryKeys[value]) : value;
+  };
+  const sourceLabel = (value: string) => {
+    const sourceKeys: Record<string, Parameters<typeof t>[0]> = {
+      global: 'Nguồn nguyên liệu · Hệ thống',
+      custom: 'Nguồn nguyên liệu · Tùy chỉnh',
+    };
+    return value === 'all' ? t('Nguồn nguyên liệu · Tất cả') : sourceKeys[value] ? t(sourceKeys[value]) : value;
+  };
+  const categories = [
+    { value: 'all', label: t('Tất cả loại') },
+    { value: 'protein', label: t('Loại nguyên liệu · Đạm') },
+    { value: 'tinh_bot', label: t('Loại nguyên liệu · Tinh bột') },
+    { value: 'chat_beo', label: t('Loại nguyên liệu · Chất béo') },
+    { value: 'rau_cu', label: t('Loại nguyên liệu · Rau củ') },
+    { value: 'gia_vi', label: t('Loại nguyên liệu · Gia vị') },
+    { value: 'sua', label: t('Loại nguyên liệu · Sữa & Dairy') },
+  ];
+  const sourceTypes = [
+    { value: 'all', label: t('Nguồn nguyên liệu · Tất cả') },
+    { value: 'global', label: t('Nguồn nguyên liệu · Hệ thống') },
+    { value: 'custom', label: t('Nguồn nguyên liệu · Tùy chỉnh') },
+  ];
   const getCategoryLabel = (val: string) => {
-    const found = CATEGORIES.find((c) => c.value === val);
-    return found ? found.label : 'Tất cả loại';
+    return categoryLabel(val);
   };
   const getSourceLabel = (val: string) => {
-    const found = SOURCE_TYPES.find((s) => s.value === val);
-    return found ? found.label : 'Tất cả nguồn';
+    return sourceLabel(val);
   };
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -94,11 +101,11 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
       setTotal(res.total);
       setPages(res.pages);
     } catch (err: any) {
-      toast.error('Không thể tải danh sách nguyên liệu');
+      toast.error(t('Không thể tải danh sách nguyên liệu'));
     } finally {
       setIsLoading(false);
     }
-  }, [page, search, category, sourceType]);
+  }, [page, search, category, sourceType, t]);
 
   useEffect(() => {
     loadIngredients();
@@ -112,22 +119,22 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
   const handleSave = async (payload: any, editing: Ingredient | null) => {
     if (editing) {
       await ingredientService.update(editing._id, payload);
-      toast.success('Đã cập nhật nguyên liệu tùy chỉnh thành công');
+      toast.success(t('Đã cập nhật nguyên liệu tùy chỉnh thành công'));
     } else {
       await ingredientService.create(payload);
-      toast.success('Đã tạo nguyên liệu tùy chỉnh thành công');
+      toast.success(t('Đã tạo nguyên liệu tùy chỉnh thành công'));
     }
     loadIngredients();
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Bạn có chắc muốn xóa nguyên liệu tùy chỉnh này vĩnh viễn?')) return;
+    if (!window.confirm(t('Bạn có chắc muốn xóa nguyên liệu tùy chỉnh này vĩnh viễn?'))) return;
     try {
       await ingredientService.delete(id);
-      toast.success('Đã xóa nguyên liệu thành công');
+      toast.success(t('Đã xóa nguyên liệu thành công'));
       loadIngredients();
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi xóa nguyên liệu');
+      toast.error(err.message || t('Lỗi khi xóa nguyên liệu'));
     }
   };
 
@@ -154,16 +161,16 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
       {/* Title block */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-900">Quản lý Nguyên liệu</h2>
+          <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('Quản lý Nguyên liệu')}</h2>
           <p className="text-neutral-500 text-xs mt-0.5 font-medium">
-            Quản lý nguyên liệu tùy chỉnh của nhà hàng và xem các nguyên liệu mặc định từ hệ thống.
+            {t('Quản lý nguyên liệu tùy chỉnh của nhà hàng và xem các nguyên liệu mặc định từ hệ thống.')}
           </p>
         </div>
         <Button
           onClick={handleAddNew}
           className="rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-md shadow-green-600/10 gap-1.5 h-9.5 text-xs px-4 cursor-pointer"
         >
-          <Plus className="w-4 h-4" /> Thêm nguyên liệu
+          <Plus className="w-4 h-4" /> {t('Thêm nguyên liệu')}
         </Button>
       </div>
 
@@ -174,7 +181,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo tên nguyên liệu..."
+            placeholder={t('Tìm theo tên nguyên liệu...')}
             className="pl-10 h-10 rounded-xl bg-neutral-50/50 border-neutral-200/60 focus:bg-white text-xs font-semibold focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-green-400 focus:shadow-sm"
           />
         </div>
@@ -185,12 +192,12 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
               <SelectTrigger className="h-10 rounded-xl bg-white border-neutral-200/60 text-xs font-bold text-neutral-750 focus:border-green-400 focus:ring-0 focus:ring-offset-0 focus:shadow-sm flex items-center gap-1.5 w-full justify-between pr-2.5 cursor-pointer">
                 <span className="flex items-center gap-1 text-neutral-600 truncate">
                   <span className="shrink-0 text-sm">🏷️</span>
-                  <span className="text-neutral-450 font-bold text-[10px] uppercase tracking-wider shrink-0 mr-0.5">Loại:</span>
+                  <span className="text-neutral-450 font-bold text-[10px] uppercase tracking-wider shrink-0 mr-0.5">{t('Loại:')}</span>
                   <span className="truncate font-semibold">{getCategoryLabel(category)}</span>
                 </span>
               </SelectTrigger>
               <SelectContent className="bg-white rounded-xl shadow-md border-neutral-100">
-                {CATEGORIES.map((c) => (
+                {categories.map((c) => (
                   <SelectItem key={c.value} value={c.value} className="text-xs font-semibold text-neutral-700 rounded-lg">
                     {c.label}
                   </SelectItem>
@@ -204,12 +211,12 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
               <SelectTrigger className="h-10 rounded-xl bg-white border-neutral-200/60 text-xs font-bold text-neutral-750 focus:border-green-400 focus:ring-0 focus:ring-offset-0 focus:shadow-sm flex items-center gap-1.5 w-full justify-between pr-2.5 cursor-pointer">
                 <span className="flex items-center gap-1 text-neutral-600 truncate">
                   <span className="shrink-0 text-sm">🗄️</span>
-                  <span className="text-neutral-450 font-bold text-[10px] uppercase tracking-wider shrink-0 mr-0.5">Nguồn:</span>
+                  <span className="text-neutral-450 font-bold text-[10px] uppercase tracking-wider shrink-0 mr-0.5">{t('Nguồn:')}</span>
                   <span className="truncate font-semibold">{getSourceLabel(sourceType)}</span>
                 </span>
               </SelectTrigger>
               <SelectContent className="bg-white rounded-xl shadow-md border-neutral-100">
-                {SOURCE_TYPES.map((s) => (
+                {sourceTypes.map((s) => (
                   <SelectItem key={s.value} value={s.value} className="text-xs font-semibold text-neutral-700 rounded-lg">
                     {s.label}
                   </SelectItem>
@@ -236,11 +243,11 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
             <Table>
               <TableHeader>
                 <TableRow className="border-neutral-100 hover:bg-transparent bg-neutral-50/40">
-                  <TableHead className="text-xs font-bold text-neutral-450 pl-6 h-11">Nguyên liệu</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-450 h-11">Loại</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-450 h-11">Dinh dưỡng</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-450 h-11">Nguồn</TableHead>
-                  <TableHead className="text-right text-xs font-bold text-neutral-450 w-[140px] pr-6 h-11">Thao tác</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-450 pl-6 h-11">{t('Nguyên liệu')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-450 h-11">{t('Loại')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-450 h-11">{t('Dinh dưỡng')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-450 h-11">{t('Nguồn')}</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-neutral-450 w-[140px] pr-6 h-11">{t('Thao tác')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -251,20 +258,20 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                       <div className="flex flex-col gap-0.5">
                         <span className="text-neutral-850 font-bold">{ing.name}</span>
                         <span className="text-[10px] text-neutral-500 font-medium">
-                          Mặc định: {ing.defaultUnit} {ing.defaultUnit === 'piece' && `(≈${ing.gramsPerUnit}g)`}
+                          {t('Mặc định: {unit}', { unit: `${ing.defaultUnit}${ing.defaultUnit === 'piece' ? ` (≈${ing.gramsPerUnit}g)` : ''}` })}
                         </span>
                         <div className={`flex items-center gap-1 text-[9px] font-bold mt-1 ${ing.allergenInfoStatus === 'REVIEWED' ? 'text-emerald-700' : 'text-amber-700'}`}>
                           {ing.allergenInfoStatus === 'REVIEWED' ? <ShieldCheck className="w-2.5 h-2.5 shrink-0" /> : <AlertTriangle className="w-2.5 h-2.5 shrink-0" />}
                           <span>{ing.allergenInfoStatus === 'REVIEWED'
-                            ? `Đã xác minh: ${ing.allergens?.length ? ing.allergens.join(', ') : 'không có allergen trong danh sách hỗ trợ'}`
-                            : `Ứng viên chưa xác minh: ${ing.allergens?.length ? ing.allergens.join(', ') : 'chưa có dữ liệu'}`}</span>
+                            ? t('Đã xác minh: {allergens}', { allergens: ing.allergens?.length ? ing.allergens.join(', ') : t('không có allergen trong danh sách hỗ trợ') })
+                            : t('Ứng viên chưa xác minh: {allergens}', { allergens: ing.allergens?.length ? ing.allergens.join(', ') : t('chưa có dữ liệu') })}</span>
                         </div>
                       </div>
                     </TableCell>
 
                     {/* Category column */}
                     <TableCell className="text-xs text-neutral-600 font-bold py-4">
-                      {CATEGORY_LABELS[ing.category] || ing.category}
+                      {categoryLabel(ing.category)}
                     </TableCell>
 
                     {/* Nutrition column */}
@@ -283,15 +290,15 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                     <TableCell className="text-xs py-4">
                       {ing.isVerified ? (
                         <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2.5 py-0.5 rounded-full border border-green-200/50 font-bold text-[9px]">
-                          <span className="w-1 h-1 rounded-full bg-green-500" /> Hệ thống
+                          <span className="w-1 h-1 rounded-full bg-green-500" /> {t('Hệ thống')}
                         </span>
                       ) : user?.role === Role.RESTAURANT_OWNER ? (
                         <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded-full border border-purple-200/50 font-bold text-[9px]">
-                          <span className="w-1 h-1 rounded-full bg-purple-500" /> Chủ nhà hàng
+                          <span className="w-1 h-1 rounded-full bg-purple-500" /> {t('Chủ nhà hàng')}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-200/50 font-bold text-[9px]">
-                          <span className="w-1 h-1 rounded-full bg-blue-500" /> Nhà hàng
+                          <span className="w-1 h-1 rounded-full bg-blue-500" /> {t('Nhà hàng')}
                         </span>
                       )}
                     </TableCell>
@@ -304,7 +311,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                           variant="ghost"
                           onClick={() => handleView(ing)}
                           className="w-8 h-8 rounded-lg text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 shrink-0 cursor-pointer"
-                          title="Xem chi tiết"
+                          title={t('Xem chi tiết')}
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </Button>
@@ -315,7 +322,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                               variant="ghost"
                               onClick={() => handleEdit(ing)}
                               className="w-8 h-8 rounded-lg text-neutral-400 hover:text-green-600 hover:bg-green-50 shrink-0 cursor-pointer"
-                              title="Chỉnh sửa"
+                              title={t('Chỉnh sửa')}
                             >
                               <Edit3 className="w-3.5 h-3.5 text-neutral-500 hover:text-green-600" />
                             </Button>
@@ -324,7 +331,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                               variant="ghost"
                               onClick={() => handleDelete(ing._id)}
                               className="w-8 h-8 rounded-lg text-neutral-400 hover:text-rose-600 hover:bg-rose-50 shrink-0 cursor-pointer"
-                              title="Xóa nguyên liệu"
+                              title={t('Xóa nguyên liệu')}
                             >
                               <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                             </Button>
@@ -351,26 +358,26 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
               <div className="min-w-0">
                 <span className="block text-sm font-bold text-neutral-850 truncate">{ing.name}</span>
                 <span className="text-[10px] text-neutral-450 font-bold mt-0.5">
-                  Đơn vị: {ing.defaultUnit} {ing.defaultUnit === 'piece' && `(≈${ing.gramsPerUnit}g)`}
+                  {t('Đơn vị: {unit}', { unit: `${ing.defaultUnit}${ing.defaultUnit === 'piece' ? ` (≈${ing.gramsPerUnit}g)` : ''}` })}
                 </span>
               </div>
               <div className="shrink-0 flex gap-1">
                 {/* Category Badge */}
                 <span className="inline-flex items-center bg-neutral-50 text-neutral-600 px-2 py-0.5 rounded-full border border-neutral-200/50 font-bold text-[9px]">
-                  {CATEGORY_LABELS[ing.category] || ing.category}
+                    {categoryLabel(ing.category)}
                 </span>
                 {/* Source Badge */}
                 {ing.isVerified ? (
                   <span className="inline-flex items-center bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200/50 font-bold text-[9px]">
-                    Hệ thống
+                    {t('Hệ thống')}
                   </span>
                 ) : user?.role === Role.RESTAURANT_OWNER ? (
                   <span className="inline-flex items-center bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200/50 font-bold text-[9px]">
-                    Chủ quán
+                    {t('Chủ quán')}
                   </span>
                 ) : (
                   <span className="inline-flex items-center bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200/50 font-bold text-[9px]">
-                    Nhà hàng
+                    {t('Nhà hàng')}
                   </span>
                 )}
               </div>
@@ -379,18 +386,18 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
             <div className={`flex items-center gap-1 text-[9px] font-bold ${ing.allergenInfoStatus === 'REVIEWED' ? 'text-emerald-700' : 'text-amber-700'}`}>
               {ing.allergenInfoStatus === 'REVIEWED' ? <ShieldCheck className="w-2.5 h-2.5 shrink-0" /> : <AlertTriangle className="w-2.5 h-2.5 shrink-0" />}
               <span>{ing.allergenInfoStatus === 'REVIEWED'
-                ? `Đã xác minh: ${ing.allergens?.length ? ing.allergens.join(', ') : 'không có allergen trong danh sách hỗ trợ'}`
-                : `Ứng viên chưa xác minh: ${ing.allergens?.length ? ing.allergens.join(', ') : 'chưa có dữ liệu'}`}</span>
+                ? t('Đã xác minh: {allergens}', { allergens: ing.allergens?.length ? ing.allergens.join(', ') : t('không có allergen trong danh sách hỗ trợ') })
+                : t('Ứng viên chưa xác minh: {allergens}', { allergens: ing.allergens?.length ? ing.allergens.join(', ') : t('chưa có dữ liệu') })}</span>
             </div>
 
             {/* Mobile Nutrition Grid */}
             <div className="grid grid-cols-2 gap-2 bg-neutral-50 p-2.5 rounded-xl border border-neutral-150">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-neutral-450 font-bold">Calo:</span>
+                <span className="text-[10px] text-neutral-450 font-bold">{t('Calo:')}</span>
                 <span className="text-xs text-neutral-800 font-bold">{ing.caloriesPer100g} kcal</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-neutral-450 font-bold">Đạm:</span>
+                <span className="text-[10px] text-neutral-450 font-bold">{t('Đạm:')}</span>
                 <span className="text-xs text-neutral-800 font-bold">{ing.proteinPer100g}g</span>
               </div>
               <div className="flex items-center justify-between">
@@ -398,7 +405,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                 <span className="text-xs text-neutral-800 font-bold">{ing.carbPer100g}g</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-neutral-450 font-bold">Béo:</span>
+                <span className="text-[10px] text-neutral-450 font-bold">{t('Béo:')}</span>
                 <span className="text-xs text-neutral-800 font-bold">{ing.fatPer100g}g</span>
               </div>
             </div>
@@ -410,7 +417,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                 onClick={() => handleView(ing)}
                 className="h-8 text-[11px] font-bold rounded-lg border-neutral-200 gap-1 cursor-pointer"
               >
-                <Eye className="w-3 h-3" /> Chi tiết
+                <Eye className="w-3 h-3" /> {t('Chi tiết')}
               </Button>
               {!ing.isVerified && (
                 <>
@@ -420,7 +427,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                     onClick={() => handleEdit(ing)}
                     className="h-8 text-[11px] font-bold rounded-lg border-neutral-200 hover:border-green-200 hover:bg-green-50 text-neutral-600 hover:text-green-700 gap-1 cursor-pointer"
                   >
-                    <Edit3 className="w-3 h-3" /> Sửa
+                    <Edit3 className="w-3 h-3" /> {t('Sửa')}
                   </Button>
                   <Button
                     variant="outline"
@@ -428,7 +435,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
                     onClick={() => handleDelete(ing._id)}
                     className="h-8 text-[11px] font-bold rounded-lg border-neutral-200 hover:border-rose-200 hover:bg-rose-50 text-neutral-600 hover:text-rose-600 gap-1 cursor-pointer"
                   >
-                    <Trash2 className="w-3 h-3 text-rose-500" /> Xóa
+                    <Trash2 className="w-3 h-3 text-rose-500" /> {t('Xóa')}
                   </Button>
                 </>
               )}
@@ -444,16 +451,16 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
             🥦
           </div>
           <div className="max-w-md space-y-1.5">
-            <h3 className="text-base font-bold text-neutral-800">Chưa có nguyên liệu nào</h3>
+            <h3 className="text-base font-bold text-neutral-800">{t('Chưa có nguyên liệu nào')}</h3>
             <p className="text-xs text-neutral-500 font-semibold leading-relaxed">
-              Tạo nguyên liệu đầu tiên để sử dụng Recipe Builder và xây dựng thực đơn tối ưu hóa sức khỏe cho nhà hàng của bạn.
+              {t('Tạo nguyên liệu đầu tiên để sử dụng Recipe Builder và xây dựng thực đơn tối ưu hóa sức khỏe cho nhà hàng của bạn.')}
             </p>
           </div>
           <Button
             onClick={handleAddNew}
             className="rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold shadow-md shadow-green-600/10 gap-1.5 h-9 text-xs px-5 cursor-pointer"
           >
-            <Plus className="w-4 h-4" /> Thêm nguyên liệu đầu tiên
+            <Plus className="w-4 h-4" /> {t('Thêm nguyên liệu đầu tiên')}
           </Button>
         </div>
       )}
@@ -462,7 +469,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
       {pages > 1 && (
         <div className="flex items-center justify-between border-t border-neutral-100 px-6 py-4 bg-white rounded-b-3xl">
           <div className="text-xs text-neutral-500 font-bold">
-            Hiển thị bản ghi {(page - 1) * 10 + 1} - {Math.min(page * 10, total)} trên tổng số {total}
+            {t('Hiển thị bản ghi {from} - {to} trên tổng số {total}', { from: (page - 1) * 10 + 1, to: Math.min(page * 10, total), total })}
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -472,9 +479,9 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
               onClick={() => setPage((p) => p - 1)}
               className="rounded-xl h-8.5 text-xs font-bold gap-1 border-neutral-200 cursor-pointer"
             >
-              <ChevronLeft className="w-3.5 h-3.5" /> Trước
+              <ChevronLeft className="w-3.5 h-3.5" /> {t('Trước')}
             </Button>
-            <span className="text-xs font-bold text-neutral-800 px-2">Trang {page} / {pages}</span>
+            <span className="text-xs font-bold text-neutral-800 px-2">{t('Trang {page} / {pages}', { page, pages })}</span>
             <Button
               variant="outline"
               size="sm"
@@ -482,7 +489,7 @@ export const RestaurantIngredientsTab: React.FC<RestaurantIngredientsTabProps> =
               onClick={() => setPage((p) => p + 1)}
               className="rounded-xl h-8.5 text-xs font-bold gap-1 border-neutral-200 cursor-pointer"
             >
-              Sau <ChevronRight className="w-3.5 h-3.5" />
+              {t('Sau')} <ChevronRight className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>

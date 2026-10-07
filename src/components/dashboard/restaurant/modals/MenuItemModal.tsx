@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Camera, ChefHat, Info, Loader2 as UploadLoader, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { RecipeBuilderTab } from './RecipeBuilderTab';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 type TabId = 'info' | 'recipe';
 
@@ -54,6 +55,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
   initialTab = 'info',
 }) => {
   const { user } = useAuth();
+  const { t } = useOwnerConsoleLocale();
   const restaurantId =
     localStorage.getItem('selected_restaurant_id') || user?.restaurantId || '';
 
@@ -112,27 +114,27 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('Vui lòng chọn đúng file ảnh'); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Ảnh không được vượt quá 5MB'); return; }
+    if (!file.type.startsWith('image/')) { toast.error(t('Vui lòng chọn đúng file ảnh')); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(t('Ảnh không được vượt quá 5MB')); return; }
     setIsUploadingMenuImage(true);
     try {
       const uploaded = await uploadService.uploadMenuImage(file);
       setMenuForm((current) => ({ ...current, imageUrl: uploaded.url }));
-      toast.success('Đã upload ảnh món ăn');
+      toast.success(t('Đã upload ảnh món ăn'));
     } catch (err: any) {
-      toast.error(err.message || 'Không thể upload ảnh');
+      toast.error(err.message || t('Không thể upload ảnh'));
     } finally {
       setIsUploadingMenuImage(false);
     }
   };
 
   const handleSave = async () => {
-    if (!menuForm.name.trim()) { toast.error('Tên món ăn là bắt buộc'); return; }
-    if (menuForm.price <= 0) { toast.error('Giá món ăn phải lớn hơn 0'); return; }
-    if (!menuForm.category) { toast.error('Danh mục món ăn là bắt buộc'); return; }
+    if (!menuForm.name.trim()) { toast.error(t('Tên món ăn là bắt buộc')); return; }
+    if (menuForm.price <= 0) { toast.error(t('Giá món ăn phải lớn hơn 0')); return; }
+    if (!menuForm.category) { toast.error(t('Danh mục món ăn là bắt buộc')); return; }
 
     if (recipeIngredients.length === 0) {
-      toast.error('Vui lòng nhập danh sách nguyên liệu trong tab Recipe Builder để hoàn tất tạo món ăn.');
+      toast.error(t('Vui lòng nhập danh sách nguyên liệu trong tab Recipe Builder để hoàn tất tạo món ăn.'));
       setActiveTab('recipe');
       return;
     }
@@ -171,7 +173,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
   };
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'info', label: 'Thông tin cơ bản', icon: <Info className="w-3.5 h-3.5" /> },
+    { id: 'info', label: t('Thông tin cơ bản'), icon: <Info className="w-3.5 h-3.5" /> },
     { id: 'recipe', label: 'Recipe Builder', icon: <ChefHat className="w-3.5 h-3.5" /> },
   ];
 
@@ -180,10 +182,10 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
       <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-hidden bg-white rounded-2xl p-0 flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-0 shrink-0">
           <DialogTitle className="text-lg font-bold text-gray-900">
-            {editingItem ? 'Cập nhật món ăn' : 'Thêm món ăn mới'}
+            {editingItem ? t('Cập nhật món ăn') : t('Thêm món ăn mới')}
           </DialogTitle>
           <DialogDescription className="text-xs text-gray-500">
-            Cung cấp thông tin món ăn. Dùng <strong>Recipe Builder</strong> để tính dinh dưỡng tự động.
+            {t('Cung cấp thông tin món ăn. Dùng Recipe Builder để tính dinh dưỡng tự động.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -209,7 +211,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                       {recipeIngredients.length}
                     </span>
                   ) : (
-                    <span className="ml-1.5 flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" title="Yêu cầu nhập nguyên liệu" />
+                    <span className="ml-1.5 flex h-2 w-2 rounded-full bg-amber-500 animate-pulse" title={t('Yêu cầu nhập nguyên liệu')} />
                   )
                 )}
               </button>
@@ -226,7 +228,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
 
               {/* LEFT: 3:4 Image card */}
               <div className="shrink-0 w-36">
-                <Label className="text-xs text-gray-600 font-semibold block mb-1.5">Hình ảnh</Label>
+                <Label className="text-xs text-gray-600 font-semibold block mb-1.5">{t('Hình ảnh')}</Label>
 
                 {/* URL input */}
                 <Input
@@ -234,7 +236,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                   value={menuForm.imageUrl}
                   onChange={(e) => setMenuForm({ ...menuForm, imageUrl: e.target.value })}
                   className="rounded-lg text-[11px] h-7 mb-2 px-2"
-                  placeholder="Dán URL..."
+                  placeholder={t('Dán URL...')}
                 />
                 <input
                   id="dishImageFile"
@@ -255,13 +257,13 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                     <>
                       <img
                         src={menuForm.imageUrl}
-                        alt="Preview ảnh món"
+                        alt={t('Preview ảnh món')}
                         className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         loading="lazy"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5">
                         <Camera className="w-5 h-5 text-white" />
-                        <span className="text-white text-[10px] font-semibold">Thay ảnh</span>
+                        <span className="text-white text-[10px] font-semibold">{t('Thay ảnh')}</span>
                       </div>
                     </>
                   ) : (
@@ -269,13 +271,13 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                       {isUploadingMenuImage ? (
                         <>
                           <UploadLoader className="w-7 h-7 animate-spin text-green-500" />
-                          <span className="text-[10px] font-medium text-green-600">Đang tải...</span>
+                          <span className="text-[10px] font-medium text-green-600">{t('Đang tải...')}</span>
                         </>
                       ) : (
                         <>
                           <Camera className="w-7 h-7" />
                           <div className="text-center px-2">
-                            <p className="text-[10px] font-semibold leading-tight">Nhấp để tải ảnh</p>
+                            <p className="text-[10px] font-semibold leading-tight">{t('Nhấp để tải ảnh')}</p>
                             <p className="text-[9px] mt-0.5 text-neutral-400">JPG · PNG · WEBP</p>
                           </div>
                         </>
@@ -283,7 +285,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                     </div>
                   )}
                 </div>
-                <p className="text-[9px] text-gray-400 mt-1 text-center">Tỷ lệ 3:4 · Tối đa 5MB</p>
+                <p className="text-[9px] text-gray-400 mt-1 text-center">{t('Tỷ lệ 3:4 · Tối đa 5MB')}</p>
               </div>
 
               {/* RIGHT: Form fields */}
@@ -291,19 +293,19 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
 
                 {/* Tên + Giá */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="dishName" className="text-xs text-gray-600 font-semibold">Tên món ăn *</Label>
-                  <Input id="dishName" value={menuForm.name} onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })} className="rounded-xl" placeholder="VD: Cơm gà Hải Nam" />
+                  <Label htmlFor="dishName" className="text-xs text-gray-600 font-semibold">{t('Tên món ăn *')}</Label>
+                  <Input id="dishName" value={menuForm.name} onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })} className="rounded-xl" placeholder={t('VD: Cơm gà Hải Nam')} />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="dishPrice" className="text-xs text-gray-600 font-semibold">Giá món (VNĐ) *</Label>
+                  <Label htmlFor="dishPrice" className="text-xs text-gray-600 font-semibold">{t('Giá món (VNĐ) *')}</Label>
                   <Input id="dishPrice" type="number" min={0} value={menuForm.price} onChange={(e) => setMenuForm({ ...menuForm, price: Number(e.target.value) || 0 })} className="rounded-xl" />
                 </div>
 
                 {/* Danh mục */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <Label className="text-xs text-gray-600 font-semibold">Danh mục *</Label>
+                    <Label className="text-xs text-gray-600 font-semibold">{t('Danh mục *')}</Label>
                     {isCreatingNewCategory && categories.length > 0 && (
                       <button
                         type="button"
@@ -319,7 +321,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                         }}
                         className="text-[10px] text-green-600 hover:text-green-700 font-bold transition-colors"
                       >
-                        Chọn danh mục có sẵn
+                        {t('Chọn danh mục có sẵn')}
                       </button>
                     )}
                   </div>
@@ -338,7 +340,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                       }}
                     >
                       <SelectTrigger className="rounded-xl border-slate-200 h-10 px-3 hover:bg-slate-50 transition-colors text-xs font-semibold text-slate-800 w-full">
-                        <SelectValue placeholder="Chọn danh mục" />
+                        <SelectValue placeholder={t('Chọn danh mục')} />
                       </SelectTrigger>
                       <SelectContent className="bg-white border border-slate-150 rounded-2xl p-1.5 shadow-xl min-w-[200px] outline-none">
                         {categories.map((cat) => (
@@ -355,7 +357,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                           value="__CREATE_NEW__" 
                           className="cursor-pointer py-2 px-3 pl-3 pr-8 text-xs font-bold text-emerald-600 rounded-xl hover:bg-emerald-50 focus:bg-emerald-50 focus:text-emerald-700 transition-colors duration-150 outline-none"
                         >
-                          + Tạo danh mục mới...
+                          + {t('Tạo danh mục mới...')}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -364,7 +366,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                       value={menuForm.category}
                       onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value, categoryId: '' })}
                       className="rounded-xl"
-                      placeholder="Nhập tên danh mục mới (VD: Món khai vị)"
+                      placeholder={t('Nhập tên danh mục mới (VD: Món khai vị)')}
                       autoFocus={isCreatingNewCategory}
                     />
                   )}
@@ -372,15 +374,15 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
 
                 {/* Mô tả */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="dishDesc" className="text-xs text-gray-600 font-semibold">Mô tả món ăn</Label>
-                  <Textarea id="dishDesc" value={menuForm.description} onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })} className="rounded-xl min-h-[72px] text-sm" placeholder="Mô tả nguyên liệu, khẩu vị..." />
+                  <Label htmlFor="dishDesc" className="text-xs text-gray-600 font-semibold">{t('Mô tả món ăn')}</Label>
+                  <Textarea id="dishDesc" value={menuForm.description} onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })} className="rounded-xl min-h-[72px] text-sm" placeholder={t('Mô tả nguyên liệu, khẩu vị...')} />
                 </div>
 
                 {/* Trạng thái */}
                 <div className="flex items-center justify-between rounded-xl border border-neutral-100 bg-neutral-50/60 px-3 py-2.5">
                   <div>
-                    <p className="text-xs font-semibold text-neutral-700">Trạng thái bán</p>
-                    <p className="text-[10px] text-gray-400">Hiển thị trên menu khách hàng</p>
+                    <p className="text-xs font-semibold text-neutral-700">{t('Trạng thái bán')}</p>
+                    <p className="text-[10px] text-gray-400">{t('Hiển thị trên menu khách hàng')}</p>
                   </div>
                   <Switch checked={menuForm.available} onCheckedChange={(checked) => setMenuForm({ ...menuForm, available: checked })} />
                 </div>
@@ -389,7 +391,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                 {recipeIngredients.length > 0 && (
                   <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2.5 text-xs text-green-800 font-medium flex items-center gap-2">
                     <span className="text-green-600 font-bold">✅</span>
-                    <span>Đã có <strong>{recipeIngredients.length}</strong> nguyên liệu — dinh dưỡng tính tự động khi lưu.</span>
+                    <span>{t('Đã có {count} nguyên liệu — dinh dưỡng tính tự động khi lưu.', { count: recipeIngredients.length })}</span>
                   </div>
                 )}
 
@@ -398,7 +400,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                     <div className="flex gap-2.5">
                       <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                       <p className="leading-relaxed">
-                        Bạn chưa nhập nguyên liệu. Hãy hoàn thiện <strong className="text-amber-900">Recipe Builder</strong> để tính toán dinh dưỡng AI và cho phép lưu món.
+                        {t('Bạn chưa nhập nguyên liệu. Hãy hoàn thiện Recipe Builder để tính toán dinh dưỡng AI và cho phép lưu món.')}
                       </p>
                     </div>
                     <button
@@ -406,7 +408,7 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
                       onClick={() => setActiveTab('recipe')}
                       className="shrink-0 text-[10px] text-amber-900 bg-amber-100/80 hover:bg-amber-100 px-2 py-1.5 rounded-lg font-bold transition-all duration-150 active:scale-95 border border-amber-200/50"
                     >
-                      Nhập ngay
+                      {t('Nhập ngay')}
                     </button>
                   </div>
                 )}
@@ -429,9 +431,9 @@ export const MenuItemModal: React.FC<MenuItemModalProps> = ({
         </div>
 
         <DialogFooter className="px-6 py-4 border-t border-gray-100 shrink-0 m-0 bg-white rounded-b-2xl">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">Hủy</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">{t('Hủy')}</Button>
           <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-md shadow-green-600/10">
-            {editingItem ? 'Lưu thay đổi' : 'Thêm món ăn'}
+            {editingItem ? t('Lưu thay đổi') : t('Thêm món ăn')}
           </Button>
         </DialogFooter>
       </DialogContent>

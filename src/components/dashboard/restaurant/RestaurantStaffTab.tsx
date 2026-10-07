@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Plus, Edit2, Eye, EyeOff, Users, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export interface RestaurantStaffTabProps {
   staff: Staff[];
@@ -28,15 +29,16 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
   onToggleStaffActive
 }) => {
   const isMobile = useIsMobile(640);
+  const { t } = useOwnerConsoleLocale();
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-900">Quản lý Nhân viên</h2>
-          <p className="text-neutral-500 text-xs mt-0.5">Tạo tài khoản đăng nhập phục vụ hoặc nấu bếp, giúp tự động hóa quá trình nhận món và cập nhật trạng thái.</p>
+          <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('Quản lý Nhân viên')}</h2>
+          <p className="text-neutral-500 text-xs mt-0.5">{t('Tạo tài khoản đăng nhập phục vụ hoặc nấu bếp, giúp tự động hóa quá trình nhận món và cập nhật trạng thái.')}</p>
         </div>
         <Button onClick={() => onOpenStaffModal()} className="rounded-xl bg-neutral-900 hover:bg-black text-white font-semibold shadow-sm gap-1.5 h-9 self-start sm:self-auto">
-          <Plus className="w-4 h-4" /> Thêm nhân viên mới
+          <Plus className="w-4 h-4" /> {t('Thêm nhân viên mới')}
         </Button>
       </div>
 
@@ -45,7 +47,7 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
           <CardContent className="p-0">
             <div className="flex py-16 justify-center items-center">
               <RefreshCw className="w-6 h-6 animate-spin text-green-600 mr-2" />
-              <span className="text-sm font-semibold text-neutral-500">Đang tải danh sách nhân viên...</span>
+              <span className="text-sm font-semibold text-neutral-500">{t('Đang tải danh sách nhân viên...')}</span>
             </div>
           </CardContent>
         </Card>
@@ -61,7 +63,7 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
                     <h4 className="font-extrabold text-sm text-neutral-900 flex items-center gap-1.5">
                       👤 {st.name}
                     </h4>
-                    <span className="text-[10px] text-neutral-450 font-bold block mt-0.5">Nhân viên Bếp / Phục vụ</span>
+                    <span className="text-[10px] text-neutral-450 font-bold block mt-0.5">{t('Nhân viên Bếp / Phục vụ')}</span>
                   </div>
                   
                   {/* Action Menu (⋮) */}
@@ -77,7 +79,7 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
                         className="text-neutral-700 font-semibold text-xs rounded-lg cursor-pointer h-10 flex items-center"
                       >
                         <Edit2 className="w-3.5 h-3.5 mr-2 text-neutral-400" />
-                        Sửa nhân viên
+                        {t('Sửa nhân viên')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-neutral-100 my-1" />
                       <DropdownMenuItem
@@ -85,7 +87,7 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
                         className="text-rose-600 font-bold text-xs rounded-lg cursor-pointer focus:text-rose-700 focus:bg-rose-50 h-10 flex items-center"
                       >
                         {st.isActive ? <EyeOff className="w-3.5 h-3.5 mr-2 text-neutral-400" /> : <Eye className="w-3.5 h-3.5 mr-2 text-neutral-400" />}
-                        {st.isActive ? 'Khóa tài khoản' : 'Mở khóa'}
+                        {st.isActive ? t('Khóa tài khoản') : t('Mở khóa')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -93,15 +95,15 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
 
                 <div className="border-t border-neutral-100 pt-3 text-xs space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-neutral-450 text-[10px] font-bold uppercase tracking-wider">Tên đăng nhập</span>
+                    <span className="text-neutral-450 text-[10px] font-bold uppercase tracking-wider">{t('Tên đăng nhập')}</span>
                     <span className="font-mono text-neutral-700 font-bold">{st.username}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-neutral-450 text-[10px] font-bold uppercase tracking-wider">Trạng thái</span>
+                    <span className="text-neutral-450 text-[10px] font-bold uppercase tracking-wider">{t('Trạng thái')}</span>
                     <div className="flex items-center gap-1.5">
                       <Switch checked={st.isActive} onCheckedChange={() => onToggleStaffActive(staffId)} className="scale-90" />
                       <span className={`text-[10px] font-extrabold ${st.isActive ? 'text-emerald-700' : 'text-neutral-400'}`}>
-                        {st.isActive ? '🟢 Đang hoạt động' : '🔴 Đã khóa'}
+                        {st.isActive ? t('🟢 Đang hoạt động') : t('🔴 Đã khóa')}
                       </span>
                     </div>
                   </div>
@@ -114,14 +116,14 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
                     className="flex-1 h-11 text-xs font-bold rounded-xl border-neutral-200 hover:bg-neutral-50"
                   >
                     <Edit2 className="w-3.5 h-3.5 mr-1.5 text-neutral-500" />
-                    Sửa nhân viên
+                    {t('Sửa nhân viên')}
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => onToggleStaffActive(staffId)}
                     className="flex-1 h-11 text-xs font-bold rounded-xl border-neutral-200 hover:bg-neutral-50"
                   >
-                    {st.isActive ? 'Khóa' : 'Mở khóa'}
+                    {st.isActive ? t('Khóa') : t('Mở khóa')}
                   </Button>
                 </div>
               </div>
@@ -135,8 +137,8 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
                   <Users className="w-6 h-6 text-neutral-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-neutral-800">Chưa có nhân viên nào</h3>
-                  <p className="text-xs text-neutral-400 mt-1">Bấm nút "Thêm nhân viên mới" để bắt đầu thiết lập nhân sự.</p>
+                  <h3 className="text-sm font-bold text-neutral-800">{t('Chưa có nhân viên nào')}</h3>
+                  <p className="text-xs text-neutral-400 mt-1">{t('Bấm nút "Thêm nhân viên mới" để bắt đầu thiết lập nhân sự.')}</p>
                 </div>
               </div>
             </div>
@@ -148,10 +150,10 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
             <Table>
               <TableHeader>
                 <TableRow className="border-neutral-100 hover:bg-transparent">
-                  <TableHead className="text-xs font-bold text-neutral-400 pl-6">Tên nhân viên</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400">Username đăng nhập</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400">Trạng thái hoạt động</TableHead>
-                  <TableHead className="text-right text-xs font-bold text-neutral-400 pr-6">Thao tác</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400 pl-6">{t('Tên nhân viên')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400">{t('Username đăng nhập')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400">{t('Trạng thái hoạt động')}</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-neutral-400 pr-6">{t('Thao tác')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -165,7 +167,7 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
                         <div className="flex items-center gap-2">
                           <Switch checked={st.isActive} onCheckedChange={() => onToggleStaffActive(staffId)} />
                           <span className={`text-[11px] font-bold ${st.isActive ? 'text-green-700' : 'text-neutral-400'}`}>
-                            {st.isActive ? 'Đang hoạt động' : 'Đã khóa'}
+                            {st.isActive ? t('Đang hoạt động') : t('Đã khóa')}
                           </span>
                         </div>
                       </TableCell>
@@ -179,11 +181,11 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
                           <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-lg border border-neutral-100 p-1 w-40">
                             <DropdownMenuItem onClick={() => onOpenStaffModal(st)} className="text-neutral-700 font-semibold text-xs rounded-lg cursor-pointer">
                               <Edit2 className="w-3.5 h-3.5 mr-2 text-neutral-400" />
-                              Sửa nhân viên
+                              {t('Sửa nhân viên')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onToggleStaffActive(staffId)} className="text-neutral-700 font-semibold text-xs rounded-lg cursor-pointer">
                               {st.isActive ? <EyeOff className="w-3.5 h-3.5 mr-2 text-neutral-400" /> : <Eye className="w-3.5 h-3.5 mr-2 text-neutral-400" />}
-                              {st.isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
+                              {st.isActive ? t('Khóa tài khoản') : t('Mở khóa tài khoản')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -199,8 +201,8 @@ export const RestaurantStaffTab: React.FC<RestaurantStaffTabProps> = ({
                           <Users className="w-6 h-6 text-neutral-400" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-bold text-neutral-800">Chưa có nhân viên nào</h3>
-                          <p className="text-xs text-neutral-400 mt-1">Bấm nút "Thêm nhân viên mới" để tạo tài khoản phục vụ.</p>
+                          <h3 className="text-sm font-bold text-neutral-800">{t('Chưa có nhân viên nào')}</h3>
+                          <p className="text-xs text-neutral-400 mt-1">{t('Bấm nút "Thêm nhân viên mới" để tạo tài khoản phục vụ.')}</p>
                         </div>
                       </div>
                     </TableCell>

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import type { MerchantInsightsPayload } from '@/services/merchantInsightLoader';
 import { MenuRecommendationDialog } from './MenuRecommendationDialog';
 import { toast } from 'sonner';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 interface QDishIntelligencePanelProps {
   customerSegments: MerchantInsightsPayload['customerSegments'];
@@ -36,6 +37,7 @@ export const QDishIntelligencePanel = ({
   onOpenRecipeBuilder,
   onOpenMenu,
 }: QDishIntelligencePanelProps) => {
+  const { t } = useOwnerConsoleLocale();
   const [showRecommendations, setShowRecommendations] = useState(false);
   const recommendations = gapAnalysis.filter((gap) => !gap.includes('Thực đơn của bạn'));
   const healthyCount = customerSegments
@@ -44,13 +46,13 @@ export const QDishIntelligencePanel = ({
   const gapCount = recommendations.length;
 
   const getMissingCategory = () => {
-    if (recommendations.length === 0) return 'Đầy đủ ✨';
+    if (recommendations.length === 0) return t('Đầy đủ ✨');
     const firstGap = recommendations[0] || '';
-    if (firstGap.includes('Giàu Đạm') || firstGap.includes('HIGH_PROTEIN')) return 'Giàu Đạm 🍗';
-    if (firstGap.includes('Chay') || firstGap.includes('VEGETARIAN')) return 'Đồ Chay 🌱';
-    if (firstGap.includes('Ăn nhanh') || firstGap.includes('QUICK_BITE')) return 'Ăn Nhẹ ⏱️';
-    if (firstGap.includes('Ít đường') || firstGap.includes('LOW_SUGAR')) return 'Ít Đường 🍬';
-    return 'Thực Đơn 📋';
+    if (firstGap.includes('Giàu Đạm') || firstGap.includes('HIGH_PROTEIN')) return t('Giàu Đạm 🍗');
+    if (firstGap.includes('Chay') || firstGap.includes('VEGETARIAN')) return t('Đồ Chay 🌱');
+    if (firstGap.includes('Ăn nhanh') || firstGap.includes('QUICK_BITE')) return t('Ăn Nhẹ ⏱️');
+    if (firstGap.includes('Ít đường') || firstGap.includes('LOW_SUGAR')) return t('Ít Đường 🍬');
+    return t('Thực Đơn 📋');
   };
 
   return (
@@ -74,17 +76,17 @@ export const QDishIntelligencePanel = ({
                   QDish Intelligence
                 </h3>
                 <span className="inline-flex rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-extrabold text-[#15803d]">
-                  BẢN DEMO
+                  {t('BẢN DEMO')}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-500">
-                Bản demo tóm tắt dữ liệu khảo sát và hoạt động đặt món.
+                {t('Bản demo tóm tắt dữ liệu khảo sát và hoạt động đặt món.')}
               </p>
             </div>
           </div>
 
           {refreshingAI ? (
-            <div className="space-y-5 motion-safe:animate-pulse" aria-label="Đang làm mới báo cáo">
+            <div className="space-y-5 motion-safe:animate-pulse" aria-label={t('Đang làm mới báo cáo')}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="h-16 rounded-2xl bg-emerald-50/60" />
                 <div className="h-16 rounded-2xl bg-emerald-50/60" />
@@ -103,21 +105,21 @@ export const QDishIntelligencePanel = ({
                 🥦
               </div>
               <div className="max-w-sm space-y-2">
-                <h4 className="text-xs font-bold text-neutral-800">Cần thêm dữ liệu hoạt động</h4>
+                <h4 className="text-xs font-bold text-neutral-800">{t('Cần thêm dữ liệu hoạt động')}</h4>
                 <p className="text-[11px] leading-relaxed text-neutral-500">
-                  Để mở phần phân tích, nhà hàng cần tối thiểu <strong>20 lượt khảo sát QR</strong> và <strong>10 đơn đã phục vụ/hoàn tất</strong>.
+                  {t('Để mở phần phân tích, cần tối thiểu 20 lượt khảo sát QR và 10 đơn đã phục vụ hoặc hoàn tất.')}
                 </p>
                 <div className="flex justify-center gap-4 rounded-xl border border-neutral-100 bg-neutral-50/50 p-2 text-[10px] font-bold text-neutral-400">
-                  <span>Lượt khảo sát: {surveyResponseCount}/20</span>
-                  <span>Đơn đã phục vụ/hoàn tất: {completedOrderCount}/10</span>
+                  <span>{t('Lượt khảo sát: {count}/20', { count: surveyResponseCount })}</span>
+                  <span>{t('Đơn đã phục vụ/hoàn tất: {count}/10', { count: completedOrderCount })}</span>
                 </div>
               </div>
               <Button
                 variant="link"
                 className="mt-2 flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700"
-                onClick={() => toast.info('Đây là bản demo minh họa cách tổng hợp dữ liệu khảo sát và thực đơn.')}
+                onClick={() => toast.info(t('Đây là bản demo minh họa cách tổng hợp dữ liệu khảo sát và thực đơn.'))}
               >
-                Tìm hiểu thêm
+                {t('Tìm hiểu thêm')}
               </Button>
             </div>
           ) : (
@@ -125,16 +127,16 @@ export const QDishIntelligencePanel = ({
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="flex items-center justify-between rounded-2xl border border-neutral-100 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
                   <div className="space-y-1">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-neutral-400">Chỉ số minh họa</span>
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-neutral-400">{t('Chỉ số minh họa')}</span>
                     <div className="flex items-center gap-0.5 text-sm font-black text-emerald-600">+18%</div>
-                    <span className="block text-[9px] leading-relaxed text-neutral-500">Không phải dự báo hay cam kết doanh thu</span>
+                    <span className="block text-[9px] leading-relaxed text-neutral-500">{t('Không phải dự báo hay cam kết doanh thu')}</span>
                   </div>
                   <div className="rounded-xl bg-emerald-50 p-1.5"><TrendingUp className="h-4 w-4 text-emerald-600" /></div>
                 </div>
 
                 <div className="flex items-center justify-between rounded-2xl border border-neutral-100 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
                   <div className="space-y-1">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-neutral-400">Thiếu danh mục</span>
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-neutral-400">{t('Thiếu danh mục')}</span>
                     <div className="flex items-center gap-1 text-xs font-extrabold text-amber-600">{getMissingCategory()}</div>
                   </div>
                   <div className="rounded-xl bg-amber-50 p-1.5"><ChefHat className="h-4 w-4 text-amber-500" /></div>
@@ -142,9 +144,9 @@ export const QDishIntelligencePanel = ({
 
                 <div className="flex items-center justify-between rounded-2xl border border-neutral-100 bg-white/80 p-4 shadow-sm backdrop-blur-sm">
                   <div className="space-y-1">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-neutral-400">Tình trạng thực đơn</span>
+                    <span className="block text-[9px] font-bold uppercase tracking-wider text-neutral-400">{t('Tình trạng thực đơn')}</span>
                     <div className={`flex items-center gap-1 text-xs font-extrabold ${recommendations.length > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {recommendations.length > 0 ? 'Cần xem xét' : 'Đang cân bằng'}
+                      {recommendations.length > 0 ? t('Cần xem xét') : t('Đang cân bằng')}
                     </div>
                   </div>
                   <div className={`rounded-xl p-1.5 ${recommendations.length > 0 ? 'bg-amber-50' : 'bg-emerald-50'}`}>
@@ -158,30 +160,30 @@ export const QDishIntelligencePanel = ({
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-bold text-neutral-800">QDish Intelligence Demo</span>
-                    <span className="text-[9px] font-medium text-neutral-400">Nội dung minh họa</span>
+                    <span className="text-[9px] font-medium text-neutral-400">{t('Nội dung minh họa')}</span>
                   </div>
                   <p className="text-[11px] leading-relaxed text-neutral-600">
-                    Báo cáo gồm <strong>{surveyResponseCount} lượt khảo sát QR</strong> và <strong>{completedOrderCount} đơn đã phục vụ/hoàn tất</strong>. Nhóm mục tiêu ăn uống lành mạnh có <strong>{healthyCount} lượt lựa chọn</strong>. Thực đơn có <strong>{gapCount} điểm cần xem xét</strong>. Các gợi ý và chỉ số trên màn hình là nội dung minh họa, không phải dự báo hay cam kết doanh thu.
+                    {t('Báo cáo gồm {surveys} lượt khảo sát QR và {orders} đơn đã phục vụ/hoàn tất. Nhóm ăn uống lành mạnh có {healthy} lượt lựa chọn. Thực đơn có {gaps} điểm cần xem xét. Nội dung chỉ mang tính minh họa, không phải dự báo hay cam kết doanh thu.', { surveys: surveyResponseCount, orders: completedOrderCount, healthy: healthyCount, gaps: gapCount })}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <span className="block text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Đề xuất tối ưu thực đơn</span>
+                <span className="block text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">{t('Đề xuất tối ưu thực đơn')}</span>
                 <div className="flex flex-col justify-between gap-3 rounded-2xl border border-neutral-100 bg-white/95 p-4 shadow-sm transition-all duration-300 hover:shadow-md motion-reduce:transition-none sm:flex-row sm:items-center">
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-base">🍽️</div>
                     <div className="space-y-0.5">
                       <h4 className="text-xs font-bold text-neutral-800">
-                        {recommendations.length > 0 ? `Khoảng trống: ${getMissingCategory()}` : 'Thực đơn đang cân bằng'}
+                        {recommendations.length > 0 ? t('Khoảng trống: {category}', { category: getMissingCategory() }) : t('Thực đơn đang cân bằng')}
                       </h4>
                       <p className="text-[11px] leading-relaxed text-neutral-500">
-                        {recommendations[0] || gapAnalysis[0] || 'Chưa có gợi ý khoảng trống từ dữ liệu thực đơn hiện tại.'}
+                        {recommendations[0] || gapAnalysis[0] || t('Chưa có gợi ý khoảng trống từ dữ liệu thực đơn hiện tại.')}
                       </p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="h-8 shrink-0 self-end rounded-xl border-emerald-100 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 sm:self-auto" onClick={() => setShowRecommendations(true)}>
-                    Xem gợi ý món
+                    {t('Xem gợi ý món')}
                   </Button>
                 </div>
 
@@ -189,12 +191,12 @@ export const QDishIntelligencePanel = ({
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-green-100 bg-green-50 text-base">🥗</div>
                     <div className="space-y-0.5">
-                      <h4 className="text-xs font-bold text-neutral-800">Healthy đang tăng trưởng</h4>
-                      <p className="text-[11px] leading-relaxed text-neutral-500">Mục tiêu ăn uống Healthy được chọn <strong>{healthyCount} lượt</strong> trong khảo sát. Hãy tối ưu các tag Calo.</p>
+                      <h4 className="text-xs font-bold text-neutral-800">{t('Lựa chọn ăn uống lành mạnh')}</h4>
+                      <p className="text-[11px] leading-relaxed text-neutral-500">{t('Mục tiêu ăn uống lành mạnh được chọn {count} lượt trong khảo sát. Hãy tối ưu nhãn calo.', { count: healthyCount })}</p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="h-8 shrink-0 self-end rounded-xl border-emerald-100 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 sm:self-auto" onClick={onViewSurveyTrends}>
-                    Xem dữ liệu
+                    {t('Xem dữ liệu')}
                   </Button>
                 </div>
 
@@ -202,12 +204,12 @@ export const QDishIntelligencePanel = ({
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-indigo-100 bg-indigo-50 text-base">💰</div>
                     <div className="space-y-0.5">
-                      <h4 className="text-xs font-bold text-neutral-800">Món bán tốt nhất: {topDishes[0]?.name || 'N/A'}</h4>
-                      <p className="text-[11px] leading-relaxed text-neutral-500">Mang lại <strong>{formatVND(topDishes[0]?.revenue || 0)}</strong> doanh thu. Đề xuất ghim món này lên đầu thực đơn QR.</p>
+                      <h4 className="text-xs font-bold text-neutral-800">{t('Món bán tốt nhất: {name}', { name: topDishes[0]?.name || 'N/A' })}</h4>
+                      <p className="text-[11px] leading-relaxed text-neutral-500">{t('Mang lại {revenue} doanh thu. Hãy ghim món này lên đầu thực đơn QR.', { revenue: formatVND(topDishes[0]?.revenue || 0) })}</p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" className="h-8 shrink-0 self-end rounded-xl border-emerald-100 text-[10px] font-bold text-emerald-600 hover:bg-emerald-50 sm:self-auto" onClick={onViewSmartMenuPerformance}>
-                    Chi tiết
+                    {t('Chi tiết')}
                   </Button>
                 </div>
               </div>
@@ -217,7 +219,7 @@ export const QDishIntelligencePanel = ({
           {!refreshingAI && hasEnoughInsightData && (
             <div className="flex items-center gap-1.5 border-t border-green-600/10 pt-2 text-[10px] italic text-neutral-400">
               <Info className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
-              <span>Báo cáo có thể gồm khảo sát mẫu đã gắn nhãn; số liệu đơn hàng và doanh thu lấy từ dữ liệu vận hành. Gợi ý chỉ mang tính tham khảo.</span>
+              <span>{t('Báo cáo có thể gồm khảo sát mẫu đã gắn nhãn; số liệu đơn hàng và doanh thu lấy từ dữ liệu vận hành. Gợi ý chỉ mang tính tham khảo.')}</span>
             </div>
           )}
         </div>
@@ -226,13 +228,13 @@ export const QDishIntelligencePanel = ({
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center space-y-4 bg-white/70 p-6 text-center backdrop-blur-[1.5px]">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-tr from-purple-500 to-indigo-600 text-xl text-white shadow-lg shadow-indigo-500/20 motion-safe:animate-pulse">🔒</div>
             <div className="max-w-[280px] space-y-1.5">
-              <h4 className="text-sm font-bold text-neutral-900">Tính năng QDish Intelligence bị khóa</h4>
+              <h4 className="text-sm font-bold text-neutral-900">{t('Tính năng QDish Intelligence bị khóa')}</h4>
               <p className="text-xs leading-normal text-neutral-500">
-                Phân tích khoảng trống thực đơn và đề xuất món ăn chỉ khả dụng cho gói <strong>PRO</strong>. Các kết quả tham khảo không bảo đảm mức tăng trưởng doanh thu.
+                {t('Phân tích khoảng trống thực đơn và gợi ý món chỉ có trên gói PRO. Các kết quả tham khảo không bảo đảm tăng trưởng doanh thu.')}
               </p>
             </div>
             <Button onClick={() => { window.location.href = '/owner?tab=billing'; }} className="h-9 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 px-4 text-xs font-bold text-white shadow-md shadow-indigo-500/20 transition-transform active:scale-95 hover:from-purple-700 hover:to-indigo-700 motion-reduce:transition-none">
-              Nâng cấp gói PRO ngay ✨
+              {t('Nâng cấp gói PRO ngay')} ✨
             </Button>
           </div>
         )}

@@ -6,6 +6,8 @@ import { NotificationItemComponent } from './NotificationItem';
 import { NotificationType } from '@/types';
 import type { NotificationItem } from '@/types';
 import { NotificationDetailModal } from './NotificationDetailModal';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
+import type { OwnerConsoleTranslationKey } from '@/i18n/ownerConsoleCatalog';
 
 const filterTabs = [
   { key: '', label: 'Tất cả' },
@@ -18,6 +20,7 @@ const filterTabs = [
 ];
 
 export const NotificationCenter: React.FC = () => {
+  const { t } = useOwnerConsoleLocale();
   const navigate = useNavigate();
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,9 +71,9 @@ export const NotificationCenter: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Trung tâm thông báo</h2>
+          <h2 className="text-lg font-bold text-gray-900">{t('Trung tâm thông báo')}</h2>
           <p className="text-xs text-neutral-500 mt-0.5">
-            {total} thông báo • {unreadCount} chưa đọc
+            {t('{total} thông báo • {unread} chưa đọc', { total, unread: unreadCount })}
           </p>
         </div>
         {unreadCount > 0 && (
@@ -79,7 +82,7 @@ export const NotificationCenter: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-green-600 bg-green-50 hover:bg-green-100 border border-green-200/50 transition-colors"
           >
             <Check className="w-3.5 h-3.5" />
-            Đánh dấu tất cả đã đọc
+            {t('Đánh dấu tất cả đã đọc')}
           </button>
         )}
       </div>
@@ -97,7 +100,7 @@ export const NotificationCenter: React.FC = () => {
                 : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
             }`}
           >
-            {tab.label}
+            {t(tab.label as OwnerConsoleTranslationKey)}
             {tab.key === 'unread' && unreadCount > 0 && (
               <span className="ml-1 text-[10px]">({unreadCount})</span>
             )}
@@ -125,9 +128,9 @@ export const NotificationCenter: React.FC = () => {
             <div className="w-16 h-16 rounded-2xl bg-neutral-50 flex items-center justify-center mb-4">
               <Bell className="w-8 h-8 opacity-30" />
             </div>
-            <span className="text-sm font-semibold text-neutral-500">Chưa có thông báo nào</span>
+            <span className="text-sm font-semibold text-neutral-500">{t('Chưa có thông báo nào')}</span>
             <span className="text-xs text-neutral-400 mt-1">
-              {activeFilter ? 'Thử bỏ bộ lọc để xem tất cả thông báo' : 'Thông báo mới sẽ xuất hiện ở đây'}
+              {activeFilter ? t('Thử bỏ bộ lọc để xem tất cả thông báo') : t('Thông báo mới sẽ xuất hiện ở đây')}
             </span>
           </div>
         ) : (
@@ -156,7 +159,7 @@ export const NotificationCenter: React.FC = () => {
             <ChevronLeft className="w-4 h-4 text-neutral-600" />
           </button>
           <span className="text-xs font-semibold text-neutral-600">
-            Trang {page} / {totalPages}
+            {t('Trang {page} / {pages}', { page, pages: totalPages })}
           </span>
           <button
             onClick={() => handlePageChange(page + 1)}

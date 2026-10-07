@@ -16,6 +16,8 @@ import {
 import type { NotificationItem } from '@/types';
 import { NotificationType, NotificationPriority } from '@/types';
 import { formatNotificationSender } from '@/utils/notificationHelper';
+import { useOwnerConsoleLocale, type OwnerConsoleLocaleValue } from '@/i18n/OwnerConsoleLocaleContext';
+import type { OwnerConsoleTranslationKey } from '@/i18n/ownerConsoleCatalog';
 
 interface NotificationDetailModalProps {
   isOpen: boolean;
@@ -23,7 +25,7 @@ interface NotificationDetailModalProps {
   onClose: () => void;
 }
 
-const typeConfig: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
+const typeConfig: Record<string, { icon: React.ElementType; color: string; bg: string; label: OwnerConsoleTranslationKey }> = {
   [NotificationType.ORDER]: { icon: ShoppingBag, color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Đơn hàng' },
   [NotificationType.PAYMENT]: { icon: CreditCard, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Thanh toán' },
   [NotificationType.SUBSCRIPTION]: { icon: Shield, color: 'text-violet-600', bg: 'bg-violet-50', label: 'Gói dịch vụ' },
@@ -34,10 +36,10 @@ const typeConfig: Record<string, { icon: React.ElementType; color: string; bg: s
   [NotificationType.SYSTEM]: { icon: BellIcon, color: 'text-gray-600', bg: 'bg-gray-50', label: 'Hệ thống' },
 };
 
-function formatDetailTime(dateStr?: string): string {
+function formatDetailTime(dateStr: string | undefined, localeTag: string): string {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  return date.toLocaleString('vi-VN', {
+  return date.toLocaleString(localeTag, {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
@@ -52,6 +54,8 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
   notification,
   onClose
 }) => {
+  const { t, language } = useOwnerConsoleLocale();
+  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
   const navigate = useNavigate();
 
   // Handle ESC key press to close modal
@@ -101,7 +105,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
         <button
           onClick={onClose}
           className="absolute top-4 right-4 p-1.5 rounded-xl border border-neutral-100 hover:bg-neutral-50 text-neutral-500 hover:text-neutral-800 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500/20"
-          aria-label="Đóng"
+          aria-label={t('Đóng')}
         >
           <X className="w-4 h-4" />
         </button>
@@ -114,23 +118,23 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
           <div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${config.bg} ${config.color}`}>
-                {config.label}
+                {t(config.label)}
               </span>
               
               {/* Priority Badges */}
               {notification.priority === NotificationPriority.URGENT && (
                 <span className="text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full">
-                  Khẩn cấp
+                  {t('Khẩn cấp')}
                 </span>
               )}
               {notification.priority === NotificationPriority.HIGH && (
                 <span className="text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-750 px-2 py-0.5 rounded-full">
-                  Quan trọng
+                  {t('Quan trọng')}
                 </span>
               )}
               {notification.priority === NotificationPriority.LOW && (
                 <span className="text-[10px] font-black uppercase tracking-wider bg-slate-50 text-slate-500 px-2 py-0.5 rounded-full">
-                  Mức thấp
+                  {t('Mức thấp')}
                 </span>
               )}
             </div>
@@ -150,13 +154,13 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
           <div className="text-[11px] text-neutral-400 space-y-1.5 pt-3 border-t border-neutral-50 font-medium">
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-neutral-400" />
-              <span>Thời gian: {formatDetailTime(notification.createdAt)}</span>
+              <span>{t('Thời gian:')} {formatDetailTime(notification.createdAt, localeTag)}</span>
             </div>
 
             <div className="flex items-center gap-2 mt-2 bg-neutral-50 p-2.5 rounded-xl border border-neutral-100/50">
               <span className="text-sm shrink-0">{senderInfo.icon}</span>
               <div className="flex flex-col">
-                <span className="text-[9px] uppercase font-black text-neutral-450 tracking-wider">Nguồn gửi</span>
+                <span className="text-[9px] uppercase font-black text-neutral-450 tracking-wider">{t('Nguồn gửi')}</span>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="text-xs font-bold text-neutral-800">{senderInfo.text}</span>
                   {senderInfo.roleBadge && (
@@ -173,7 +177,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
           {notification.metadata && Object.keys(notification.metadata).length > 0 && (
             <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-100 text-[11px] font-mono space-y-1.5">
               <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                Chi tiết dữ liệu (Metadata)
+                {t('Chi tiết dữ liệu (Metadata)')}
               </div>
               {Object.entries(notification.metadata).map(([key, val]) => (
                 <div key={key} className="flex justify-between py-0.5 border-b border-neutral-100/60 last:border-b-0">
@@ -193,7 +197,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
             onClick={onClose}
             className="px-4 py-2 rounded-xl border border-neutral-200 hover:bg-neutral-50 text-xs font-bold text-neutral-700 transition-colors"
           >
-            Đóng
+            {t('Đóng')}
           </button>
           
           {notification.actionUrl && (
@@ -201,7 +205,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
               onClick={handleNavigate}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-xs font-bold text-white shadow-sm transition-colors"
             >
-              Đi tới ứng dụng
+              {t('Đi tới ứng dụng')}
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
           )}

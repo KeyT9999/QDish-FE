@@ -1,4 +1,5 @@
 import { useRef, type KeyboardEvent } from 'react';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export type InsightsSection =
   | 'qdish-intelligence'
@@ -24,7 +25,18 @@ export const InsightsSectionNavigation = ({
   selectedSection,
   onChange,
 }: InsightsSectionNavigationProps) => {
+  const { t } = useOwnerConsoleLocale();
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const getSectionLabel = (section: InsightsSection) => {
+    switch (section) {
+      case 'qdish-intelligence': return 'QDish Intelligence';
+      case 'survey-trends': return t('Xu hướng khảo sát QR');
+      case 'peak-hours': return t('Khung giờ đặt món');
+      case 'menu-attributes': return t('Thuộc tính thực đơn');
+      case 'smart-menu-performance': return t('Hiệu suất món ăn Smart-Menu');
+    }
+  };
 
   const selectAndFocus = (index: number) => {
     const section = INSIGHTS_SECTIONS[index];
@@ -61,7 +73,7 @@ export const InsightsSectionNavigation = ({
     <>
       <div
         role="tablist"
-        aria-label="Chọn nội dung phân tích"
+        aria-label={t('Chọn nội dung phân tích')}
         className="hidden w-full gap-1 overflow-x-auto rounded-xl border border-slate-200/70 bg-slate-100/80 p-1 md:flex"
       >
         {INSIGHTS_SECTIONS.map((section, index) => {
@@ -85,7 +97,7 @@ export const InsightsSectionNavigation = ({
                   : 'text-slate-500 hover:bg-white/70 hover:text-slate-800'
               }`}
             >
-              {section.label}
+              {getSectionLabel(section.id)}
             </button>
           );
         })}
@@ -93,17 +105,17 @@ export const InsightsSectionNavigation = ({
 
       <div className="space-y-1.5 md:hidden">
         <label htmlFor="insights-section-select" className="text-xs font-semibold text-slate-600">
-          Chọn nội dung phân tích
+          {t('Chọn nội dung phân tích')}
         </label>
         <select
           id="insights-section-select"
-          aria-label="Chọn nội dung phân tích"
+          aria-label={t('Chọn nội dung phân tích')}
           value={selectedSection}
           onChange={(event) => onChange(event.target.value as InsightsSection)}
           className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-emerald-600 motion-reduce:transition-none"
         >
           {INSIGHTS_SECTIONS.map((section) => (
-            <option key={section.id} value={section.id}>{section.label}</option>
+            <option key={section.id} value={section.id}>{getSectionLabel(section.id)}</option>
           ))}
         </select>
       </div>

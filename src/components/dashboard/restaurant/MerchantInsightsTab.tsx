@@ -15,12 +15,22 @@ import { PeakHoursPanel } from '@/components/dashboard/restaurant/merchant-insig
 import { QDishIntelligencePanel } from '@/components/dashboard/restaurant/merchant-insights/QDishIntelligencePanel';
 import { SmartMenuPerformancePanel } from '@/components/dashboard/restaurant/merchant-insights/SmartMenuPerformancePanel';
 import { SurveyTrendsPanel } from '@/components/dashboard/restaurant/merchant-insights/SurveyTrendsPanel';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
+
+const REPORT_PERIODS = [
+  { id: 'all', labelKey: 'Tất cả' },
+  { id: 'today', labelKey: 'Hôm nay' },
+  { id: 'week', labelKey: 'Tuần này' },
+  { id: 'month', labelKey: 'Tháng này' },
+  { id: 'year', labelKey: 'Năm nay' },
+] as const;
 
 export const MerchantInsightsTab: React.FC<{
   restaurant: Restaurant | null;
   onOpenRecipeBuilder: () => void;
   onOpenMenu: () => void;
 }> = ({ restaurant, onOpenRecipeBuilder, onOpenMenu }) => {
+  const { language, t } = useOwnerConsoleLocale();
   const [insights, setInsights] = useState<MerchantInsightsPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshingAI, setRefreshingAI] = useState(false);
@@ -58,12 +68,12 @@ export const MerchantInsightsTab: React.FC<{
         fetcher: apiFetch,
       });
       setInsights(data);
-      if (isRefresh) toast.success('Đã làm mới báo cáo dữ liệu.');
+      if (isRefresh) toast.success(t('Đã làm mới báo cáo dữ liệu.'));
     } catch (error) {
       console.error(isRefresh ? 'Error refreshing AI:' : 'Error fetching insights:', error);
       toast.error(isRefresh
-        ? 'Không thể làm mới báo cáo dữ liệu.'
-        : 'Không thể tải báo cáo phân tích thực đơn.');
+        ? t('Không thể làm mới báo cáo dữ liệu.')
+        : t('Không thể tải báo cáo phân tích thực đơn.'));
     } finally {
       if (isRefresh) {
         setRefreshingAI(false);
@@ -71,7 +81,7 @@ export const MerchantInsightsTab: React.FC<{
         setLoading(false);
       }
     }
-  }, [customerInsightsEnabled, period, restaurantId]);
+  }, [customerInsightsEnabled, period, restaurantId, t]);
 
   useEffect(() => {
     if (!isFree) {
@@ -83,10 +93,10 @@ export const MerchantInsightsTab: React.FC<{
 
   if (loading) {
     return (
-      <div role="region" aria-label="Phân tích nhà hàng" aria-busy="true" className="flex min-h-[400px] flex-col items-center justify-center">
+      <div role="region" aria-label={t('Phân tích nhà hàng')} aria-busy="true" className="flex min-h-[400px] flex-col items-center justify-center">
         <div role="status" className="flex flex-col items-center">
           <Loader2 aria-hidden="true" className="mb-3 h-8 w-8 motion-safe:animate-spin text-green-600" />
-          <p className="text-sm font-medium text-neutral-500">Đang tổng hợp báo cáo dữ liệu thực đơn...</p>
+          <p className="text-sm font-medium text-neutral-500">{t('Đang tổng hợp báo cáo dữ liệu thực đơn...')}</p>
         </div>
       </div>
     );
@@ -94,7 +104,7 @@ export const MerchantInsightsTab: React.FC<{
 
   if (isFree) {
     return (
-      <div role="region" aria-label="Phân tích nhà hàng" className="space-y-6">
+      <div role="region" aria-label={t('Phân tích nhà hàng')} className="space-y-6">
         <div className="flex flex-col justify-between gap-3 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent p-5 md:flex-row md:items-center">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-neutral-900">
@@ -102,7 +112,7 @@ export const MerchantInsightsTab: React.FC<{
               QDish Intelligence
             </h2>
             <p className="mt-0.5 text-xs text-neutral-500">
-              Tham khảo dữ liệu hoạt động và xu hướng khảo sát khi tối ưu thực đơn.
+              {t('Tham khảo dữ liệu hoạt động và xu hướng khảo sát khi tối ưu thực đơn.')}
             </p>
           </div>
         </div>
@@ -114,24 +124,24 @@ export const MerchantInsightsTab: React.FC<{
           </div>
 
           <div className="relative z-10 max-w-md space-y-2.5">
-            <h3 className="text-xl font-bold tracking-tight text-neutral-900">Tính năng Phân tích chuyên sâu bị khóa</h3>
+            <h3 className="text-xl font-bold tracking-tight text-neutral-900">{t('Tính năng Phân tích chuyên sâu bị khóa')}</h3>
             <p className="text-xs leading-relaxed text-neutral-500">
-              Bạn đang sử dụng gói <strong>FREE</strong>. Tính năng phân tích thực đơn, thị hiếu dinh dưỡng thực khách (Smart Menu Analysis &amp; Customer Insights) chỉ khả dụng từ gói <strong>PLUS</strong> trở lên.
+              {t('Bạn đang sử dụng gói FREE. Tính năng phân tích thực đơn và thị hiếu dinh dưỡng của khách hàng chỉ khả dụng từ gói PLUS trở lên.')}
             </p>
           </div>
 
           <div className="relative z-10 max-w-sm space-y-2 rounded-2xl border border-indigo-100/60 bg-indigo-50/50 p-5 text-left">
-            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700">Đặc quyền gói PLUS &amp; PRO:</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700">{t('Đặc quyền gói PLUS & PRO:')}</span>
             <ul className="list-inside list-disc space-y-1.5 text-[11px] font-medium text-neutral-600">
-              <li>Biểu đồ thị hiếu &amp; xu hướng ăn uống của thực khách</li>
-              <li>Bản đồ định vị thuộc tính dinh dưỡng thực đơn</li>
-              <li>Phân tích khoảng trống thực đơn theo thuộc tính món</li>
-              <li>Gợi ý tối ưu thực đơn dựa trên dữ liệu hiện có</li>
+              <li>{t('Biểu đồ thị hiếu và xu hướng ăn uống của khách')}</li>
+              <li>{t('Bản đồ thuộc tính dinh dưỡng của thực đơn')}</li>
+              <li>{t('Phân tích khoảng trống thuộc tính của món')}</li>
+              <li>{t('Gợi ý tối ưu thực đơn dựa trên dữ liệu hiện có')}</li>
             </ul>
           </div>
 
           <Button onClick={() => { window.location.href = '/owner?tab=billing'; }} className="relative z-10 h-11 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 px-6 text-xs font-bold text-white shadow-lg shadow-indigo-500/25 transition-transform active:scale-[0.98] hover:from-purple-700 hover:to-indigo-700 motion-reduce:transition-none">
-            Nâng cấp gói dịch vụ ngay ✨
+            {t('Nâng cấp gói dịch vụ ngay')} ✨
           </Button>
         </div>
       </div>
@@ -140,14 +150,14 @@ export const MerchantInsightsTab: React.FC<{
 
   if (!insights) {
     return (
-      <div role="region" aria-label="Phân tích nhà hàng" className="flex min-h-[400px] flex-col items-center justify-center rounded-2xl border border-dashed bg-neutral-50 p-8 text-center">
+      <div role="region" aria-label={t('Phân tích nhà hàng')} className="flex min-h-[400px] flex-col items-center justify-center rounded-2xl border border-dashed bg-neutral-50 p-8 text-center">
         <AlertTriangle aria-hidden="true" className="mb-3 h-10 w-10 text-amber-500" />
-        <h3 className="text-base font-bold text-neutral-800">Không thể tải dữ liệu phân tích</h3>
+        <h3 className="text-base font-bold text-neutral-800">{t('Không thể tải dữ liệu phân tích')}</h3>
         <p className="mt-1 max-w-sm text-xs text-neutral-500">
-          Đã xảy ra lỗi khi kết nối với máy chủ tính toán. Vui lòng làm mới lại trang.
+          {t('Đã xảy ra lỗi khi kết nối với máy chủ tính toán. Vui lòng làm mới lại trang.')}
         </p>
         <Button onClick={() => { void fetchInsights(); }} className="mt-4 h-9 rounded-xl bg-green-600 px-4 text-xs text-white hover:bg-green-700">
-          Thử lại
+          {t('Thử lại')}
         </Button>
       </div>
     );
@@ -167,13 +177,13 @@ export const MerchantInsightsTab: React.FC<{
     surveyResponseCount,
     completedOrderCount,
   });
-  const formatVND = (amount: number) => new Intl.NumberFormat('vi-VN', {
+  const formatVND = (amount: number) => new Intl.NumberFormat(language === 'en' ? 'en-US' : language === 'zh-CN' ? 'zh-CN' : 'vi-VN', {
     style: 'currency',
     currency: 'VND',
   }).format(amount);
 
   return (
-    <div role="region" aria-label="Phân tích nhà hàng" className="space-y-6">
+    <div role="region" aria-label={t('Phân tích nhà hàng')} className="space-y-6">
       <div className="flex flex-col gap-4 rounded-2xl border border-emerald-100/80 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent p-5 shadow-sm">
         <div>
           <h2 className="flex items-center gap-2 text-lg font-bold text-neutral-900">
@@ -181,19 +191,13 @@ export const MerchantInsightsTab: React.FC<{
             QDish Intelligence
           </h2>
           <p className="mt-0.5 text-xs text-neutral-500">
-            Tham khảo dữ liệu hoạt động và xu hướng khảo sát khi tối ưu thực đơn.
+            {t('Tham khảo dữ liệu hoạt động và xu hướng khảo sát khi tối ưu thực đơn.')}
           </p>
         </div>
 
         <div className="flex flex-col justify-between gap-4 border-t border-emerald-100/50 pt-3 sm:flex-row sm:items-center">
-          <div role="group" aria-label="Kỳ báo cáo" className="flex w-fit max-w-full shrink-0 gap-1 overflow-x-auto rounded-xl border border-slate-200/40 bg-slate-100/80 p-1">
-            {[
-              { id: 'all', label: 'Tất cả' },
-              { id: 'today', label: 'Hôm nay' },
-              { id: 'week', label: 'Tuần này' },
-              { id: 'month', label: 'Tháng này' },
-              { id: 'year', label: 'Năm nay' },
-            ].map((item) => (
+          <div role="group" aria-label={t('Kỳ báo cáo')} className="flex w-fit max-w-full shrink-0 gap-1 overflow-x-auto rounded-xl border border-slate-200/40 bg-slate-100/80 p-1">
+            {REPORT_PERIODS.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -204,7 +208,7 @@ export const MerchantInsightsTab: React.FC<{
                   : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                {item.label}
+                {t(item.labelKey)}
               </button>
             ))}
           </div>
@@ -217,7 +221,7 @@ export const MerchantInsightsTab: React.FC<{
             className="flex h-9 shrink-0 items-center gap-1.5 rounded-xl border-slate-200 px-3.5 text-xs font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 motion-reduce:transition-none active:scale-95"
           >
             <RefreshCw aria-hidden="true" className={`h-3.5 w-3.5 ${refreshingAI ? 'motion-safe:animate-spin' : ''}`} />
-            Làm mới báo cáo
+            {t('Làm mới báo cáo')}
           </Button>
         </div>
       </div>

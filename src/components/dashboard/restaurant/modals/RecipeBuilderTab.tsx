@@ -12,18 +12,9 @@ import {
   RefreshCw, Loader2, ChevronDown, ChevronUp, FlaskConical, Utensils, Check
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 const UNITS: IngredientUnit[] = ['g', 'ml', 'piece', 'tbsp', 'tsp', 'cup', 'bowl'];
-const UNIT_LABELS: Record<IngredientUnit, string> = {
-  g: 'g',
-  ml: 'ml',
-  piece: 'cái',
-  tbsp: 'muỗng',
-  tsp: 'cà phê',
-  cup: 'cup',
-  bowl: 'chén',
-};
-
 const COOKING_METHODS = [
   { value: 'raw',       emoji: '🥗', label: 'Sống' },
   { value: 'boil',      emoji: '♨️', label: 'Luộc' },
@@ -33,10 +24,10 @@ const COOKING_METHODS = [
   { value: 'grill',     emoji: '🔥', label: 'Nướng' },
   { value: 'bake',      emoji: '🫓', label: 'Lò nướng' },
   { value: 'braise',    emoji: '🍲', label: 'Kho' },
-];
+] as const;
 
 // Vietnamese category display labels
-const CATEGORY_VI: Record<string, string> = {
+const CATEGORY_VI = {
   protein: '🥩 Đạm',
   tinh_bot: '🌾 Tinh bột',
   chat_beo: '🫒 Chất béo',
@@ -48,7 +39,7 @@ const CATEGORY_VI: Record<string, string> = {
   vegetable: '🥦 Rau củ',
   sauce: '🧂 Gia vị',
   dairy: '🥛 Sữa',
-};
+} as const;
 
 interface RecipeRow {
   id: string;
@@ -113,6 +104,7 @@ const IngredientSearchRow: React.FC<SearchRowProps> = ({
   row, idx, showDelete, restaurantId, ingredientCatalogStatus,
   onSelect, onClear, onQuantityChange, onUnitChange, onRemove,
 }) => {
+  const { language, t } = useOwnerConsoleLocale();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Ingredient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -142,7 +134,7 @@ const IngredientSearchRow: React.FC<SearchRowProps> = ({
         const res = await ingredientService.search(value, restaurantId);
         setResults(res);
       } catch {
-        toast.error('Không thể tìm kiếm nguyên liệu');
+          toast.error(t('Không thể tìm kiếm nguyên liệu'));
       } finally {
         setLoading(false);
       }
@@ -185,16 +177,16 @@ const IngredientSearchRow: React.FC<SearchRowProps> = ({
               }`}>
                 {row.ingredientName || (
                   ingredientCatalogStatus === 'loading'
-                    ? 'Đang tải nguyên liệu…'
+                    ? t('Đang tải nguyên liệu…')
                     : ingredientCatalogStatus === 'error'
-                      ? 'Không tải được kho nguyên liệu'
-                      : 'Không tìm thấy trong kho nguyên liệu'
+                      ? t('Không tải được kho nguyên liệu')
+                      : t('Không tìm thấy trong kho nguyên liệu')
                 )}
               </span>
               <button
                 type="button"
                 onClick={handleClear}
-                aria-label={`Xóa nguyên liệu ${row.ingredientName || idx + 1}`}
+                aria-label={t('Xóa nguyên liệu {name}', { name: row.ingredientName || idx + 1 })}
                 className="text-gray-400 hover:text-red-500 transition-colors text-sm leading-none shrink-0 w-4 h-4 flex items-center justify-center"
               >
                 ×
@@ -209,7 +201,7 @@ const IngredientSearchRow: React.FC<SearchRowProps> = ({
                   value={query}
                   onChange={(e) => handleQueryChange(e.target.value)}
                   onFocus={() => { if (results.length > 0) setShowResults(true); }}
-                  placeholder="Tìm nguyên liệu (VD: gà, cơm, dầu...)"
+                  placeholder={t('Tìm nguyên liệu (VD: gà, cơm, dầu...)')}
                   className="pl-8 h-8 text-xs rounded-lg bg-white border-neutral-200 focus:border-green-400 focus:ring-green-100"
                 />
                 {loading && (
@@ -232,7 +224,11 @@ const IngredientSearchRow: React.FC<SearchRowProps> = ({
                     >
                       <div>
                         <span className="text-xs font-semibold text-gray-800 block">{ing.name}</span>
-                        <span className="text-[10px] text-gray-400">{CATEGORY_VI[ing.category] || ing.category}</span>
+                        <span className="text-[10px] text-gray-400">
+                          {CATEGORY_VI[ing.category as keyof typeof CATEGORY_VI]
+                            ? t(CATEGORY_VI[ing.category as keyof typeof CATEGORY_VI])
+                            : ing.category}
+                        </span>
                       </div>
                       <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100 shrink-0 ml-2">
                         {ing.caloriesPer100g} kcal/100g
@@ -244,7 +240,7 @@ const IngredientSearchRow: React.FC<SearchRowProps> = ({
 
               {showResults && !loading && query.trim() && results.length === 0 && (
                 <div className="mt-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-500 text-center">
-                  Không tìm thấy "<span className="font-semibold">{query}</span>" — thử từ khác
+                  {t('Không tìm thấy “{query}” — thử từ khác', { query })}
                 </div>
               )}
             </div>
@@ -269,7 +265,15 @@ const IngredientSearchRow: React.FC<SearchRowProps> = ({
           <SelectContent className="bg-white">
             {UNITS.map((u) => (
               <SelectItem key={u} value={u} className="text-xs">
-                {UNIT_LABELS[u]}
+                {{
+                  g: 'g',
+                  ml: 'ml',
+                  piece: language === 'en' ? 'piece' : language === 'zh-CN' ? '个' : 'cái',
+                  tbsp: language === 'en' ? 'tbsp' : language === 'zh-CN' ? '汤匙' : 'muỗng',
+                  tsp: language === 'en' ? 'tsp' : language === 'zh-CN' ? '茶匙' : 'cà phê',
+                  cup: language === 'zh-CN' ? '杯' : 'cup',
+                  bowl: language === 'en' ? 'bowl' : language === 'zh-CN' ? '碗' : 'chén',
+                }[u]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -305,6 +309,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
   onChangeServingCount,
   onChangeCookingMethod,
 }) => {
+  const { t } = useOwnerConsoleLocale();
   const [rows, setRows] = useState<RecipeRow[]>(() => {
     if (initialRows.length > 0) {
       return initialRows.map((r) => ({
@@ -427,7 +432,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
   const handlePreview = async () => {
     const validRows = rows.filter((r) => r.ingredientId);
     if (validRows.length === 0) {
-      toast.warning('Thêm ít nhất 1 nguyên liệu để xem dữ liệu dinh dưỡng');
+      toast.warning(t('Thêm ít nhất 1 nguyên liệu để xem dữ liệu dinh dưỡng'));
       return;
     }
     const ingredients: DishIngredientInput[] = validRows.map((r) => ({
@@ -442,7 +447,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
       setPreview(result);
       setShowPreview(true);
     } catch (err: any) {
-      toast.error(err.message || 'Không thể tính toán dinh dưỡng');
+      toast.error(err.message || t('Không thể tính toán dinh dưỡng'));
     } finally {
       setIsPreviewing(false);
     }
@@ -459,7 +464,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
         {/* Số khẩu phần */}
         <div className="space-y-1.5">
           <Label className="text-[11px] text-gray-500 font-semibold flex items-center gap-1.5">
-            <Utensils className="w-3 h-3" /> Số khẩu phần
+            <Utensils className="w-3 h-3" /> {t('Số khẩu phần')}
           </Label>
           <div className="flex items-center gap-2">
             <button
@@ -484,13 +489,13 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
               +
             </button>
           </div>
-          <p className="text-[10px] text-gray-400">Dinh dưỡng sẽ chia theo số khẩu phần này</p>
+          <p className="text-[10px] text-gray-400">{t('Dinh dưỡng sẽ chia theo số khẩu phần này')}</p>
         </div>
 
         {/* Phương pháp nấu — pill grid */}
         <div className="space-y-2">
           <Label className="text-[11px] text-gray-500 font-semibold flex items-center gap-1.5">
-            <FlaskConical className="w-3 h-3" /> Phương pháp chế biến
+            <FlaskConical className="w-3 h-3" /> {t('Phương pháp chế biến')}
           </Label>
           <div className="grid grid-cols-4 gap-1.5">
             {COOKING_METHODS.map((m) => (
@@ -505,7 +510,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
                 }`}
               >
                 <span className="text-base leading-none">{m.emoji}</span>
-                <span className="text-[10px] font-semibold leading-tight">{m.label}</span>
+                <span className="text-[10px] font-semibold leading-tight">{t(m.label)}</span>
               </button>
             ))}
           </div>
@@ -515,14 +520,14 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
       {/* ── Header ───────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <Label className="text-xs font-bold text-neutral-700 uppercase tracking-wider">
-          Nguyên liệu
+          {t('Nguyên liệu')}
           {validCount > 0 && (
             <span className="ml-2 bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
               {validCount}
             </span>
           )}
         </Label>
-        <span className="text-[10px] text-gray-400">Tìm kiếm từ cơ sở dữ liệu QDish</span>
+        <span className="text-[10px] text-gray-400">{t('Tìm kiếm từ cơ sở dữ liệu QDish')}</span>
       </div>
 
       {/* ── Ingredient rows ───────────────────────────────────────────── */}
@@ -557,7 +562,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
         className="w-full rounded-xl border-dashed border-neutral-300 text-neutral-500 hover:text-green-700 hover:border-green-400 text-xs h-9"
       >
         <Plus className="w-3.5 h-3.5 mr-1.5" />
-        Thêm nguyên liệu
+        {t('Thêm nguyên liệu')}
       </Button>
 
       {/* ── Preview button ────────────────────────────────────────────── */}
@@ -568,9 +573,9 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
         className="w-full rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm h-10 font-semibold shadow-sm shadow-green-600/20 disabled:opacity-50"
       >
         {isPreviewing ? (
-          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Đang tính toán...</>
+          <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('Đang tính toán...')}</>
         ) : (
-          <><RefreshCw className="w-4 h-4 mr-2" />Xem dinh dưỡng dự kiến</>
+          <><RefreshCw className="w-4 h-4 mr-2" />{t('Xem dinh dưỡng dự kiến')}</>
         )}
       </Button>
 
@@ -584,17 +589,17 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-green-50/50 transition-colors"
           >
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-green-800">✨ Dinh dưỡng / khẩu phần</span>
+              <span className="text-xs font-bold text-green-800">✨ {t('Dinh dưỡng / khẩu phần')}</span>
               <span className="text-[10px] text-green-600 bg-green-100 px-2 py-0.5 rounded-full font-medium">
                 {Math.round(preview.perServing.calories)} kcal
               </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-gray-400">
-                Consistency {Math.round(preview.confidence * 100)}%
+                {t('Độ tin cậy')} {Math.round(preview.confidence * 100)}%
                 {!preview.isComplete && (
                   <span className="text-amber-600">
-                    · Incomplete ({preview.missingIngredientCount} missing)
+                    · {t('Chưa đầy đủ ({count} nguyên liệu thiếu)', { count: preview.missingIngredientCount })}
                   </span>
                 )}
               </span>
@@ -610,19 +615,19 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
 
               {/* 4 macro tiles */}
               <div className="grid grid-cols-4 gap-2">
-                {[
+                {([
                   { label: 'Calo', value: Math.round(preview.perServing.calories), unit: 'kcal', icon: <Flame className="w-3.5 h-3.5 text-orange-500" />, bg: 'bg-orange-50 border-orange-200' },
                   { label: 'Đạm', value: preview.perServing.protein.toFixed(1), unit: 'g', icon: <Dumbbell className="w-3.5 h-3.5 text-purple-500" />, bg: 'bg-purple-50 border-purple-200' },
                   { label: 'Carbs', value: preview.perServing.carbs.toFixed(1), unit: 'g', icon: <Wheat className="w-3.5 h-3.5 text-amber-500" />, bg: 'bg-amber-50 border-amber-200' },
                   { label: 'Béo', value: preview.perServing.fat.toFixed(1), unit: 'g', icon: <Droplet className="w-3.5 h-3.5 text-blue-500" />, bg: 'bg-blue-50 border-blue-200' },
-                ].map((m) => (
+                ] as const).map((m) => (
                   <div key={m.label} className={`${m.bg} border rounded-xl p-2 text-center`}>
                     <div className="flex justify-center mb-1">{m.icon}</div>
                     <div className="text-sm font-bold text-neutral-800 leading-none">
                       {m.value}
                       <span className="text-[9px] text-gray-400 ml-0.5">{m.unit}</span>
                     </div>
-                    <div className="text-[10px] text-gray-500 font-medium mt-0.5">{m.label}</div>
+                    <div className="text-[10px] text-gray-500 font-medium mt-0.5">{t(m.label)}</div>
                   </div>
                 ))}
               </div>
@@ -630,7 +635,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
               {/* Macro ratio bar */}
               <div>
                 <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                  <span>Tỉ lệ calo theo macros</span>
+                  <span>{t('Tỉ lệ calo theo macros')}</span>
                   <span>P {macroWidths.protein}% · C {macroWidths.carbs}% · F {macroWidths.fat}%</span>
                 </div>
                 <div className="h-2 w-full rounded-full overflow-hidden flex">
@@ -642,13 +647,13 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
 
               {/* Micro nutrients */}
               <div className="grid grid-cols-3 gap-1.5">
-                {[
+                {([
                   { label: 'Chất xơ', value: `${preview.perServing.fiber.toFixed(1)}g` },
                   { label: 'Đường', value: `${preview.perServing.sugar.toFixed(1)}g` },
                   { label: 'Sodium', value: `${Math.round(preview.perServing.sodium)}mg` },
-                ].map((m) => (
+                ] as const).map((m) => (
                   <div key={m.label} className="bg-white border border-gray-100 rounded-lg p-1.5 text-center">
-                    <div className="text-[10px] text-gray-400 font-semibold uppercase">{m.label}</div>
+                    <div className="text-[10px] text-gray-400 font-semibold uppercase">{t(m.label)}</div>
                     <div className="text-xs font-bold text-neutral-700 mt-0.5">{m.value}</div>
                   </div>
                 ))}
@@ -672,7 +677,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
               {/* Allergens */}
               {preview.allergens.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                  <p className="text-[10px] font-bold text-red-700 uppercase tracking-wider mb-1.5">⚠️ Chứa chất gây dị ứng</p>
+                  <p className="text-[10px] font-bold text-red-700 uppercase tracking-wider mb-1.5">⚠️ {t('Chứa chất gây dị ứng')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {preview.allergens.map((a) => (
                       <span key={a} className="text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded-full border border-red-200">
@@ -684,7 +689,7 @@ export const RecipeBuilderTab: React.FC<RecipeBuilderTabProps> = ({
               )}
 
               <p className="text-[10px] text-gray-400 italic">
-                * Tính tự động theo công thức QDish. Giá trị thực có thể dao động ±10%.
+                {t('* Tính tự động theo công thức QDish. Giá trị thực có thể dao động ±10%.')}
               </p>
             </div>
           )}

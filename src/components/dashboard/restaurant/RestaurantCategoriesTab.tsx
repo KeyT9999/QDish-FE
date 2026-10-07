@@ -14,6 +14,7 @@ import {
 import { Plus, Edit2, Trash2, Tag, MoreHorizontal, Languages } from 'lucide-react';
 import { TranslationEditorDialog } from '@/components/dashboard/restaurant/modals/TranslationEditorDialog';
 import type { CategoryTranslationValue, MenuLocale } from '@/types/menuTranslation';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export interface RestaurantCategoriesTabProps {
   categories: CategoryItem[];
@@ -34,16 +35,17 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
   onGenerateTranslations,
   onSaveTranslation
 }) => {
+  const { t } = useOwnerConsoleLocale();
   const [translationCategory, setTranslationCategory] = React.useState<CategoryItem | null>(null);
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-900">Quản lý Danh mục món ăn</h2>
-          <p className="text-neutral-500 text-xs mt-0.5">Phân loại món ăn theo các nhóm chính để khách hàng dễ dàng tìm kiếm.</p>
+          <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('Quản lý Danh mục món ăn')}</h2>
+          <p className="text-neutral-500 text-xs mt-0.5">{t('Phân loại món ăn theo các nhóm chính để khách hàng dễ dàng tìm kiếm.')}</p>
         </div>
         <Button onClick={() => onOpenCategoryModal()} className="rounded-xl bg-neutral-900 hover:bg-black text-white font-semibold shadow-sm gap-1.5 h-9 self-start sm:self-auto">
-          <Plus className="w-4 h-4" /> Thêm danh mục
+          <Plus className="w-4 h-4" /> {t('Thêm danh mục')}
         </Button>
       </div>
 
@@ -52,10 +54,10 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
           <Table>
             <TableHeader>
               <TableRow className="border-neutral-100 hover:bg-transparent">
-                <TableHead className="text-xs font-bold text-neutral-400 pl-6 w-[240px]">ID Danh mục</TableHead>
-                <TableHead className="text-xs font-bold text-neutral-400">Tên danh mục</TableHead>
-                <TableHead className="text-xs font-bold text-neutral-400">Số món</TableHead>
-                <TableHead className="text-right text-xs font-bold text-neutral-400 w-[100px] pr-6">Thao tác</TableHead>
+                <TableHead className="text-xs font-bold text-neutral-400 pl-6 w-[240px]">{t('ID Danh mục')}</TableHead>
+                <TableHead className="text-xs font-bold text-neutral-400">{t('Tên danh mục')}</TableHead>
+                <TableHead className="text-xs font-bold text-neutral-400">{t('Số món')}</TableHead>
+                <TableHead className="text-right text-xs font-bold text-neutral-400 w-[100px] pr-6">{t('Thao tác')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -76,14 +78,14 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
                           onClick={() => setTranslationCategory(cat)}
                           className="text-emerald-800 font-semibold text-xs rounded-lg cursor-pointer"
                         >
-                          <Languages className="w-3.5 h-3.5 mr-2" /> Dịch Anh / Trung
+                          <Languages className="w-3.5 h-3.5 mr-2" /> {t('Dịch Anh / Trung')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => onOpenCategoryModal(cat)}
                           className="text-neutral-700 font-semibold text-xs rounded-lg cursor-pointer"
                         >
                           <Edit2 className="w-3.5 h-3.5 mr-2 text-neutral-400" />
-                          Chỉnh sửa
+                          {t('Chỉnh sửa')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-neutral-100 my-1" />
                         <DropdownMenuItem
@@ -91,7 +93,7 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
                           className="text-rose-600 font-bold text-xs rounded-lg cursor-pointer focus:text-rose-700 focus:bg-rose-50"
                         >
                           <Trash2 className="w-3.5 h-3.5 mr-2 text-rose-450" />
-                          Xóa danh mục
+                          {t('Xóa danh mục')}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -106,8 +108,8 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
                         <Tag className="w-6 h-6 text-neutral-400" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-bold text-neutral-800">Chưa có danh mục nào</h3>
-                        <p className="text-xs text-neutral-400 mt-1">Bấm nút "Thêm danh mục" để bắt đầu thiết lập menu.</p>
+                        <h3 className="text-sm font-bold text-neutral-800">{t('Chưa có danh mục nào')}</h3>
+                        <p className="text-xs text-neutral-400 mt-1">{t('Bấm nút "Thêm danh mục" để bắt đầu thiết lập menu.')}</p>
                       </div>
                     </div>
                   </TableCell>
@@ -115,7 +117,7 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
               )}
               {categories.length === 0 && isLoadingCategories && (
                 <TableRow>
-                  <TableCell colSpan={4} className="py-8 text-center text-sm text-neutral-500">Đang tải danh mục…</TableCell>
+                  <TableCell colSpan={4} className="py-8 text-center text-sm text-neutral-500">{t('Đang tải danh mục…')}</TableCell>
                 </TableRow>
               )}
             </TableBody>
