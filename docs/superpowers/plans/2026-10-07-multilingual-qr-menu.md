@@ -64,11 +64,11 @@
 - The client posts JSON to `https://api.xkiro.com/v1/chat/completions`; use `qwen/qwen3.8-max` unless `XKIRO_MODEL_ID` overrides it.
 - Read `XKIRO_API_KEY` only inside the backend client. Inject a fetch-compatible function in tests.
 
-- [ ] **Step 1: Write mocked-client tests.** Assert URL, bearer header, model ID, response JSON parsing, malformed content rejection, timeout/failure handling, and missing-key rejection without exposing the key in errors.
-- [ ] **Step 2: Add the failing test commands.** Register `test:xkiro-translation-client` and `test:menu-translation-service`; include both in `test:ci`.
-- [ ] **Step 3: Implement the request and response validator.** Send a concise system instruction and source fields; request JSON output; validate every required string before returning a draft.
-- [ ] **Step 4: Implement item and category prompts.** Preserve useful Vietnamese dish names; do not infer ingredients, allergens, nutrition, or claims. Empty source descriptions must produce empty translations rather than invented copy.
-- [ ] **Step 5: Add `.env.example` entries and run focused tests.** Add an empty `XKIRO_API_KEY` placeholder and `XKIRO_MODEL_ID=qwen/qwen3.8-max`; never add the real key.
+- [x] **Step 1: Write mocked-client tests.** Assert URL, bearer header, model ID, response JSON parsing, malformed content rejection, timeout/failure handling, and missing-key rejection without exposing the key in errors.
+- [x] **Step 2: Add the failing test commands.** Register `test:xkiro-translation-client` and `test:menu-translation-service`; include both in `test:ci`.
+- [x] **Step 3: Implement the request and response validator.** Send a concise system instruction and source fields; request JSON output; validate every required string before returning a draft.
+- [x] **Step 4: Implement item and category prompts.** Preserve useful Vietnamese dish names; do not infer ingredients, allergens, nutrition, or claims. Empty source descriptions must produce empty translations rather than invented copy. Reject oversized source text before calling xKiro.
+- [x] **Step 5: Add `.env.example` entries and run focused tests.** Add an empty `XKIRO_API_KEY` placeholder and `XKIRO_MODEL_ID=qwen/qwen3.8-max`; never add the real key. Focused tests, full backend `test:ci`, and build pass.
 
 ## Task 3: Add protected management APIs and safe public serialization
 

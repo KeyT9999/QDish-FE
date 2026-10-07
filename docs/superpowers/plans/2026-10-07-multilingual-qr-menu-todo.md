@@ -19,8 +19,8 @@
 ## Current progress
 
 - [x] Task 1: backend translation schema and publication policy.
-- [~] Task 2: xKiro client and draft generation service (in progress).
-- [ ] Task 3: protected management APIs and public serialization.
+- [x] Task 2: xKiro client and draft generation service.
+- [~] Task 3: protected management APIs and public serialization (in progress).
 - [ ] Tasks 4–8: dashboard, guest localization, browser coverage, and CI verification.
 
 ## Backend
