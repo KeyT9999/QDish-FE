@@ -6,6 +6,8 @@ import { FitScoreBadge } from './FitScoreBadge';
 import { getMenuAllergenWarning } from '@/services/allergenPresentation';
 import { formatCurrency } from '@/lib/utils';
 import type { FitScoreSummary } from '@/services/fitScorePresentation';
+import type { MenuLocale } from '@/types/menuTranslation';
+import { getMenuMessage } from '@/lib/menuLocale';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -18,6 +20,7 @@ interface MenuItemCardProps {
   isRecommended?: boolean;
   fitScore?: FitScoreSummary;
   isFitScoreLoading?: boolean;
+  locale?: MenuLocale;
 }
 
 const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({ 
@@ -31,8 +34,9 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
   isRecommended = false,
   fitScore,
   isFitScoreLoading = false,
+  locale = 'vi',
 }) => {
-  const allergenWarning = getMenuAllergenWarning(item, userAllergies);
+  const allergenWarning = getMenuAllergenWarning(item, userAllergies, locale);
   const quantity = cartItem?.quantity || 0;
 
   // Clean redundant descriptions that simply repeat the dish name
@@ -84,7 +88,7 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
         {!item.available && (
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center">
             <span className="bg-white/95 text-slate-900 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider shadow-xs">
-              Hết món
+              {getMenuMessage(locale, 'outOfStock')}
             </span>
           </div>
         )}
@@ -125,7 +129,7 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
               }`}>
                 <ShieldAlert className={`w-3 h-3 mt-0.5 shrink-0 ${allergenWarning.kind === 'CONFLICT' ? 'text-rose-600' : 'text-amber-700'}`} />
                 <span>{allergenWarning.kind === 'UNKNOWN'
-                  ? 'Chưa xác minh dị ứng'
+                  ? getMenuMessage(locale, 'allergenUnknown')
                   : allergenWarning.message}</span>
               </div>
             ) : item.nutrition ? (
@@ -160,7 +164,7 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
                   <button 
                     onClick={handleMinus}
                     className="w-7 h-7 rounded-xl bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center shadow-2xs transition-transform active:scale-90 cursor-pointer"
-                    aria-label="Giảm số lượng"
+                    aria-label={locale === 'en' ? 'Decrease quantity' : locale === 'zh-CN' ? '减少数量' : 'Giảm số lượng'}
                   >
                     <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
                   </button>
@@ -170,7 +174,7 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
                   <button 
                     onClick={handlePlus}
                     className="w-7 h-7 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white flex items-center justify-center shadow-2xs transition-transform active:scale-90 cursor-pointer"
-                    aria-label="Tăng số lượng"
+                    aria-label={locale === 'en' ? 'Increase quantity' : locale === 'zh-CN' ? '增加数量' : 'Tăng số lượng'}
                   >
                     <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                   </button>
@@ -179,7 +183,7 @@ const MenuItemCardComponent: React.FC<MenuItemCardProps> = ({
                 <button 
                   onClick={handlePlus}
                   className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 active:scale-90 text-white flex items-center justify-center shadow-md shadow-emerald-500/25 transition-all duration-200 cursor-pointer"
-                  aria-label={`Thêm món ${item.name}`}
+                  aria-label={`${getMenuMessage(locale, 'addDish')} ${item.name}`}
                 >
                   <Plus className="w-4 h-4 stroke-[2.5]" />
                 </button>

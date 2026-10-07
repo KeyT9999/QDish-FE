@@ -223,6 +223,8 @@ export interface MenuItem {
   imageUrl: string;
   available: boolean;
   categoryId?: string;
+  translations?: import('./menuTranslation').PublicTranslations<import('./menuTranslation').MenuItemTranslationValue>;
+  translationManagement?: import('./menuTranslation').ManagedTranslations<import('./menuTranslation').MenuItemTranslationValue>;
   
   // QDish Nutrition (computed cache)
   nutrition?: NutritionInfo;

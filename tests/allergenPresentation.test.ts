@@ -36,6 +36,15 @@ assert.deepEqual(getMenuAllergenWarning({
   message: 'Món này có thể chứa hạt cây bạn đã khai báo dị ứng. Thông tin dị ứng của món chưa được xác minh.'
 });
 
+assert.equal(getMenuAllergenWarning({
+  allergenInfoStatus: 'UNKNOWN',
+  allergens: ['TREE_NUTS']
+}, ['NUTS'], 'en').message, 'This dish may contain tree nuts, which you reported as an allergy. Allergen information has not been verified.');
+assert.equal(getMenuAllergenWarning({
+  allergenInfoStatus: 'UNKNOWN',
+  allergens: ['TREE_NUTS']
+}, ['NUTS'], 'zh-CN').message, '这道菜可能含有您申报过敏的树坚果，过敏原信息尚未核实。');
+
 assert.deepEqual(getMenuAllergenWarning({
   allergenInfoStatus: 'UNKNOWN',
   allergens: ['PEANUT', 'LEGACY_UNKNOWN_CODE']

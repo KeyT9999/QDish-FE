@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import type { FitScoreSummary } from '@/services/fitScorePresentation';
 import { getMenuAllergenWarning, hasReviewedAllergenDeclaration } from '@/services/allergenPresentation';
+import type { MenuLocale } from '@/types/menuTranslation';
+import { getMenuMessage } from '@/lib/menuLocale';
 
 interface MenuItemDetailProps {
   item: MenuItem | null;
@@ -33,6 +35,7 @@ interface MenuItemDetailProps {
   userAllergies?: Allergen[];
   fitScore?: FitScoreSummary;
   onEditProfile?: () => void;
+  locale?: MenuLocale;
 }
 
 // ─── Macro Calorie Ratio ─────────────────────────────────────────────────────
@@ -108,6 +111,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
   userAllergies = [],
   fitScore,
   onEditProfile,
+  locale = 'vi',
 }) => {
   const macroWidths = useMacroWidths(item);
 
@@ -122,7 +126,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
   );
 
   const allergenWarning = item
-    ? getMenuAllergenWarning(item, userAllergies)
+    ? getMenuAllergenWarning(item, userAllergies, locale)
     : { kind: 'NONE' as const };
   const hasUserAllergen = allergenWarning.kind === 'CONFLICT';
 
@@ -152,10 +156,10 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
             type="button"
             onClick={onClose}
             className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200/90 text-slate-800 font-semibold text-xs sm:text-sm transition-all duration-150 active:scale-95 cursor-pointer shadow-2xs select-none"
-            aria-label="Quay lại danh sách món ăn"
+            aria-label={locale === 'en' ? 'Back to menu' : locale === 'zh-CN' ? '返回菜单' : 'Quay lại danh sách món ăn'}
           >
             <ArrowLeft className="w-4 h-4 transition-transform duration-150 group-hover:-translate-x-0.5 text-slate-700" />
-            <span>Quay lại</span>
+            <span>{locale === 'en' ? 'Back' : locale === 'zh-CN' ? '返回' : 'Quay lại'}</span>
           </button>
 
           {/* Dish Title Breadcrumb */}
@@ -189,11 +193,11 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
               {/* Floating Badges */}
               <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
                 <span className="px-3 py-1 rounded-full bg-slate-900/60 backdrop-blur-md text-white/95 text-xs font-semibold border border-white/15 shadow-xs">
-                  {item.category || 'Món chính'}
+                  {item.category || (locale === 'en' ? 'Main dishes' : locale === 'zh-CN' ? '主菜' : 'Món chính')}
                 </span>
                 {!item.available && (
                   <span className="px-3 py-1 rounded-full bg-rose-600/90 backdrop-blur-md text-white text-xs font-bold shadow-xs">
-                    Tạm hết món
+                    {getMenuMessage(locale, 'detailUnavailable')}
                   </span>
                 )}
               </div>
@@ -212,7 +216,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                   {item.available && (
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      Đang phục vụ
+                      {locale === 'en' ? 'Available' : locale === 'zh-CN' ? '供应中' : 'Đang phục vụ'}
                     </span>
                   )}
                 </div>
@@ -271,7 +275,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                     <Activity className="w-3.5 h-3.5 text-emerald-500" />
                     Giá trị dinh dưỡng / khẩu phần
                   </h2>
-                  <span className="text-[11px] text-slate-400 font-medium">Chuẩn khẩu phần</span>
+                  <span className="text-[11px] text-slate-400 font-medium">{locale === 'en' ? 'Serving size' : locale === 'zh-CN' ? '标准份量' : 'Chuẩn khẩu phần'}</span>
                 </div>
 
                 <div className="bg-slate-50/80 rounded-2xl border border-slate-200/70 p-4 sm:p-5 space-y-4">
@@ -287,20 +291,20 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                         {Math.round(item.nutrition.calories)}
                         <span className="text-[11px] font-semibold text-slate-400 ml-1">kcal</span>
                       </div>
-                      <div className="text-[10px] text-orange-600/80 font-medium mt-0.5">Năng lượng</div>
+                      <div className="text-[10px] text-orange-600/80 font-medium mt-0.5">{locale === 'en' ? 'Energy' : locale === 'zh-CN' ? '能量' : 'Năng lượng'}</div>
                     </div>
 
                     {/* Protein */}
                     <div className="bg-gradient-to-br from-purple-500/10 via-indigo-500/10 to-transparent border border-purple-200/70 rounded-2xl p-3 text-center shadow-2xs flex flex-col justify-between">
                       <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
                         <Dumbbell className="w-4 h-4 text-purple-600" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider">Đạm</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider">{locale === 'en' ? 'Protein' : locale === 'zh-CN' ? '蛋白质' : 'Đạm'}</span>
                       </div>
                       <div className="text-xl font-black text-slate-800 tracking-tight">
                         {item.nutrition.protein.toFixed(1)}
                         <span className="text-[11px] font-semibold text-slate-400 ml-1">g</span>
                       </div>
-                      <div className="text-[10px] text-purple-600/80 font-medium mt-0.5">Protein</div>
+                      <div className="text-[10px] text-purple-600/80 font-medium mt-0.5">{locale === 'en' ? 'Protein' : locale === 'zh-CN' ? '蛋白质' : 'Protein'}</div>
                     </div>
 
                     {/* Carbs */}
@@ -313,27 +317,27 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                         {item.nutrition.carbs.toFixed(1)}
                         <span className="text-[11px] font-semibold text-slate-400 ml-1">g</span>
                       </div>
-                      <div className="text-[10px] text-amber-700/80 font-medium mt-0.5">Tinh bột</div>
+                      <div className="text-[10px] text-amber-700/80 font-medium mt-0.5">{locale === 'en' ? 'Carbohydrates' : locale === 'zh-CN' ? '碳水化合物' : 'Tinh bột'}</div>
                     </div>
 
                     {/* Fat */}
                     <div className="bg-gradient-to-br from-sky-500/10 via-blue-500/10 to-transparent border border-sky-200/70 rounded-2xl p-3 text-center shadow-2xs flex flex-col justify-between">
                       <div className="flex items-center justify-center gap-1 text-sky-600 mb-1">
                         <Droplet className="w-4 h-4 fill-sky-500/20 text-sky-500" />
-                        <span className="text-[11px] font-bold uppercase tracking-wider">Béo</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider">{locale === 'en' ? 'Fat' : locale === 'zh-CN' ? '脂肪' : 'Béo'}</span>
                       </div>
                       <div className="text-xl font-black text-slate-800 tracking-tight">
                         {item.nutrition.fat.toFixed(1)}
                         <span className="text-[11px] font-semibold text-slate-400 ml-1">g</span>
                       </div>
-                      <div className="text-[10px] text-sky-600/80 font-medium mt-0.5">Chất béo</div>
+                      <div className="text-[10px] text-sky-600/80 font-medium mt-0.5">{locale === 'en' ? 'Fat' : locale === 'zh-CN' ? '脂肪' : 'Chất béo'}</div>
                     </div>
                   </div>
 
                   {/* Macro ratio progress bar */}
                   <div className="bg-white rounded-xl p-3 border border-slate-200/60 shadow-2xs space-y-2">
                     <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
-                      <span>Tỉ lệ Macros (theo calo)</span>
+                      <span>{locale === 'en' ? 'Macro ratio (by calories)' : locale === 'zh-CN' ? '营养素比例（按热量）' : 'Tỉ lệ Macros (theo calo)'}</span>
                       <span className="text-[11px] font-bold text-slate-500">
                         P <strong className="text-purple-600">{macroWidths.protein}%</strong> · C <strong className="text-amber-600">{macroWidths.carbs}%</strong> · F <strong className="text-sky-600">{macroWidths.fat}%</strong>
                       </span>
@@ -358,7 +362,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                     <div className="flex gap-4 pt-1 justify-center">
                       <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
                         <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shadow-2xs" />
-                        <span>Protein</span>
+                        <span>{locale === 'zh-CN' ? '蛋白质' : 'Protein'}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
                         <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-2xs" />
@@ -390,7 +394,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                     <div className="bg-emerald-50/80 border border-emerald-200/70 rounded-xl px-3.5 py-2.5 flex items-center justify-between">
                       <div className="flex items-center gap-2 text-emerald-800">
                         <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                        <span className="text-xs font-semibold">Độ tin cậy dữ liệu dinh dưỡng</span>
+                      <span className="text-xs font-semibold">{locale === 'en' ? 'Nutrition data confidence' : locale === 'zh-CN' ? '营养数据可信度' : 'Độ tin cậy dữ liệu dinh dưỡng'}</span>
                       </div>
                       <span className="bg-emerald-600 text-white font-extrabold text-xs px-2.5 py-0.5 rounded-full shadow-2xs">
                         {item.nutrition.confidenceScore}%
@@ -448,7 +452,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                   </div>
                   {mayContainList.length > 0 && (
                     <div className="mt-2.5">
-                      <p className="mb-1.5 text-[11px] font-semibold text-amber-900">Có thể chứa do nguy cơ nhiễm chéo</p>
+                      <p className="mb-1.5 text-[11px] font-semibold text-amber-900">{locale === 'en' ? 'Possible cross-contact' : locale === 'zh-CN' ? '可能因交叉接触含有' : 'Có thể chứa do nguy cơ nhiễm chéo'}</p>
                       <div className="flex flex-wrap gap-2">
                         {mayContainList.map((a) => (
                           <span key={String(a)} className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-900">
@@ -460,11 +464,11 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
                   )}
                   {allergenDataIsReviewed && allergenList.length === 0 && mayContainList.length === 0 && (
                     <p className="text-[11px] leading-5 text-emerald-800">
-                      Nhà hàng đã rà soát và không khai báo allergen nào trong danh sách hỗ trợ.
+                      {locale === 'en' ? 'The restaurant reviewed this dish and declared none of the supported allergens.' : locale === 'zh-CN' ? '餐厅已核查此菜品，未申报支持列表中的过敏原。' : 'Nhà hàng đã rà soát và không khai báo allergen nào trong danh sách hỗ trợ.'}
                     </p>
                   )}
                   <p className="text-[11px] text-neutral-600 mt-2.5">
-                    Thành phần do nhà hàng khai báo; có thể tồn tại nguy cơ nhiễm chéo trong quá trình chế biến.
+                    {locale === 'en' ? 'Ingredients are declared by the restaurant; cross-contact may still occur during preparation.' : locale === 'zh-CN' ? '食材信息由餐厅提供；制作过程中仍可能发生交叉接触。' : 'Thành phần do nhà hàng khai báo; có thể tồn tại nguy cơ nhiễm chéo trong quá trình chế biến.'}
                   </p>
                 </div>
               </section>
@@ -481,7 +485,7 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
             {allergenWarning.kind !== 'NONE' && (
               <div className={`p-2.5 rounded-xl flex items-start gap-2 border text-xs font-semibold ${hasUserAllergen ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-amber-50 text-amber-900 border-amber-200'}`}>
                 <AlertTriangle className={`w-4 h-4 shrink-0 ${hasUserAllergen ? 'text-rose-600' : 'text-amber-700'}`} />
-                {allergenWarning.message} Bạn vẫn có thể gọi món.
+                {allergenWarning.message} {getMenuMessage(locale, 'allergenNote')}
               </div>
             )}
 
@@ -495,11 +499,11 @@ export const MenuItemDetail: React.FC<MenuItemDetailProps> = ({
               className="w-full h-13 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-slate-200 disabled:to-slate-300 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold text-base sm:text-lg shadow-lg shadow-emerald-600/25 disabled:shadow-none transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2.5 cursor-pointer select-none"
             >
               {!item.available ? (
-                'Tạm hết món'
+                getMenuMessage(locale, 'detailUnavailable')
               ) : (
                 <>
                   <ShoppingBag className="w-5 h-5 shrink-0" />
-                  <span>Thêm vào giỏ hàng • {formatCurrency(item.price)}</span>
+                  <span>{getMenuMessage(locale, 'addToCart')} • {formatCurrency(item.price)}</span>
                 </>
               )}
             </button>

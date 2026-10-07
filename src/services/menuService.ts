@@ -1,5 +1,7 @@
 import { apiFetch } from './api';
 import { MenuItem } from '@/types';
+import type { BackendTranslations, MenuItemTranslationValue, MenuLocale, TranslationReviewEntry } from '@/types/menuTranslation';
+import { getApprovedMenuItemTranslations, normalizeBackendManagedTranslations, normalizeBackendTranslations } from '@/lib/menuLocale';
 
 export interface MenuAllergenReviewPayload {
   method: 'RECIPE' | 'MANUAL';
@@ -9,7 +11,8 @@ export interface MenuAllergenReviewPayload {
   sourceNote: string;
 }
 
-type BackendMenuItem = MenuItem & {
+type BackendMenuItem = Omit<MenuItem, 'translations' | 'translationManagement'> & {
+  translations?: BackendTranslations<MenuItemTranslationValue | TranslationReviewEntry<MenuItemTranslationValue>>;
   _id?: string;
   calories?: number;
   protein?: number;
@@ -29,31 +32,46 @@ type BackendMenuItem = MenuItem & {
   foodAttributes?: string[];
 };
 
-const normalizeMenuItem = (item: BackendMenuItem): MenuItem => ({
-  ...item,
-  id: item.id || item._id || '',
-  nutrition: item.nutrition || {
-    calories: item.calories ?? 0,
-    protein: item.protein ?? 0,
-    carbs: item.carbs ?? 0,
-    fat: item.fat ?? 0,
-    fiber: item.fiber ?? 0,
-    sugar: item.sugar ?? 0,
-    sodium: item.sodium ?? 0,
-    confidenceScore: item.confidenceScore ?? 0
-  },
-  // Pass through recipe fields
-  ingredients: item.ingredients || [],
-  servingCount: item.servingCount ?? 1,
-  servingSizeGrams: item.servingSizeGrams ?? 0,
-  cookingMethod: item.cookingMethod ?? 'raw',
-  foodAttributes: item.foodAttributes || [],
-  allergens: item.allergens || [],
-  allergenInfoStatus: item.allergenInfoStatus === 'REVIEWED' ? 'REVIEWED' : 'UNKNOWN',
-  nutritionCompleteness: item.nutritionCompleteness ?? 0,
-  nutritionComplete: item.nutritionComplete ?? false,
-  missingIngredientCount: item.missingIngredientCount ?? 0,
-});
+const isManagedTranslations = (translations?: BackendMenuItem['translations']): translations is BackendTranslations<TranslationReviewEntry<MenuItemTranslationValue>> => Boolean(
+  translations && Object.values(translations).some((entry) => entry && ('displayStatus' in entry || 'approved' in entry || 'draft' in entry)),
+);
+
+const normalizeMenuItem = (item: BackendMenuItem): MenuItem => {
+  const translationManagement = isManagedTranslations(item.translations)
+    ? normalizeBackendManagedTranslations(item.translations)
+    : undefined;
+  const translations = translationManagement
+    ? getApprovedMenuItemTranslations(translationManagement)
+    : normalizeBackendTranslations(item.translations as BackendTranslations<MenuItemTranslationValue> | undefined);
+
+  return {
+    ...item,
+    id: item.id || item._id || '',
+    translations,
+    translationManagement,
+    nutrition: item.nutrition || {
+      calories: item.calories ?? 0,
+      protein: item.protein ?? 0,
+      carbs: item.carbs ?? 0,
+      fat: item.fat ?? 0,
+      fiber: item.fiber ?? 0,
+      sugar: item.sugar ?? 0,
+      sodium: item.sodium ?? 0,
+      confidenceScore: item.confidenceScore ?? 0
+    },
+    // Pass through recipe fields
+    ingredients: item.ingredients || [],
+    servingCount: item.servingCount ?? 1,
+    servingSizeGrams: item.servingSizeGrams ?? 0,
+    cookingMethod: item.cookingMethod ?? 'raw',
+    foodAttributes: item.foodAttributes || [],
+    allergens: item.allergens || [],
+    allergenInfoStatus: item.allergenInfoStatus === 'REVIEWED' ? 'REVIEWED' : 'UNKNOWN',
+    nutritionCompleteness: item.nutritionCompleteness ?? 0,
+    nutritionComplete: item.nutritionComplete ?? false,
+    missingIngredientCount: item.missingIngredientCount ?? 0,
+  };
+};
 
 const toBackendMenuPayload = (
   data: Partial<MenuItem>,
@@ -98,10 +116,34 @@ export const menuService = {
   
   // Admin routes
   getAll: async (restaurantId: string, includeUnavailable = true) => {
-    const params = new URLSearchParams({ restaurantId });
-    if (includeUnavailable) params.set('includeUnavailable', 'true');
-    const data = await apiFetch<BackendMenuItem[]>(`/api/menu?${params.toString()}`);
+    void restaurantId;
+    void includeUnavailable;
+    const data = await apiFetch<BackendMenuItem[]>('/api/menu/manage');
     return data.map(normalizeMenuItem);
+  },
+
+  generateTranslationDraft: async (id: string, options?: { preserveExisting?: boolean }) => {
+    const updated = await apiFetch<BackendMenuItem>(`/api/menu/${id}/translations/draft`, {
+      method: 'POST',
+      body: JSON.stringify(options?.preserveExisting ? { preserveExisting: true } : {}),
+    });
+    return normalizeMenuItem(updated);
+  },
+
+  bulkPublishTranslations: async (itemIds: string[]): Promise<{ publishedCount: number; items: MenuItem[] }> => {
+    const result = await apiFetch<{ publishedCount: number; items: BackendMenuItem[] }>('/api/menu/translations/bulk-publish', {
+      method: 'POST',
+      body: JSON.stringify({ itemIds }),
+    });
+    return { publishedCount: result.publishedCount, items: result.items.map(normalizeMenuItem) };
+  },
+
+  saveTranslation: async (id: string, locale: Exclude<MenuLocale, 'vi'>, value: MenuItemTranslationValue, publish: boolean) => {
+    const updated = await apiFetch<BackendMenuItem>(`/api/menu/${id}/translations/${locale}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ ...value, publish }),
+    });
+    return normalizeMenuItem(updated);
   },
   
   create: async (data: Partial<MenuItem>) => {

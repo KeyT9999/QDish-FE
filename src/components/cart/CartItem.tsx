@@ -4,16 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { getMenuAllergenWarning } from '@/services/allergenPresentation';
+import type { MenuLocale } from '@/types/menuTranslation';
 
 interface CartItemProps {
   item: CartItemType;
   userAllergies: Allergen[];
   onUpdateQuantity: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
+  locale?: MenuLocale;
 }
 
-export const CartItem: React.FC<CartItemProps> = ({ item, userAllergies, onUpdateQuantity, onRemove }) => {
-  const warning = getMenuAllergenWarning(item, userAllergies);
+export const CartItem: React.FC<CartItemProps> = ({ item, userAllergies, onUpdateQuantity, onRemove, locale = 'vi' }) => {
+  const warning = getMenuAllergenWarning(item, userAllergies, locale);
 
   return (
     <div className="flex items-center justify-between gap-3 py-3 border-b border-gray-100 last:border-0">

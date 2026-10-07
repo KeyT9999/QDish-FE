@@ -11,7 +11,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
-import { Plus, Edit2, Trash2, Tag, MoreHorizontal } from 'lucide-react';
+import { Plus, Edit2, Trash2, Tag, MoreHorizontal, Languages } from 'lucide-react';
+import { TranslationEditorDialog } from '@/components/dashboard/restaurant/modals/TranslationEditorDialog';
+import type { CategoryTranslationValue, MenuLocale } from '@/types/menuTranslation';
 
 export interface RestaurantCategoriesTabProps {
   categories: CategoryItem[];
@@ -19,6 +21,8 @@ export interface RestaurantCategoriesTabProps {
   isLoadingCategories: boolean;
   onOpenCategoryModal: (cat?: CategoryItem) => void;
   onDeleteCategory: (id: string, name: string) => Promise<void>;
+  onGenerateTranslations: (id: string) => Promise<CategoryItem>;
+  onSaveTranslation: (id: string, locale: Exclude<MenuLocale, 'vi'>, value: CategoryTranslationValue, publish: boolean) => Promise<CategoryItem>;
 }
 
 export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = ({
@@ -26,8 +30,11 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
   menuItems,
   isLoadingCategories,
   onOpenCategoryModal,
-  onDeleteCategory
+  onDeleteCategory,
+  onGenerateTranslations,
+  onSaveTranslation
 }) => {
+  const [translationCategory, setTranslationCategory] = React.useState<CategoryItem | null>(null);
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -47,6 +54,7 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
               <TableRow className="border-neutral-100 hover:bg-transparent">
                 <TableHead className="text-xs font-bold text-neutral-400 pl-6 w-[240px]">ID Danh mục</TableHead>
                 <TableHead className="text-xs font-bold text-neutral-400">Tên danh mục</TableHead>
+                <TableHead className="text-xs font-bold text-neutral-400">Số món</TableHead>
                 <TableHead className="text-right text-xs font-bold text-neutral-400 w-[100px] pr-6">Thao tác</TableHead>
               </TableRow>
             </TableHeader>
@@ -55,6 +63,7 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
                 <TableRow key={cat._id} className="border-neutral-100 hover:bg-neutral-50/40 transition-colors">
                   <TableCell className="font-mono text-xs text-neutral-400 pl-6">{cat._id}</TableCell>
                   <TableCell className="font-bold text-xs text-neutral-900">{cat.name}</TableCell>
+                  <TableCell className="text-xs text-neutral-600">{menuItems.filter((item) => item.categoryId === cat._id || (!item.categoryId && item.category === cat.name)).length}</TableCell>
                   <TableCell className="text-right pr-6">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -63,7 +72,13 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-lg border border-neutral-100 p-1 w-36">
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
+                          onClick={() => setTranslationCategory(cat)}
+                          className="text-emerald-800 font-semibold text-xs rounded-lg cursor-pointer"
+                        >
+                          <Languages className="w-3.5 h-3.5 mr-2" /> Dịch Anh / Trung
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
                           onClick={() => onOpenCategoryModal(cat)}
                           className="text-neutral-700 font-semibold text-xs rounded-lg cursor-pointer"
                         >
@@ -71,7 +86,7 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
                           Chỉnh sửa
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-neutral-100 my-1" />
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => onDeleteCategory(cat._id, cat.name)}
                           className="text-rose-600 font-bold text-xs rounded-lg cursor-pointer focus:text-rose-700 focus:bg-rose-50"
                         >
@@ -83,9 +98,9 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
                   </TableCell>
                 </TableRow>
               ))}
-              {categories.length === 0 && (
+              {categories.length === 0 && !isLoadingCategories && (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-16">
+                  <TableCell colSpan={4} className="text-center py-16">
                     <div className="flex flex-col items-center justify-center space-y-3">
                       <div className="w-12 h-12 rounded-2xl bg-neutral-55 border border-neutral-200/40 flex items-center justify-center">
                         <Tag className="w-6 h-6 text-neutral-400" />
@@ -98,10 +113,34 @@ export const RestaurantCategoriesTab: React.FC<RestaurantCategoriesTabProps> = (
                   </TableCell>
                 </TableRow>
               )}
+              {categories.length === 0 && isLoadingCategories && (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-8 text-center text-sm text-neutral-500">Đang tải danh mục…</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+      <TranslationEditorDialog<CategoryTranslationValue>
+        open={Boolean(translationCategory)}
+        onOpenChange={(open) => { if (!open) setTranslationCategory(null); }}
+        kind="category"
+        sourceName={translationCategory?.name ?? ''}
+        translations={translationCategory?.translationManagement}
+        onGenerate={async () => {
+          const id = translationCategory?._id ?? '';
+          const updated = await onGenerateTranslations(id);
+          setTranslationCategory(updated);
+          return updated.translationManagement ?? {};
+        }}
+        onSave={async (locale, value, publish) => {
+          const id = translationCategory?._id ?? '';
+          const updated = await onSaveTranslation(id, locale, value, publish);
+          setTranslationCategory(updated);
+          return updated.translationManagement ?? {};
+        }}
+      />
     </div>
   );
 };

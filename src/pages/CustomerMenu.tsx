@@ -37,10 +37,13 @@ import { CartDrawer } from '@/components/cart/CartDrawer';
 import { DiningProfileForm } from '@/components/dining/DiningProfileForm';
 import { DiningOnboarding } from '@/components/dining/DiningOnboarding';
 import { OrderHistoryDrawer } from '@/components/menu/OrderHistoryDrawer';
+import { MenuLanguageSelector } from '@/components/menu/MenuLanguageSelector';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ShoppingBag, Loader2, Info, Sparkles, Clock, Search, Heart, X, Flame, Dumbbell, Wheat, Droplet, Shield, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
+import type { MenuLocale } from '@/types/menuTranslation';
+import { getMenuMessage, persistMenuLocale, readMenuLocale, translateCategory, translateMenuItem } from '@/lib/menuLocale';
 
 const EMPTY_ALLERGIES: Allergen[] = [];
 
@@ -49,6 +52,13 @@ export const CustomerMenu: React.FC = () => {
   // Get restaurantId and tableNumber from query params
   const restaurantId = searchParams.get('r') || '';
   const tableNumber = searchParams.get('t') || '';
+  const [locale, setLocale] = useState<MenuLocale>(() => {
+    try {
+      return readMenuLocale(restaurantId, typeof window === 'undefined' ? undefined : window.localStorage);
+    } catch {
+      return 'vi';
+    }
+  });
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [session, setSession] = useState<TableSession | null>(null);
@@ -83,6 +93,14 @@ export const CustomerMenu: React.FC = () => {
   } = useDiningProfile();
   const { execute: submitOrder, isLoading: isSubmitting } = useApi(orderService.createOrder);
   const fitScoreEnabled = restaurant?.features?.fitScoreEnabled;
+
+  useEffect(() => {
+    try {
+      setLocale(readMenuLocale(restaurantId, typeof window === 'undefined' ? undefined : window.localStorage));
+    } catch {
+      setLocale('vi');
+    }
+  }, [restaurantId]);
 
   // Every QR guest can declare allergies, regardless of restaurant plan.
   useEffect(() => {
@@ -272,6 +290,20 @@ export const CustomerMenu: React.FC = () => {
     return Array.from(cats);
   }, [menuItems, dbCategories]);
 
+  const getCategoryLabel = useCallback((categoryName: string) => {
+    const category = dbCategories.find((candidate) => candidate.name === categoryName);
+    return translateCategory(categoryName, locale, category?.translations);
+  }, [dbCategories, locale]);
+
+  const toDisplayItem = useCallback((item: MenuItem) => {
+    const category = dbCategories.find((candidate) => (
+      (item.categoryId && candidate._id === item.categoryId) || candidate.name === item.category
+    ));
+    return translateMenuItem(item, locale, item.translations, category
+      ? translateCategory(category.name, locale, category.translations)
+      : undefined);
+  }, [dbCategories, locale]);
+
   // Filter items by category, nutrition requirements, and search query
   const filteredItems = useMemo(() => {
     let items = menuItems;
@@ -281,7 +313,11 @@ export const CustomerMenu: React.FC = () => {
       const q = searchQuery.toLowerCase();
       items = items.filter(item => 
         item.name.toLowerCase().includes(q) || 
-        (item.description && item.description.toLowerCase().includes(q))
+        (item.description && item.description.toLowerCase().includes(q)) ||
+        item.translations?.en?.name.toLowerCase().includes(q) === true ||
+        item.translations?.en?.description.toLowerCase().includes(q) === true ||
+        item.translations?.['zh-CN']?.name.toLowerCase().includes(q) === true ||
+        item.translations?.['zh-CN']?.description.toLowerCase().includes(q) === true
       );
     }
     
@@ -375,17 +411,21 @@ export const CustomerMenu: React.FC = () => {
 
   // Handlers
   const handleItemClick = useCallback((item: MenuItem) => {
-    setSelectedItem(item);
+    const itemId = getMenuItemIdentity(item);
+    const sourceItem = menuItems.find((candidate) => getMenuItemIdentity(candidate) === itemId) ?? item;
+    setSelectedItem(toDisplayItem(sourceItem));
     setIsDetailOpen(true);
-  }, []);
+  }, [menuItems, toDisplayItem]);
 
   const handleAddToCart = useCallback((item: MenuItem) => {
-    addToCart(item);
-    toast.success(`Đã thêm ${item.name} vào giỏ`, {
+    const itemId = getMenuItemIdentity(item);
+    const sourceItem = menuItems.find((candidate) => getMenuItemIdentity(candidate) === itemId) ?? item;
+    addToCart(sourceItem);
+    toast.success(getMenuMessage(locale, 'addedToCart').replace('{name}', toDisplayItem(sourceItem).name), {
       duration: 2000,
       position: 'top-center'
     });
-  }, [addToCart, userAllergies]);
+  }, [addToCart, locale, menuItems, toDisplayItem]);
 
   const handleSessionClosed = useCallback(async () => {
     if (!restaurantId || !tableNumber) return;
@@ -423,7 +463,7 @@ export const CustomerMenu: React.FC = () => {
         sessionCode: activeSession?.sessionCode,
         items: cart.cart.map(i => ({
           menuItemId: i.menuItemId,
-          name: i.name,
+          name: menuItems.find((item) => getMenuItemIdentity(item) === i.menuItemId)?.name || i.name,
           price: i.price,
           quantity: i.quantity
         })),
@@ -439,7 +479,7 @@ export const CustomerMenu: React.FC = () => {
       
       await submitOrder(restaurantId, orderPayload);
       
-      toast.success('Đặt món thành công! Bếp đang chuẩn bị món cho bạn.', {
+      toast.success(getMenuMessage(locale, 'orderSuccess'), {
         duration: 4000
       });
       cart.clearCart();
@@ -450,7 +490,7 @@ export const CustomerMenu: React.FC = () => {
       toast.error(error.message || 'Có lỗi xảy ra khi đặt món. Vui lòng thử lại.');
       throw error;
     }
-  }, [cart, restaurantId, submitOrder, tableNumber, session, userAllergies]);
+  }, [cart, locale, menuItems, restaurantId, submitOrder, tableNumber, session, userAllergies]);
 
   const selectedItemId = getMenuItemIdentity(selectedItem ?? undefined);
 
@@ -486,7 +526,19 @@ export const CustomerMenu: React.FC = () => {
   return (
     <div className="relative pb-24 px-4 sm:max-w-md sm:mx-auto bg-surface min-h-screen">
       {/* Header */}
-      <RestaurantHeader restaurant={restaurant} tableNumber={tableNumber} />
+      <RestaurantHeader restaurant={restaurant} tableNumber={tableNumber} locale={locale} />
+
+      <MenuLanguageSelector
+        locale={locale}
+        onChange={(nextLocale) => {
+          setLocale(nextLocale);
+          try {
+            persistMenuLocale(restaurantId, nextLocale, window.localStorage);
+          } catch {
+            // The selected language remains active for this page if browser storage is unavailable.
+          }
+        }}
+      />
       
       {/* Search Bar */}
       <div className="sticky top-[64px] z-20 bg-surface/90 backdrop-blur-xl px-4 py-2.5 -mx-4 sm:mx-0 sm:px-0 transition-all">
@@ -494,7 +546,7 @@ export const CustomerMenu: React.FC = () => {
           <Search className="w-4 h-4 text-slate-400 ml-3.5 shrink-0" />
           <input
             type="text"
-            placeholder="Tìm món ăn, calories, nguyên liệu..."
+            placeholder={getMenuMessage(locale, 'search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-transparent pl-2.5 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none font-medium"
@@ -524,10 +576,10 @@ export const CustomerMenu: React.FC = () => {
             </div>
             <div className="min-w-0">
               <div className="text-xs font-bold text-slate-800 flex items-center gap-1 leading-tight">
-                Hồ sơ ẩm thực
+                {locale === 'vi' ? 'Hồ sơ ẩm thực' : locale === 'en' ? 'Dining profile' : '饮食偏好'}
               </div>
               <p className="text-[10px] text-amber-700 font-medium truncate mt-0.5">
-                {hasDiningProfileSelections(profile) ? 'Đã cá nhân hóa' : 'Tùy chỉnh mục tiêu'}
+                {hasDiningProfileSelections(profile) ? (locale === 'en' ? 'Personalized' : locale === 'zh-CN' ? '已个性化' : 'Đã cá nhân hóa') : (locale === 'en' ? 'Set preferences' : locale === 'zh-CN' ? '设置偏好' : 'Tùy chỉnh mục tiêu')}
               </p>
             </div>
           </button>
@@ -536,15 +588,15 @@ export const CustomerMenu: React.FC = () => {
           type="button"
           onClick={() => setIsOnboardingOpen(true)}
           className="group relative overflow-hidden bg-gradient-to-br from-rose-500/[0.08] via-orange-500/[0.04] to-rose-500/[0.02] hover:from-rose-500/[0.12] border border-rose-200/70 rounded-2xl p-2.5 flex items-center gap-2.5 transition-all duration-200 active:scale-[0.98] shadow-xs text-left cursor-pointer"
-          aria-label="Khai báo hoặc sửa thông tin dị ứng"
+            aria-label={locale === 'en' ? 'Declare or edit allergy information' : locale === 'zh-CN' ? '填写或修改过敏信息' : 'Khai báo hoặc sửa thông tin dị ứng'}
         >
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-rose-500/25">
             <ShieldAlert className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-xs font-bold text-slate-800 leading-tight">Dị ứng thực phẩm</div>
+            <div className="text-xs font-bold text-slate-800 leading-tight">{locale === 'en' ? 'Food allergies' : locale === 'zh-CN' ? '食物过敏' : 'Dị ứng thực phẩm'}</div>
             <p className="text-[10px] text-rose-700 font-medium truncate mt-0.5">
-              {userAllergies.length > 0 ? 'Đã khai báo' : 'Khai báo để xem cảnh báo'}
+              {userAllergies.length > 0 ? (locale === 'en' ? 'Declared' : locale === 'zh-CN' ? '已填写' : 'Đã khai báo') : (locale === 'en' ? 'Declare to see warnings' : locale === 'zh-CN' ? '填写后查看提示' : 'Khai báo để xem cảnh báo')}
             </p>
           </div>
         </button>
@@ -558,10 +610,10 @@ export const CustomerMenu: React.FC = () => {
           </div>
           <div className="min-w-0">
             <div className="text-xs font-bold text-slate-800 leading-tight">
-              Món đã gọi
+              {getMenuMessage(locale, 'ordered')}
             </div>
             <p className="text-[10px] text-blue-700 font-medium truncate mt-0.5">
-              Theo dõi đơn bàn
+              {getMenuMessage(locale, 'historyHint')}
             </p>
           </div>
         </button>
@@ -594,6 +646,7 @@ export const CustomerMenu: React.FC = () => {
             <div className="overflow-x-auto flex gap-3.5 scrollbar-none pb-2 -mx-4 px-4">
             {recommendations.map((rec) => {
               const dishItem = rec.dish;
+              const displayDishItem = toDisplayItem(dishItem);
               const itemId = getMenuItemIdentity(dishItem);
               const fitScore = selectRecommendationFitScore({
                 fitScoreEnabled,
@@ -611,9 +664,9 @@ export const CustomerMenu: React.FC = () => {
                   {/* Dish Image */}
                   <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
                     {dishItem.imageUrl ? (
-                      <img 
+                      <img
                         src={dishItem.imageUrl} 
-                        alt={dishItem.name} 
+                        alt={displayDishItem.name}
                         className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-500"
                         onClick={() => handleItemClick(dishItem)}
                         loading="lazy"
@@ -646,7 +699,7 @@ export const CustomerMenu: React.FC = () => {
                         className="font-heading font-extrabold text-[13.5px] text-slate-900 line-clamp-1 group-hover:text-emerald-700 cursor-pointer transition-colors leading-snug"
                         onClick={() => handleItemClick(dishItem)}
                       >
-                        {dishItem.name}
+                        {displayDishItem.name}
                       </h4>
                       <p className="text-[10.5px] text-emerald-800 font-medium bg-emerald-500/10 px-2.5 py-1 rounded-xl leading-snug border border-emerald-500/20 line-clamp-2">
                         {rec.reason}
@@ -662,7 +715,7 @@ export const CustomerMenu: React.FC = () => {
                         onClick={() => handleAddToCart(dishItem)}
                         className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold h-7.5 rounded-xl px-3 shadow-sm shadow-emerald-600/30 cursor-pointer transition-all"
                       >
-                        Thêm món
+                        {getMenuMessage(locale, 'addDish')}
                       </Button>
                     </div>
                   </div>
@@ -683,8 +736,14 @@ export const CustomerMenu: React.FC = () => {
           </div>
           {pairingSuggestions.slice(0, 1).map((p, idx) => (
             <div key={idx} className="text-xs leading-relaxed text-slate-700 space-y-2">
+              {(() => {
+                const pairedItem = toDisplayItem(p.pairedDish);
+                const mainItem = menuItems.find((item) => item.name === p.mainDishName);
+                const mainName = mainItem ? toDisplayItem(mainItem).name : p.mainDishName;
+                return (
+                  <>
               <p className="font-semibold text-slate-800">
-                Ăn kèm {p.mainDishName} + <strong className="text-emerald-700 font-bold">{p.pairedDish.name}</strong>:
+                {locale === 'en' ? 'Pair' : locale === 'zh-CN' ? '搭配' : 'Ăn kèm'} {mainName} + <strong className="text-emerald-700 font-bold">{pairedItem.name}</strong>:
               </p>
               <p className="text-[11px] text-slate-500 leading-normal">{p.reason}</p>
               <div className="flex justify-end pt-1">
@@ -693,9 +752,12 @@ export const CustomerMenu: React.FC = () => {
                   variant="outline"
                   className="border-emerald-200 text-emerald-800 text-[10px] font-bold h-6.5 rounded-xl px-2.5 hover:bg-emerald-50 cursor-pointer"
                 >
-                  Thêm {p.pairedDish.name} (+{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.pairedDish.price)})
+                  {getMenuMessage(locale, 'addDish')} {pairedItem.name} (+{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.pairedDish.price)})
                 </Button>
               </div>
+                </>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -706,6 +768,8 @@ export const CustomerMenu: React.FC = () => {
         categories={categoriesList} 
         selectedCategory={selectedCategory} 
         onSelect={setSelectedCategory} 
+        locale={locale}
+        getCategoryLabel={getCategoryLabel}
       />
 
       {/* Smart Nutrition Filter Bar */}
@@ -746,12 +810,12 @@ export const CustomerMenu: React.FC = () => {
           <div role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-950">
             <p className="font-bold">
               {allergenSummary.conflicts > 0
-                ? `${allergenSummary.conflicts} món có thể liên quan đến dị ứng bạn đã khai báo.`
-                : 'Một số món chưa có thông tin dị ứng đã xác minh.'}
+                ? (locale === 'en' ? `${allergenSummary.conflicts} dishes may conflict with your reported allergies.` : locale === 'zh-CN' ? `${allergenSummary.conflicts}道菜可能与您申报的过敏原有关。` : `${allergenSummary.conflicts} món có thể liên quan đến dị ứng bạn đã khai báo.`)
+                : (locale === 'en' ? 'Some dishes do not have verified allergen information.' : locale === 'zh-CN' ? '部分菜品的过敏原信息尚未核实。' : 'Một số món chưa có thông tin dị ứng đã xác minh.')}
             </p>
             {allergenSummary.unverified > 0 && (
               <p className="mt-0.5 text-amber-900">
-                Thông tin của {allergenSummary.unverified} món còn chưa đầy đủ. Hãy hỏi nhân viên nếu bạn cần xác nhận.
+                {locale === 'en' ? `${allergenSummary.unverified} dishes have incomplete information. Ask staff if you need confirmation.` : locale === 'zh-CN' ? `${allergenSummary.unverified}道菜的信息不完整。如需确认，请咨询工作人员。` : `Thông tin của ${allergenSummary.unverified} món còn chưa đầy đủ. Hãy hỏi nhân viên nếu bạn cần xác nhận.`}
               </p>
             )}
           </div>
@@ -759,10 +823,11 @@ export const CustomerMenu: React.FC = () => {
         <div className="grid grid-cols-1 gap-3">
           {filteredItems.map(item => {
             const itemId = getMenuItemIdentity(item);
+            const displayItem = toDisplayItem(item);
             return (
               <MenuItemCard
                 key={itemId}
-                item={item}
+                item={displayItem}
                 cartItem={cart.cart.find(c => c.menuItemId === itemId)}
                 onAdd={handleAddToCart}
                 onUpdateQuantity={cart.updateQuantity}
@@ -770,6 +835,7 @@ export const CustomerMenu: React.FC = () => {
                 onClick={handleItemClick}
                 userAllergies={userAllergies}
                 isRecommended={checkIsRecommended(item)}
+                locale={locale}
                 fitScore={itemId ? fitScores[itemId] : undefined}
                 isFitScoreLoading={isFitScoreLoading}
               />
@@ -779,8 +845,8 @@ export const CustomerMenu: React.FC = () => {
           {filteredItems.length === 0 && (
             <div className="py-16 text-center text-slate-400 text-sm bg-white/60 rounded-3xl border border-dashed border-slate-200 my-4">
               <Search className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-              <p className="font-semibold text-slate-600">Không tìm thấy món ăn phù hợp</p>
-              <p className="text-xs text-slate-400 mt-1">Thử đổi danh mục hoặc điều chỉnh bộ lọc dinh dưỡng.</p>
+              <p className="font-semibold text-slate-600">{getMenuMessage(locale, 'searchEmpty')}</p>
+              <p className="text-xs text-slate-400 mt-1">{getMenuMessage(locale, 'filterHint')}</p>
             </div>
           )}
         </div>
@@ -810,8 +876,8 @@ export const CustomerMenu: React.FC = () => {
                   {cart.cartCount}
                 </motion.div>
                 <div className="text-left">
-                  <span className="text-[13.5px] font-bold block leading-tight text-white/95">Xem giỏ hàng</span>
-                  <span className="text-[10px] text-slate-400 font-medium">{cart.cartCount} món • Bấm để gọi món</span>
+                  <span className="text-[13.5px] font-bold block leading-tight text-white/95">{getMenuMessage(locale, 'viewCart')}</span>
+                  <span className="text-[10px] text-slate-400 font-medium">{cart.cartCount} • {getMenuMessage(locale, 'cartHint')}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -835,6 +901,7 @@ export const CustomerMenu: React.FC = () => {
         onAdd={handleAddToCart}
         userAllergies={userAllergies}
         fitScore={selectedItemId ? fitScores[selectedItemId] : undefined}
+        locale={locale}
         onEditProfile={() => {
           setIsDetailOpen(false);
           if (restaurant.features?.personalizedMenuEnabled) setIsHealthOpen(true);
@@ -851,6 +918,11 @@ export const CustomerMenu: React.FC = () => {
         onRemove={cart.removeFromCart}
         onSubmitOrder={handleSubmitOrder}
         userAllergies={userAllergies}
+        locale={locale}
+        localizeItemName={(menuItemId, fallbackName) => {
+          const sourceItem = menuItems.find((item) => getMenuItemIdentity(item) === menuItemId);
+          return sourceItem ? toDisplayItem(sourceItem).name : fallbackName;
+        }}
       />
 
       {/* Dining Profile Sheet Drawer */}
@@ -876,6 +948,11 @@ export const CustomerMenu: React.FC = () => {
         tableNumber={tableNumber}
         sessionId={sessionId}
         onSessionClosed={handleSessionClosed}
+        locale={locale}
+        localizeItemName={(menuItemId, fallbackName) => {
+          const sourceItem = menuItems.find((item) => getMenuItemIdentity(item) === menuItemId);
+          return sourceItem ? toDisplayItem(sourceItem).name : fallbackName;
+        }}
       />
 
       {/* Onboarding Dialog Wizard */}

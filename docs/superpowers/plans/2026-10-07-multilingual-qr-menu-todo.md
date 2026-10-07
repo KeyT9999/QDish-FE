@@ -1,6 +1,6 @@
 # Multilingual QR Menu — Todo
 
-**Status:** Draft for user review
+**Status:** Implemented; local CI passed on `feat/multilingual-qr-menu` (not pushed)
 **Plan:** `2026-10-07-multilingual-qr-menu.md`
 **Design:** `../specs/2026-10-07-multilingual-qr-menu-design.md`
 
@@ -20,37 +20,39 @@
 
 - [x] Task 1: backend translation schema and publication policy.
 - [x] Task 2: xKiro client and draft generation service.
-- [~] Task 3: protected management APIs and public serialization (in progress).
-- [ ] Tasks 4–8: dashboard, guest localization, browser coverage, and CI verification.
+- [x] Task 3: protected management APIs and public serialization.
+- [x] Tasks 4–8: dashboard, guest localization, browser coverage, and CI verification.
 
 ## Backend
 
-- [ ] Add separate draft and approved values per locale; derive DRAFT, APPROVED, or STALE for the management UI.
-- [ ] Add tested policy helpers for stale invalidation and approved-only public serialization.
-- [ ] Add xKiro client using the Qwen3.8 Max model ID, backend secret, timeout, and response validation.
-- [ ] Add authenticated management reads for owner/admin only, scoped from the authenticated restaurant identity.
-- [ ] Add authenticated item/category draft generation and locale edit/publish routes.
-- [ ] Verify public reads hide DRAFT and STALE content and cross-restaurant writes fail.
-- [ ] Keep order snapshots and staff/kitchen display in Vietnamese.
+- [x] Add separate draft and approved values per locale; derive DRAFT, APPROVED, or STALE for the management UI.
+- [x] Add tested policy helpers for stale invalidation and approved-only public serialization.
+- [x] Add xKiro client using the Qwen3.8 Max model ID, backend secret, timeout, and response validation.
+- [x] Add authenticated management reads for owner/admin only, scoped from the authenticated restaurant identity.
+- [x] Add authenticated item/category draft generation and locale edit/publish routes.
+- [x] Verify public reads hide DRAFT and STALE content and cross-restaurant writes fail.
+- [x] Keep order snapshots and staff/kitchen display in Vietnamese.
 
 ## Frontend
 
-- [ ] Add translation and locale types plus management API methods.
-- [ ] Update dashboard reads to protected management APIs.
-- [ ] Add AI draft, edit, and approve controls for dishes and categories.
-- [ ] Add per-restaurant guest locale persistence and VI/EN/zh-CN message dictionaries.
-- [ ] Add language selector to the guest QR menu.
-- [ ] Localize category filters, menu cards, item details, warnings, cart, checkout, and order history.
-- [ ] Verify approved translations render and missing/stale translations fall back to Vietnamese.
-- [ ] Verify order submission keeps the existing item-ID/quantity payload.
+- [x] Add translation and locale types plus management API methods.
+- [x] Update dashboard reads to protected management APIs.
+- [x] Add AI draft, edit, and approve controls for dishes and categories.
+- [x] Add per-restaurant guest locale persistence and VI/EN/zh-CN message dictionaries.
+- [x] Add language selector to the guest QR menu.
+- [x] Localize category filters, menu cards, item details, warnings, cart, checkout, and order history.
+- [x] Verify approved translations render and missing/stale translations fall back to Vietnamese.
+- [x] Verify order submission keeps the existing item-ID/quantity payload.
 
 ## Verification and release readiness
 
-- [ ] Add focused backend tests and register them in backend test:ci.
-- [ ] Add focused frontend tests and register them in frontend test:ci.
-- [ ] Add a mocked multilingual Playwright test and include it in frontend CI.
-- [ ] Run backend npm ci, npm run test:ci, and npm run build.
-- [ ] Run frontend npm ci, npm run check:encoding, npm run lint, npm run test:ci, existing E2E commands, multilingual E2E, and npm run build.
-- [ ] Review the full diff for key leakage, draft exposure, and changed staff order names.
+- [x] Add focused backend tests and register them in backend test:ci.
+- [x] Add focused frontend tests and register them in frontend test:ci.
+- [x] Add a mocked multilingual Playwright test and include it in frontend CI.
+- [x] Run backend npm ci, npm run test:ci, and npm run build.
+- [x] Run frontend npm ci, npm run check:encoding, npm run lint, npm run test:ci, existing E2E commands, multilingual E2E, and npm run build.
+- [x] Review the full diff for key leakage, draft exposure, and changed staff order names.
 - [ ] Confirm production XKIRO_API_KEY is configured as a backend secret before enabling the AI action.
-- [ ] Review the finished flow before any deployment.
+- [x] Review the finished flow before any deployment.
+
+`npm ci` and CI commands were run in clean temporary copies of both repositories because active local dev servers held the workspace's native Node binaries open. The feature branches have not been pushed, so hosted CI remains unverified.
