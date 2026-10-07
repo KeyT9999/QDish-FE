@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { RefreshCw, Search, ClipboardList, Clock, MoreHorizontal, Receipt, CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatCurrency } from '@/lib/utils';
 import { formatOrderAllergenWarning } from '@/services/allergenPresentation';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
+import type { OwnerConsoleTranslationKey } from '@/i18n/ownerConsoleCatalog';
 
 export interface RestaurantOrdersTabProps {
   activeBills: ActiveBill[];
@@ -38,7 +39,7 @@ const statusColors: Record<OrderStatus, string> = {
   [OrderStatus.CANCELLED]: 'bg-rose-50 text-rose-700 border-rose-200/60'
 };
 
-const statusLabel: Record<OrderStatus, string> = {
+const statusLabel: Record<OrderStatus, OwnerConsoleTranslationKey> = {
   [OrderStatus.PENDING]: 'Chờ duyệt',
   [OrderStatus.CONFIRMED]: 'Bếp nhận',
   [OrderStatus.SERVED]: 'Đã ra món',
@@ -46,7 +47,7 @@ const statusLabel: Record<OrderStatus, string> = {
   [OrderStatus.CANCELLED]: 'Đã hủy'
 };
 
-const billStatusLabel: Record<BillStatus, string> = {
+const billStatusLabel: Record<BillStatus, OwnerConsoleTranslationKey> = {
   [BillStatus.UNPAID]: 'Chưa thanh toán',
   [BillStatus.PAYMENT_REQUESTED]: 'Chờ thanh toán',
   [BillStatus.PAID]: 'Đã thanh toán',
@@ -67,11 +68,11 @@ const orderFilterTabs = [
   { label: 'Đã phục vụ', value: OrderStatus.SERVED },
   { label: 'Hoàn thành', value: OrderStatus.COMPLETED },
   { label: 'Đã hủy', value: OrderStatus.CANCELLED }
-];
+] as const;
 
 const staffOrderFilterTabs = orderFilterTabs.filter((tab) => tab.value !== OrderStatus.CANCELLED);
 
-const emptyStateCopy: Record<string, { title: string; description: string }> = {
+const emptyStateCopy: Record<string, { title: OwnerConsoleTranslationKey; description: OwnerConsoleTranslationKey }> = {
   ALL: {
     title: 'Chưa có đơn hàng nào',
     description: 'Bill và order sẽ xuất hiện sau khi khách đặt món trong phiên bàn.'
@@ -100,15 +101,15 @@ const emptyStateCopy: Record<string, { title: string; description: string }> = {
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
 
-const getOrderTime = (order: Order) => {
+const getOrderTime = (order: Order, localeTag: string, t: (key: OwnerConsoleTranslationKey) => string) => {
   const raw = order.createdAt || (order.timestamp ? new Date(order.timestamp).toISOString() : '');
-  if (!raw) return 'Vừa xong';
+  if (!raw) return t('Vừa xong');
 
   try {
     const date = new Date(raw);
-    return `${date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ${date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}`;
+    return `${date.toLocaleTimeString(localeTag, { hour: '2-digit', minute: '2-digit' })} ${date.toLocaleDateString(localeTag, { day: '2-digit', month: '2-digit' })}`;
   } catch {
-    return 'Vừa xong';
+    return t('Vừa xong');
   }
 };
 
@@ -135,6 +136,9 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
   userRole,
   canPayBill = true
 }) => {
+  const { t, language } = useOwnerConsoleLocale();
+  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const formatOrderCurrency = (amount: number) => new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(amount);
   const availableFilterTabs = userRole === Role.STAFF ? staffOrderFilterTabs : orderFilterTabs;
   const emptyCopy = emptyStateCopy[orderStatusFilter] || emptyStateCopy.ALL;
 
@@ -156,11 +160,11 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-900">Đơn hàng theo bill</h2>
-          <p className="text-neutral-500 text-xs mt-0.5">Mỗi bill gom nhiều order trong cùng phiên bàn. Thanh toán chỉ thực hiện ở cấp bill.</p>
+          <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('Đơn hàng theo bill')}</h2>
+          <p className="text-neutral-500 text-xs mt-0.5">{t('Mỗi bill gom nhiều order trong cùng phiên bàn. Thanh toán chỉ thực hiện ở cấp bill.')}</p>
         </div>
         <Button size="sm" onClick={onRefreshOrders} disabled={isLoadingOrders} className="rounded-xl bg-neutral-900 hover:bg-black text-white font-semibold shadow-sm gap-1.5 h-9 self-start sm:self-auto">
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoadingOrders ? 'animate-spin' : ''}`} /> Làm mới
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoadingOrders ? 'animate-spin' : ''}`} /> {t('Làm mới')}
         </Button>
       </div>
 
@@ -168,7 +172,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <Input
-            placeholder="Tìm bill, bàn, mã đơn, món..."
+            placeholder={t('Tìm bill, bàn, mã đơn, món...')}
             value={orderSearch}
             onChange={(e) => onSetOrderSearch(e.target.value)}
             className="pl-10 rounded-xl border-neutral-200 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 text-sm"
@@ -186,7 +190,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                   : 'bg-neutral-50 text-neutral-600 border-neutral-200/60 hover:bg-neutral-100 hover:text-neutral-900'
               }`}
             >
-              {tab.label}
+              {t(tab.label)}
             </button>
           ))}
         </div>
@@ -200,8 +204,8 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                 <ClipboardList className="w-6 h-6 text-neutral-400" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-neutral-800">{emptyCopy.title}</h3>
-                <p className="text-xs text-neutral-400 mt-1">{emptyCopy.description}</p>
+                <h3 className="text-sm font-bold text-neutral-800">{t(emptyCopy.title)}</h3>
+                <p className="text-xs text-neutral-400 mt-1">{t(emptyCopy.description)}</p>
               </div>
             </div>
           </CardContent>
@@ -218,23 +222,23 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <Receipt className="h-4 w-4 text-emerald-600" />
-                        <h3 className="text-sm font-bold text-neutral-950">Bàn {bill.tableNumber}</h3>
+                        <h3 className="text-sm font-bold text-neutral-950">{t('Bàn {table}', { table: bill.tableNumber })}</h3>
                         <span className="font-mono text-xs font-bold text-neutral-500">{bill.billCode}</span>
                         <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold ${billStatusClass[bill.status]}`}>
-                          {billStatusLabel[bill.status]}
+                          {t(billStatusLabel[bill.status])}
                         </span>
                       </div>
                       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-medium text-neutral-500">
                         <span>Session: <span className="font-mono">{bill.sessionCode || '-'}</span></span>
-                        <span>{bill.orderCount} orders</span>
-                        <span>{bill.totalItems} món</span>
+                        <span>{t('{count} orders', { count: bill.orderCount })}</span>
+                        <span>{t('{count} món', { count: bill.totalItems })}</span>
                       </div>
                     </div>
 
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                       <div className="text-left sm:text-right">
-                        <span className="block text-[11px] font-semibold text-neutral-500">Tổng bill</span>
-                        <span className="text-lg font-bold text-emerald-700">{formatCurrency(bill.totalAmount)}</span>
+                        <span className="block text-[11px] font-semibold text-neutral-500">{t('Tổng bill')}</span>
+                        <span className="text-lg font-bold text-emerald-700">{formatOrderCurrency(bill.totalAmount)}</span>
                       </div>
                       {canPayBill && isBillPayable && (
                         <Button
@@ -243,7 +247,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                           className="h-10 rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white shadow-sm hover:bg-emerald-700"
                         >
                           <CheckCircle2 className="mr-1.5 h-4 w-4" />
-                          Thanh toán bill
+                          {t('Thanh toán bill')}
                         </Button>
                       )}
                     </div>
@@ -268,7 +272,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                             )}
                             <span className="mt-1 flex items-center gap-1 text-[11px] font-medium text-neutral-400">
                               <Clock className="h-3.5 w-3.5" />
-                              {getOrderTime(order)}
+                              {getOrderTime(order, localeTag, t)}
                             </span>
                           </div>
 
@@ -278,7 +282,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                             </p>
                             {order.note && (
                               <p className="mt-1 inline-flex rounded-lg border border-amber-100 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800">
-                                Ghi chú: {order.note}
+                                {t('Ghi chú:')} {order.note}
                               </p>
                             )}
                             {order.items.map((item, index) => {
@@ -297,9 +301,9 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
 
                           <div className="flex flex-wrap items-center gap-2">
                             <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-bold ${statusColors[order.status]}`}>
-                              {statusLabel[order.status]}
+                              {t(statusLabel[order.status])}
                             </span>
-                            <span className="text-xs font-bold text-neutral-900">{formatCurrency(order.totalAmount)}</span>
+                            <span className="text-xs font-bold text-neutral-900">{formatOrderCurrency(order.totalAmount)}</span>
                           </div>
 
                           <div className="flex items-center justify-start gap-1.5 md:justify-end">
@@ -311,7 +315,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                                 aria-busy={isUpdatingOrder}
                                 className="h-8 rounded-lg bg-blue-600 px-3 text-xs font-semibold text-white shadow-sm hover:bg-blue-700"
                               >
-                                {isUpdatingOrder ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Đang cập nhật…</> : 'Xác nhận'}
+                                {isUpdatingOrder ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> {t('Đang cập nhật…')}</> : t('Xác nhận')}
                               </Button>
                             )}
                             {canUpdateOrder && order.status === OrderStatus.CONFIRMED && (
@@ -322,12 +326,12 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                                 aria-busy={isUpdatingOrder}
                                 className="h-8 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white shadow-sm hover:bg-violet-700"
                               >
-                                {isUpdatingOrder ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Đang ra món…</> : 'Ra món'}
+                                {isUpdatingOrder ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> {t('Đang ra món…')}</> : t('Ra món')}
                               </Button>
                             )}
                             {canUpdateOrder && order.status === OrderStatus.SERVED && (
                               <span className="rounded-lg bg-neutral-50 px-2 py-1 text-[11px] font-semibold text-neutral-500">
-                                Chờ thanh toán bill
+                                {t('Chờ thanh toán bill')}
                               </span>
                             )}
 
@@ -345,7 +349,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                                       disabled={isUpdatingOrder}
                                       className="text-rose-600 hover:bg-rose-50/50 focus:text-rose-700 focus:bg-rose-50 font-semibold text-xs rounded-lg cursor-pointer"
                                     >
-                                      Hủy đơn hàng
+                                      {t('Hủy đơn hàng')}
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator className="bg-neutral-100 my-1" />
                                   </>
@@ -353,11 +357,11 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                                 <DropdownMenuItem
                                   onClick={() => {
                                     navigator.clipboard.writeText(orderId);
-                                    toast.success('Đã copy mã đơn hàng');
+                                    toast.success(t('Đã copy mã đơn hàng'));
                                   }}
                                   className="text-neutral-700 font-medium text-xs rounded-lg cursor-pointer"
                                 >
-                                  Sao chép mã đơn
+                                  {t('Sao chép mã đơn')}
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>

@@ -5,8 +5,10 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationItemComponent } from './NotificationItem';
 import type { NotificationItem } from '@/types';
 import { NotificationDetailModal } from './NotificationDetailModal';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export const NotificationBell: React.FC = () => {
+  const { t } = useOwnerConsoleLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,7 +71,7 @@ export const NotificationBell: React.FC = () => {
       <button
         onClick={handleToggle}
         className="p-2 rounded-xl border border-neutral-200 hover:bg-neutral-50 hover:border-neutral-300 text-neutral-500 relative transition-colors duration-200 shadow-sm/5"
-        aria-label="Thông báo"
+        aria-label={t('Thông báo')}
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
@@ -85,10 +87,10 @@ export const NotificationBell: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm text-gray-900">Thông báo</span>
+              <span className="font-bold text-sm text-gray-900">{t('Thông báo')}</span>
               {unreadCount > 0 && (
                 <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                  {unreadCount} mới
+                  {unreadCount} {t('mới')}
                 </span>
               )}
             </div>
@@ -98,7 +100,7 @@ export const NotificationBell: React.FC = () => {
                 className="text-[11px] font-semibold text-green-600 hover:text-green-700 flex items-center gap-1 transition-colors"
               >
                 <Check className="w-3 h-3" />
-                Đọc tất cả
+                {t('Đọc tất cả')}
               </button>
             )}
           </div>
@@ -108,7 +110,7 @@ export const NotificationBell: React.FC = () => {
             {recentNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-neutral-400">
                 <Bell className="w-8 h-8 mb-2 opacity-30" />
-                <span className="text-xs font-semibold">Chưa có thông báo nào</span>
+                <span className="text-xs font-semibold">{t('Chưa có thông báo nào')}</span>
               </div>
             ) : (
               recentNotifications.map(n => (
@@ -128,7 +130,7 @@ export const NotificationBell: React.FC = () => {
               onClick={handleViewAll}
               className="w-full flex items-center justify-center gap-1 py-2 rounded-xl text-xs font-bold text-green-600 hover:bg-green-50 transition-colors"
             >
-              Xem tất cả thông báo
+              {t('Xem tất cả thông báo')}
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>

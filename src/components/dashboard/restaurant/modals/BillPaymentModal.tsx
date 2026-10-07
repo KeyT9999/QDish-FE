@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { formatCurrency } from '@/lib/utils';
 import { AlertCircle, Banknote, CheckCircle2, Landmark, Loader2, Maximize2, QrCode, Receipt, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 type PayableBill = ActiveBill | Bill;
 
@@ -31,21 +32,23 @@ const QrPreviewCard: React.FC<QrPreviewCardProps> = ({
   accountHolder,
   bankInfoItems,
   onExpand
-}) => (
+}) => {
+  const { t } = useOwnerConsoleLocale();
+  return (
   <div className="flex flex-col items-center gap-3 text-center">
     <button
       type="button"
       onClick={onExpand}
-      aria-label="Mở QR chuyển khoản cỡ lớn"
+      aria-label={t('Mở QR chuyển khoản cỡ lớn')}
       className="group relative rounded-2xl border border-neutral-100 bg-white p-2 shadow-sm outline-none transition hover:border-emerald-300 hover:shadow-md focus-visible:border-emerald-500 focus-visible:ring-3 focus-visible:ring-emerald-500/20"
     >
       <img
         src={qrImageUrl}
-        alt="QR chuyển khoản"
+        alt={t('QR chuyển khoản')}
         className="h-56 w-56 cursor-pointer rounded-xl object-contain"
       />
       <span className="absolute inset-x-4 bottom-4 rounded-full bg-neutral-950/80 px-3 py-1.5 text-xs font-bold text-white opacity-95 transition group-hover:bg-emerald-700">
-        Nhấn để phóng to
+        {t('Nhấn để phóng to')}
       </span>
     </button>
 
@@ -56,19 +59,20 @@ const QrPreviewCard: React.FC<QrPreviewCardProps> = ({
       className="h-10 w-full rounded-xl border-emerald-200 bg-emerald-50 text-sm font-bold text-emerald-800 hover:bg-emerald-100 sm:w-auto"
     >
       <Maximize2 className="mr-1.5 h-4 w-4" />
-      Phóng to QR
+      {t('Phóng to QR')}
     </Button>
 
     <div className="space-y-0.5 text-xs font-semibold text-neutral-600">
-      {accountHolder && <p>Chủ TK: {accountHolder}</p>}
+      {accountHolder && <p>{t('Chủ TK:')} {accountHolder}</p>}
       {bankInfoItems
-        .filter((item) => item.label !== 'Chủ tài khoản' && !item.highlight)
+        .filter((item) => item.label !== t('Chủ tài khoản') && !item.highlight)
         .map((item) => (
           <p key={item.label}>{item.label}: {item.value}</p>
         ))}
     </div>
   </div>
-);
+  );
+};
 
 interface QrFullscreenModalProps {
   open: boolean;
@@ -86,7 +90,9 @@ const QrFullscreenModal: React.FC<QrFullscreenModalProps> = ({
   isSubmitting,
   onOpenChange,
   onConfirmPaid
-}) => (
+}) => {
+  const { t } = useOwnerConsoleLocale();
+  return (
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent
       showCloseButton={false}
@@ -94,9 +100,9 @@ const QrFullscreenModal: React.FC<QrFullscreenModalProps> = ({
       className="z-[70] max-h-[94vh] w-[min(94vw,720px)] overflow-y-auto rounded-2xl bg-white p-4 sm:p-5"
     >
       <DialogHeader className="pr-10">
-        <DialogTitle className="text-lg font-black text-neutral-950">QR chuyển khoản</DialogTitle>
+        <DialogTitle className="text-lg font-black text-neutral-950">{t('QR chuyển khoản')}</DialogTitle>
         <DialogDescription>
-          Đưa màn hình này cho khách quét, kiểm tra đúng tổng tiền trước khi xác nhận.
+          {t('Đưa màn hình này cho khách quét, kiểm tra đúng tổng tiền trước khi xác nhận.')}
         </DialogDescription>
       </DialogHeader>
 
@@ -105,7 +111,7 @@ const QrFullscreenModal: React.FC<QrFullscreenModalProps> = ({
         variant="ghost"
         size="icon"
         onClick={() => onOpenChange(false)}
-        aria-label="Đóng QR phóng to"
+        aria-label={t('Đóng QR phóng to')}
         className="absolute right-3 top-3 rounded-full"
       >
         <X className="h-5 w-5" />
@@ -116,7 +122,7 @@ const QrFullscreenModal: React.FC<QrFullscreenModalProps> = ({
           {qrImageUrl && (
             <img
               src={qrImageUrl}
-              alt="QR chuyển khoản phóng to"
+              alt={t('QR chuyển khoản phóng to')}
               className="aspect-square w-[90vw] max-w-[520px] rounded-xl bg-white object-contain shadow-sm sm:w-full lg:max-w-[640px]"
             />
           )}
@@ -147,7 +153,7 @@ const QrFullscreenModal: React.FC<QrFullscreenModalProps> = ({
           disabled={isSubmitting}
           className="h-10 rounded-xl"
         >
-          Đóng
+          {t('Đóng')}
         </Button>
         <Button
           type="button"
@@ -160,12 +166,13 @@ const QrFullscreenModal: React.FC<QrFullscreenModalProps> = ({
           ) : (
             <CheckCircle2 className="mr-1.5 h-4 w-4" />
           )}
-          Đã nhận tiền
+          {t('Đã nhận tiền')}
         </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>
-);
+  );
+};
 
 interface BillPaymentModalProps {
   open: boolean;
@@ -187,6 +194,7 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
   onOpenChange,
   onPaid
 }) => {
+  const { t } = useOwnerConsoleLocale();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
   const [cashReceived, setCashReceived] = useState('');
   const [settings, setSettings] = useState<RestaurantPaymentSettings | null>(null);
@@ -224,12 +232,12 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
   const paymentInfoItems = useMemo(() => {
     if (!settings) return [];
     return [
-      settings.bankAccountHolder ? { label: 'Chủ tài khoản', value: settings.bankAccountHolder } : null,
-      settings.bankName ? { label: 'Ngân hàng', value: settings.bankName } : null,
+      settings.bankAccountHolder ? { label: t('Chủ tài khoản'), value: settings.bankAccountHolder } : null,
+      settings.bankName ? { label: t('Ngân hàng'), value: settings.bankName } : null,
       settings.bankAccountNumber ? { label: 'Số tài khoản', value: settings.bankAccountNumber } : null,
-      { label: 'Tổng bill cần chuyển', value: formatCurrency(totalAmount), highlight: true }
+      { label: t('Tổng bill cần chuyển'), value: formatCurrency(totalAmount), highlight: true }
     ].filter(Boolean) as PaymentInfoItem[];
-  }, [settings, totalAmount]);
+  }, [settings, totalAmount, t]);
 
   const handlePaymentMethodChange = (value: string) => {
     const nextMethod = value as PaymentMethod;
@@ -241,12 +249,12 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
 
   const handleConfirm = async () => {
     if (!billId) {
-      toast.error('Không xác định được bill cần thanh toán');
+      toast.error(t('Không xác định được bill cần thanh toán'));
       return;
     }
 
     if (isCashInvalid) {
-      toast.error('Tiền khách đưa phải lớn hơn hoặc bằng tổng bill');
+      toast.error(t('Tiền khách đưa phải lớn hơn hoặc bằng tổng bill'));
       return;
     }
 
@@ -256,11 +264,11 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
         paymentMethod,
         cashReceived: paymentMethod === PaymentMethod.CASH ? receivedAmount : undefined
       });
-      toast.success('Thanh toán bill thành công. Bàn đã được giải phóng.');
+      toast.success(t('Thanh toán bill thành công. Bàn đã được giải phóng.'));
       onOpenChange(false);
       await onPaid?.();
     } catch (error: any) {
-      toast.error(error.message || 'Không thể thanh toán bill');
+      toast.error(error.message || t('Không thể thanh toán bill'));
     } finally {
       setIsSubmitting(false);
     }
@@ -272,10 +280,10 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg font-bold text-neutral-950">
             <Receipt className="h-5 w-5 text-emerald-600" />
-            Thanh toán bill - Bàn {bill?.tableNumber || '-'}
+            {t('Thanh toán bill - Bàn {table}', { table: bill?.tableNumber || '-' })}
           </DialogTitle>
           <DialogDescription>
-            Thanh toán một lần cho toàn bộ bill trong phiên bàn. Các order con sẽ được hoàn thành sau khi xác nhận.
+            {t('Thanh toán một lần cho toàn bộ bill trong phiên bàn. Các order con sẽ được hoàn thành sau khi xác nhận.')}
           </DialogDescription>
         </DialogHeader>
 
@@ -286,15 +294,15 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
               <span className="font-mono text-xs font-bold text-neutral-900">{bill?.billCode || '-'}</span>
             </div>
             <div>
-              <span className="block text-xs font-semibold text-neutral-500">Số order</span>
+              <span className="block text-xs font-semibold text-neutral-500">{t('Số order')}</span>
               <span className="font-bold text-neutral-900">{orderCount}</span>
             </div>
             <div>
-              <span className="block text-xs font-semibold text-neutral-500">Tổng món</span>
+              <span className="block text-xs font-semibold text-neutral-500">{t('Tổng món')}</span>
               <span className="font-bold text-neutral-900">{totalItems}</span>
             </div>
             <div className="text-left sm:text-right">
-              <span className="block text-xs font-semibold text-neutral-500">Tổng bill</span>
+              <span className="block text-xs font-semibold text-neutral-500">{t('Tổng bill')}</span>
               <span className="text-base font-black text-emerald-700">{formatCurrency(totalAmount)}</span>
             </div>
           </div>
@@ -307,12 +315,12 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
             <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${paymentMethod === PaymentMethod.CASH ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-200 bg-white hover:bg-neutral-50'}`}>
               <RadioGroupItem value={PaymentMethod.CASH} />
               <Banknote className="h-4 w-4 text-emerald-600" />
-              <span className="text-sm font-bold text-neutral-900">Tiền mặt</span>
+              <span className="text-sm font-bold text-neutral-900">{t('Tiền mặt')}</span>
             </label>
             <label className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${paymentMethod === PaymentMethod.BANK_TRANSFER ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-200 bg-white hover:bg-neutral-50'}`}>
               <RadioGroupItem value={PaymentMethod.BANK_TRANSFER} />
               <Landmark className="h-4 w-4 text-emerald-600" />
-              <span className="text-sm font-bold text-neutral-900">Chuyển khoản / QR</span>
+              <span className="text-sm font-bold text-neutral-900">{t('Chuyển khoản / QR')}</span>
             </label>
           </RadioGroup>
 
@@ -320,7 +328,7 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
             <div className="space-y-3 rounded-xl border border-neutral-100 bg-white p-4">
               <div className="space-y-1.5">
                 <Label htmlFor="cashReceived" className="text-xs font-bold text-neutral-600">
-                  Tiền khách đưa
+                  {t('Tiền khách đưa')}
                 </Label>
                 <Input
                   id="cashReceived"
@@ -329,22 +337,22 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
                   step={1000}
                   value={cashReceived}
                   onChange={(event) => setCashReceived(event.target.value)}
-                  placeholder="VD: 100000"
+                  placeholder={t('VD: 100000')}
                   className="rounded-xl"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-lg bg-neutral-50 p-3">
-                  <span className="block text-xs font-semibold text-neutral-500">Tổng bill</span>
+                  <span className="block text-xs font-semibold text-neutral-500">{t('Tổng bill')}</span>
                   <span className="font-bold text-neutral-900">{formatCurrency(totalAmount)}</span>
                 </div>
                 <div className="rounded-lg bg-emerald-50 p-3">
-                  <span className="block text-xs font-semibold text-emerald-700">Tiền trả lại</span>
+                  <span className="block text-xs font-semibold text-emerald-700">{t('Tiền trả lại')}</span>
                   <span className="font-bold text-emerald-800">{formatCurrency(changeAmount)}</span>
                 </div>
               </div>
               {isCashInvalid && cashReceived && (
-                <p className="text-xs font-semibold text-red-600">Tiền khách đưa chưa đủ để thanh toán bill.</p>
+                <p className="text-xs font-semibold text-red-600">{t('Tiền khách đưa chưa đủ để thanh toán bill.')}</p>
               )}
             </div>
           ) : (
@@ -352,7 +360,7 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
               {isLoadingSettings ? (
                 <div className="flex items-center justify-center gap-2 py-10 text-sm font-semibold text-neutral-500">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Đang tải QR chuyển khoản...
+                  {t('Đang tải QR chuyển khoản...')}
                 </div>
               ) : settings?.bankQrImageUrl ? (
                 <QrPreviewCard
@@ -365,8 +373,8 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
                 <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <div>
-                    <p className="font-bold">Chủ nhà hàng chưa cấu hình QR chuyển khoản.</p>
-                    <p className="mt-1 text-xs font-medium">Restaurant Admin/Staff không thể upload tại đây. Vui lòng liên hệ Chủ nhà hàng.</p>
+                    <p className="font-bold">{t('Chủ nhà hàng chưa cấu hình QR chuyển khoản.')}</p>
+                    <p className="mt-1 text-xs font-medium">{t('Restaurant Admin/Staff không thể upload tại đây. Vui lòng liên hệ Chủ nhà hàng.')}</p>
                   </div>
                 </div>
               )}
@@ -376,7 +384,7 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-            Đóng
+            {t('Đóng')}
           </Button>
           <Button
             type="button"
@@ -389,7 +397,7 @@ export const BillPaymentModal: React.FC<BillPaymentModalProps> = ({
             ) : (
               <CheckCircle2 className="mr-1.5 h-4 w-4" />
             )}
-            {paymentMethod === PaymentMethod.CASH ? 'Xác nhận thanh toán' : 'Xác nhận đã nhận tiền'}
+            {paymentMethod === PaymentMethod.CASH ? t('Xác nhận thanh toán') : t('Xác nhận đã nhận tiền')}
           </Button>
         </DialogFooter>
 

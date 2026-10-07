@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Landmark, Loader2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 interface RestaurantPaymentSettingsPanelProps {
   restaurantId: string;
@@ -29,6 +30,7 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
   userRole,
   onUpdated
 }) => {
+  const { t } = useOwnerConsoleLocale();
   const isOwner = userRole === Role.RESTAURANT_OWNER;
   const [settings, setSettings] = useState<RestaurantPaymentSettings>(emptySettings);
   const [form, setForm] = useState({
@@ -80,10 +82,10 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
         bankAccountHolder: form.bankAccountHolder.trim()
       });
       setSettings(nextSettings);
-      toast.success('Đã lưu thông tin thanh toán chuyển khoản');
+      toast.success(t('Đã lưu thông tin thanh toán chuyển khoản'));
       await onUpdated?.();
     } catch (error: any) {
-      toast.error(error.message || 'Không thể lưu thông tin thanh toán');
+      toast.error(error.message || t('Không thể lưu thông tin thanh toán'));
     } finally {
       setIsSaving(false);
     }
@@ -95,12 +97,12 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
     if (!file || !isOwner || !restaurantId) return;
 
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      toast.error('Chỉ hỗ trợ ảnh QR định dạng jpg, png hoặc webp');
+      toast.error(t('Chỉ hỗ trợ ảnh QR định dạng jpg, png hoặc webp'));
       return;
     }
 
     if (file.size > 3 * 1024 * 1024) {
-      toast.error('Ảnh QR không được vượt quá 3MB');
+      toast.error(t('Ảnh QR không được vượt quá 3MB'));
       return;
     }
 
@@ -110,10 +112,10 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
     try {
       const nextSettings = await paymentSettingsService.uploadBankQr(restaurantId, file);
       setSettings(nextSettings);
-      toast.success('Đã upload QR chuyển khoản');
+      toast.success(t('Đã upload QR chuyển khoản'));
       await onUpdated?.();
     } catch (error: any) {
-      toast.error(error.message || 'Không thể upload QR chuyển khoản');
+      toast.error(error.message || t('Không thể upload QR chuyển khoản'));
     } finally {
       setIsUploading(false);
     }
@@ -126,10 +128,10 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
       const nextSettings = await paymentSettingsService.deleteBankQr(restaurantId);
       setSettings(nextSettings);
       setLocalPreview(null);
-      toast.success('Đã xóa QR chuyển khoản');
+      toast.success(t('Đã xóa QR chuyển khoản'));
       await onUpdated?.();
     } catch (error: any) {
-      toast.error(error.message || 'Không thể xóa QR chuyển khoản');
+      toast.error(error.message || t('Không thể xóa QR chuyển khoản'));
     } finally {
       setIsDeletingQr(false);
     }
@@ -142,23 +144,23 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-bold text-neutral-900 flex items-center gap-2">
           <Landmark className="w-4 h-4 text-neutral-500" />
-          Thông tin thanh toán / QR chuyển khoản
+          {t('Thông tin thanh toán / QR chuyển khoản')}
         </CardTitle>
         <CardDescription className="text-xs">
-          QR này dùng khi nhân viên/chủ quán chọn chuyển khoản trong modal thanh toán bill.
+          {t('QR này dùng khi nhân viên/chủ quán chọn chuyển khoản trong modal thanh toán bill.')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoading ? (
           <div className="flex items-center gap-2 rounded-xl bg-neutral-50 p-4 text-sm font-semibold text-neutral-500">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Đang tải cấu hình thanh toán...
+            {t('Đang tải cấu hình thanh toán...')}
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-neutral-600">Tên ngân hàng</Label>
+                <Label className="text-xs font-semibold text-neutral-600">{t('Tên ngân hàng')}</Label>
                 <Input
                   value={form.bankName}
                   onChange={(event) => setForm({ ...form, bankName: event.target.value })}
@@ -167,7 +169,7 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-neutral-600">Số tài khoản</Label>
+                <Label className="text-xs font-semibold text-neutral-600">{t('Số tài khoản')}</Label>
                 <Input
                   value={form.bankAccountNumber}
                   onChange={(event) => setForm({ ...form, bankAccountNumber: event.target.value })}
@@ -176,7 +178,7 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-neutral-600">Chủ tài khoản</Label>
+                <Label className="text-xs font-semibold text-neutral-600">{t('Chủ tài khoản')}</Label>
                 <Input
                   value={form.bankAccountHolder}
                   onChange={(event) => setForm({ ...form, bankAccountHolder: event.target.value })}
@@ -189,9 +191,9 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-[160px_1fr]">
               <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
                 {qrPreview ? (
-                  <img src={qrPreview} alt="QR chuyển khoản" className="h-full w-full object-contain" />
+                  <img src={qrPreview} alt={t('QR chuyển khoản')} className="h-full w-full object-contain" />
                 ) : (
-                  <span className="px-4 text-center text-xs font-semibold text-neutral-400">Chưa có QR</span>
+                  <span className="px-4 text-center text-xs font-semibold text-neutral-400">{t('Chưa có QR')}</span>
                 )}
               </div>
               <div className="flex flex-col justify-center gap-3">
@@ -199,23 +201,23 @@ export const RestaurantPaymentSettingsPanel: React.FC<RestaurantPaymentSettingsP
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" onClick={handleSave} disabled={isSaving} className="bg-emerald-600 text-white hover:bg-emerald-700">
                       {isSaving && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                      Lưu thông tin
+                      {t('Lưu thông tin')}
                     </Button>
                     <label className="inline-flex h-8 cursor-pointer items-center justify-center rounded-lg border border-neutral-200 bg-white px-3 text-sm font-medium hover:bg-neutral-50">
                       {isUploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
-                      Upload QR
+                      {t('Upload QR')}
                       <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleUploadQr} disabled={isUploading} />
                     </label>
                     {settings.bankQrImageUrl && (
                       <Button type="button" variant="outline" onClick={handleDeleteQr} disabled={isDeletingQr} className="text-rose-600 hover:bg-rose-50 hover:text-rose-700">
                         {isDeletingQr ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <X className="mr-1.5 h-4 w-4" />}
-                        Xóa QR
+                        {t('Xóa QR')}
                       </Button>
                     )}
                   </div>
                 ) : (
                   <div className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-semibold text-amber-900">
-                    Chỉ Chủ nhà hàng được sửa thông tin ngân hàng và QR chuyển khoản. Admin/Staff chỉ dùng QR này khi thanh toán bill.
+                    {t('Chỉ Chủ nhà hàng được sửa thông tin ngân hàng và QR chuyển khoản. Admin/Staff chỉ dùng QR này khi thanh toán bill.')}
                   </div>
                 )}
               </div>

@@ -21,6 +21,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
+import type { OwnerConsoleTranslationKey } from '@/i18n/ownerConsoleCatalog';
 
 export interface CurrentBillDetails {
   bill: Bill;
@@ -57,13 +59,13 @@ const orderStatusLabels: Record<string, string> = {
   CANCELLED: 'Đã hủy',
 };
 
-const formatDateTime = (value?: string | number) => {
+const formatDateTime = (value: string | number | undefined, locale: string) => {
   if (value === undefined || value === null) return '-';
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '-';
 
-  return new Intl.DateTimeFormat('vi-VN', {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -100,7 +102,10 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
   onOpenChange,
   onPay,
 }) => {
+  const { language, t } = useOwnerConsoleLocale();
   if (!details) return null;
+
+  const dateLocale = language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'zh-CN';
 
   const { bill, session, orders } = details;
   const sessionCode = bill.sessionCode || session?.sessionCode || '-';
@@ -117,12 +122,12 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <DialogTitle className="text-xl font-extrabold tracking-tight text-neutral-950">
-                  Bill hiện tại · Bàn {bill.tableNumber}
+                  {t('Bill hiện tại · Bàn {table}', { table: bill.tableNumber })}
                 </DialogTitle>
                 <DialogDescription className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
                   <span className="font-semibold text-neutral-700">{bill.billCode}</span>
                   <span aria-hidden="true">·</span>
-                  <span>Mã phiên {sessionCode}</span>
+                  <span>{t('Mã phiên {code}', { code: sessionCode })}</span>
                 </DialogDescription>
               </div>
               <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold ${billStatusClasses[bill.status]}`}>
@@ -131,27 +136,27 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
                 ) : (
                   <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
-                {billStatusLabels[bill.status]}
+                {t(billStatusLabels[bill.status] as OwnerConsoleTranslationKey)}
               </span>
             </div>
           </DialogHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
             <section aria-labelledby="bill-overview-title">
-              <h3 id="bill-overview-title" className="sr-only">Tổng quan bill</h3>
+              <h3 id="bill-overview-title" className="sr-only">{t('Tổng quan bill')}</h3>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                <BillMeta icon={Hash} label="Mã phiên" value={sessionCode} />
-                <BillMeta icon={CalendarClock} label="Mở phiên" value={formatDateTime(session?.openedAt || bill.createdAt)} />
-                <BillMeta icon={ClipboardList} label="Số order" value={bill.orderCount ?? bill.orderIds.length} />
-                <BillMeta icon={ShoppingBag} label="Tổng món" value={bill.totalItems} />
+                <BillMeta icon={Hash} label={t('Mã phiên')} value={sessionCode} />
+                <BillMeta icon={CalendarClock} label={t('Mở phiên')} value={formatDateTime(session?.openedAt || bill.createdAt, dateLocale)} />
+                <BillMeta icon={ClipboardList} label={t('Số order')} value={bill.orderCount ?? bill.orderIds.length} />
+                <BillMeta icon={ShoppingBag} label={t('Tổng món')} value={bill.totalItems} />
               </div>
             </section>
 
             <section className="mt-6" aria-labelledby="bill-items-title">
               <div className="mb-3 flex items-end justify-between gap-3">
                 <div>
-                  <h3 id="bill-items-title" className="text-sm font-extrabold text-neutral-900">Món trong bill</h3>
-                  <p className="mt-1 text-xs text-neutral-500">Danh sách món đã được ghi nhận cho phiên này.</p>
+                  <h3 id="bill-items-title" className="text-sm font-extrabold text-neutral-900">{t('Món trong bill')}</h3>
+                  <p className="mt-1 text-xs text-neutral-500">{t('Danh sách món đã được ghi nhận cho phiên này.')}</p>
                 </div>
                 <span className="shrink-0 text-xs font-semibold text-neutral-500">{bill.itemsSnapshot.length} món</span>
               </div>
@@ -178,7 +183,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
                 </div>
               ) : (
                 <div className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-5 text-center text-sm text-neutral-500">
-                  Chưa có món nào trong bill.
+                  {t('Chưa có món nào trong bill.')}
                 </div>
               )}
             </section>
@@ -186,8 +191,8 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
             {orders.length > 0 && (
               <section className="mt-6" aria-labelledby="bill-orders-title">
                 <div className="mb-3">
-                  <h3 id="bill-orders-title" className="text-sm font-extrabold text-neutral-900">Các order trong phiên</h3>
-                  <p className="mt-1 text-xs text-neutral-500">Theo dõi trạng thái từng order đã tạo tại bàn.</p>
+                  <h3 id="bill-orders-title" className="text-sm font-extrabold text-neutral-900">{t('Các order trong phiên')}</h3>
+                  <p className="mt-1 text-xs text-neutral-500">{t('Theo dõi trạng thái từng order đã tạo tại bàn.')}</p>
                 </div>
                 <div className="space-y-2">
                   {orders.map((order) => {
@@ -195,9 +200,9 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
                     return (
                       <div key={orderId} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200/80 bg-neutral-50/60 p-3">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-neutral-900">Đơn {orderId}</p>
+                          <p className="truncate text-sm font-bold text-neutral-900">{t('Đơn {orderId}', { orderId })}</p>
                           <p className="mt-1 text-xs text-neutral-500">
-                            {orderStatusLabels[order.status] || order.status} · {order.items.length} món · {formatDateTime(order.createdAt || order.timestamp)}
+                            {orderStatusLabels[order.status] ? t(orderStatusLabels[order.status] as OwnerConsoleTranslationKey) : order.status} · {t('{count} món', { count: order.items.length })} · {formatDateTime(order.createdAt || order.timestamp, dateLocale)}
                           </p>
                         </div>
                         <p className="shrink-0 text-sm font-extrabold text-neutral-900">{formatCurrency(order.totalAmount)}</p>
@@ -211,28 +216,28 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
             <section className="mt-6 rounded-2xl border border-neutral-200/80 bg-neutral-50/70 p-4 sm:p-5" aria-labelledby="bill-totals-title">
               <div className="mb-4 flex items-center gap-2">
                 <ReceiptText className="h-4 w-4 text-neutral-500" aria-hidden="true" />
-                <h3 id="bill-totals-title" className="text-sm font-extrabold text-neutral-900">Chi tiết tiền</h3>
+                <h3 id="bill-totals-title" className="text-sm font-extrabold text-neutral-900">{t('Chi tiết tiền')}</h3>
               </div>
               <div className="space-y-2.5 text-sm">
                 <div className="flex items-center justify-between gap-4 text-neutral-600">
-                  <span>Tạm tính</span>
+                  <span>{t('Tạm tính')}</span>
                   <span className="font-semibold text-neutral-900">{formatCurrency(bill.subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4 text-neutral-600">
-                  <span>Giảm giá</span>
+                  <span>{t('Giảm giá')}</span>
                   <span className="font-semibold text-neutral-900">- {formatCurrency(bill.discountAmount)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4 text-neutral-600">
-                  <span>Phí dịch vụ</span>
+                  <span>{t('Phí dịch vụ')}</span>
                   <span className="font-semibold text-neutral-900">{formatCurrency(bill.serviceFee)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4 text-neutral-600">
-                  <span>Thuế</span>
+                  <span>{t('Thuế')}</span>
                   <span className="font-semibold text-neutral-900">{formatCurrency(bill.taxAmount)}</span>
                 </div>
                 <div className="my-3 border-t border-neutral-200" />
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-base font-extrabold text-neutral-950">Tổng cộng</span>
+                  <span className="text-base font-extrabold text-neutral-950">{t('Tổng cộng')}</span>
                   <span className="text-xl font-black text-emerald-700">{formatCurrency(bill.totalAmount)}</span>
                 </div>
               </div>
@@ -242,16 +247,16 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
           <div className="flex flex-col gap-3 border-t border-neutral-100 bg-neutral-50/80 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="flex items-center gap-2 text-xs text-neutral-500">
               <Clock3 className="h-4 w-4" aria-hidden="true" />
-              <span>Bill {bill.billCode}</span>
+              <span>{t('Bill')} {bill.billCode}</span>
             </div>
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
-              <Button variant="outline" aria-label="Đóng bill" onClick={() => onOpenChange(false)} className="rounded-xl">
-                Đóng
+              <Button variant="outline" aria-label={t('Đóng bill')} onClick={() => onOpenChange(false)} className="rounded-xl">
+                {t('Đóng')}
               </Button>
               {canPay && (
                 <Button onClick={() => onPay(bill)} className="rounded-xl bg-emerald-600 font-bold text-white hover:bg-emerald-700">
                   <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                  Thanh toán bill
+                  {t('Thanh toán bill')}
                 </Button>
               )}
             </div>

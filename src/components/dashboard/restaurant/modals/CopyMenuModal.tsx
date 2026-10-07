@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Restaurant } from '@/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { AlertCircle, Loader2, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { ownerRestaurantService } from '@/services/ownerRestaurantService';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export interface CopyMenuModalProps {
   open: boolean;
@@ -22,38 +23,39 @@ export const CopyMenuModal: React.FC<CopyMenuModalProps> = ({
   restaurants,
   onSuccess
 }) => {
+  const { t } = useOwnerConsoleLocale();
   const [sourceId, setSourceId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Filter out the target restaurant from the options list
-  const availableSources = restaurants.filter(
+  const availableSources = useMemo(() => restaurants.filter(
     r => targetRestaurant && (r.id || r._id) !== (targetRestaurant.id || targetRestaurant._id)
-  );
+  ), [restaurants, targetRestaurant]);
 
   useEffect(() => {
     if (open) {
       setSourceId(availableSources[0] ? (availableSources[0].id || availableSources[0]._id || '') : '');
     }
-  }, [open, targetRestaurant, restaurants]);
+  }, [open, availableSources]);
 
   const handleCopy = async () => {
     if (!targetRestaurant) return;
     const targetId = targetRestaurant.id || targetRestaurant._id;
     if (!targetId || !sourceId) {
-      toast.error('Vui lòng chọn chi nhánh nguồn để sao chép thực đơn.');
+      toast.error(t('Vui lòng chọn chi nhánh nguồn để sao chép thực đơn.'));
       return;
     }
 
     setIsSubmitting(true);
-    const toastId = toast.loading('Đang tiến hành nhân bản thực đơn, vui lòng đợi...');
+    const toastId = toast.loading(t('Đang tiến hành nhân bản thực đơn, vui lòng đợi...'));
 
     try {
       const response = await ownerRestaurantService.copyMenu(targetId, sourceId);
-      toast.success(response.message || 'Sao chép thực đơn thành công!', { id: toastId });
+      toast.success(response.message || t('Sao chép thực đơn thành công!'), { id: toastId });
       onSuccess();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err.message || 'Có lỗi xảy ra trong quá trình sao chép thực đơn.', { id: toastId });
+      toast.error(err.message || t('Có lỗi xảy ra trong quá trình sao chép thực đơn.'), { id: toastId });
     } finally {
       setIsSubmitting(false);
     }
@@ -65,23 +67,23 @@ export const CopyMenuModal: React.FC<CopyMenuModalProps> = ({
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
             <Copy className="w-5 h-5 text-emerald-600" />
-            Sao chép thực đơn chi nhánh
+            {t('Sao chép thực đơn chi nhánh')}
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500">
-            Sao chép toàn bộ danh mục và các món ăn từ một chi nhánh cũ sang chi nhánh <strong className="text-slate-700">{targetRestaurant?.name}</strong>.
+            {t('Sao chép toàn bộ danh mục và món ăn từ một chi nhánh cũ sang chi nhánh {name}.', { name: targetRestaurant?.name || '' })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-3">
           {availableSources.length === 0 ? (
             <div className="text-center py-6 text-slate-500 text-xs">
-              Bạn không có chi nhánh nào khác khả dụng để sao chép thực đơn. Vui lòng tạo thêm chi nhánh có chứa thực đơn trước.
+              {t('Không có chi nhánh nguồn khả dụng. Hãy tạo thêm chi nhánh có thực đơn trước.')}
             </div>
           ) : (
             <>
               <div className="space-y-1.5">
                 <Label htmlFor="sourceBranch" className="text-xs text-slate-600 font-semibold">
-                  Chọn chi nhánh nguồn (Sao chép từ) *
+                  {t('Chọn chi nhánh nguồn (Sao chép từ) *')}
                 </Label>
                 <select
                   id="sourceBranch"
@@ -101,8 +103,7 @@ export const CopyMenuModal: React.FC<CopyMenuModalProps> = ({
               <div className="flex gap-2.5 p-3.5 rounded-xl border border-amber-100 bg-amber-50/40 text-xs text-amber-800 font-medium leading-relaxed">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <div>
-                  Hệ thống sẽ sao chép toàn bộ danh mục món ăn, thực đơn món, định lượng nguyên liệu và hồ sơ dinh dưỡng. 
-                  Các danh mục có tên trùng khớp sẽ tự động được gộp nhóm thay vì tạo mới trùng lặp.
+                  {t('Hệ thống sao chép danh mục, món ăn, định lượng nguyên liệu và hồ sơ dinh dưỡng. Danh mục trùng tên sẽ được gộp thay vì tạo bản trùng lặp.')}
                 </div>
               </div>
             </>
@@ -116,7 +117,7 @@ export const CopyMenuModal: React.FC<CopyMenuModalProps> = ({
             className="rounded-xl text-xs font-bold"
             disabled={isSubmitting}
           >
-            Hủy
+            {t('Hủy')}
           </Button>
           <Button 
             onClick={handleCopy} 
@@ -126,10 +127,10 @@ export const CopyMenuModal: React.FC<CopyMenuModalProps> = ({
             {isSubmitting ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Đang sao chép...
+                {t('Đang sao chép...')}
               </span>
             ) : (
-              'Bắt đầu sao chép'
+              t('Bắt đầu sao chép')
             )}
           </Button>
         </DialogFooter>

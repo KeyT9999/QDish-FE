@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { getIngredientAllergenSummary, validateIngredientAllergenConfirmation } from '@/services/ingredientAllergenReviewPolicy';
 import { toast } from 'sonner';
 import { Check, Info } from 'lucide-react';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export interface IngredientModalProps {
   open: boolean;
@@ -18,33 +19,6 @@ export interface IngredientModalProps {
   isSuperAdmin?: boolean;
   isReadOnly?: boolean;
 }
-
-const CATEGORIES = [
-  { value: 'protein', label: '🥩 Đạm (Protein)' },
-  { value: 'tinh_bot', label: '🌾 Tinh bột (Carbohydrates)' },
-  { value: 'chat_beo', label: '🫒 Chất béo (Fat)' },
-  { value: 'rau_cu', label: '🥦 Rau củ (Vegetables)' },
-  { value: 'gia_vi', label: '🧂 Gia vị (Spices & Sauces)' },
-  { value: 'sua', label: '🥛 Sữa & Dairy' },
-];
-
-const UNITS = [
-  { value: 'g', label: 'g (Gram)' },
-  { value: 'ml', label: 'ml (Milliliter)' },
-  { value: 'piece', label: 'Cái (Piece)' },
-];
-
-const ALLERGEN_OPTIONS = [
-  { value: 'GLUTEN', label: 'Gluten', emoji: '🌾' },
-  { value: 'DAIRY', label: 'Sữa', emoji: '🥛' },
-  { value: 'EGGS', label: 'Trứng', emoji: '🥚' },
-  { value: 'SOY', label: 'Đậu nành', emoji: '🫘' },
-  { value: 'PEANUT', label: 'Đậu phộng', emoji: '🥜' },
-  { value: 'TREE_NUTS', label: 'Hạt cây (óc chó, hạnh nhân, hạt điều...)', emoji: '🌰' },
-  { value: 'SESAME', label: 'Mè', emoji: '🌱' },
-  { value: 'FISH', label: 'Cá', emoji: '🐟' },
-  { value: 'SHELLFISH', label: 'Hải sản có vỏ', emoji: '🦐' },
-];
 
 type IngredientAllergenSource = NonNullable<Ingredient['allergenInfoSourceType']>;
 
@@ -67,6 +41,31 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
   isSuperAdmin = false,
   isReadOnly = false,
 }) => {
+  const { t } = useOwnerConsoleLocale();
+  const categories = [
+    { value: 'protein', label: t('Phân loại nguyên liệu · Đạm') },
+    { value: 'tinh_bot', label: t('Phân loại nguyên liệu · Tinh bột') },
+    { value: 'chat_beo', label: t('Phân loại nguyên liệu · Chất béo') },
+    { value: 'rau_cu', label: t('Phân loại nguyên liệu · Rau củ') },
+    { value: 'gia_vi', label: t('Phân loại nguyên liệu · Gia vị') },
+    { value: 'sua', label: t('Phân loại nguyên liệu · Sữa') },
+  ];
+  const units = [
+    { value: 'g', label: 'g (Gram)' },
+    { value: 'ml', label: 'ml (Milliliter)' },
+    { value: 'piece', label: t('Đơn vị · Cái') },
+  ];
+  const allergens = [
+    { value: 'GLUTEN', label: 'Gluten', emoji: '🌾' },
+    { value: 'DAIRY', label: t('Dị ứng · Sữa'), emoji: '🥛' },
+    { value: 'EGGS', label: t('Dị ứng · Trứng'), emoji: '🥚' },
+    { value: 'SOY', label: t('Dị ứng · Đậu nành'), emoji: '🫘' },
+    { value: 'PEANUT', label: t('Dị ứng · Đậu phộng'), emoji: '🥜' },
+    { value: 'TREE_NUTS', label: t('Dị ứng · Hạt cây'), emoji: '🌰' },
+    { value: 'SESAME', label: t('Dị ứng · Mè'), emoji: '🌱' },
+    { value: 'FISH', label: t('Dị ứng · Cá'), emoji: '🐟' },
+    { value: 'SHELLFISH', label: t('Dị ứng · Hải sản có vỏ'), emoji: '🦐' },
+  ];
   const [activeTab, setActiveTab] = useState<'basic' | 'nutrition' | 'allergens'>('basic');
   const [name, setName] = useState('');
   const [category, setCategory] = useState('protein');
@@ -136,15 +135,15 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
   const handleSave = async () => {
     if (isReadOnly) return;
     if (!name.trim()) {
-      toast.error('Vui lòng nhập tên nguyên liệu');
+      toast.error(t('Vui lòng nhập tên nguyên liệu'));
       return;
     }
     if (defaultUnit === 'piece' && gramsPerUnit <= 0) {
-      toast.error('Vui lòng nhập khối lượng quy đổi cho 1 cái');
+      toast.error(t('Vui lòng nhập khối lượng quy đổi cho 1 cái'));
       return;
     }
     if (!validateIngredientAllergenConfirmation({ confirmed: confirmAllergenReview, sourceNote: allergenSourceNote })) {
-      toast.error('Khi xác nhận allergen, cần ghi nguồn và nội dung đã đối chiếu (tối đa 500 ký tự)');
+      toast.error(t('Khi xác nhận allergen, cần ghi nguồn và nội dung đã đối chiếu (tối đa 500 ký tự)'));
       setActiveTab('allergens');
       return;
     }
@@ -173,7 +172,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
       await onSave(payload, editingIngredient);
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err.message || 'Lỗi khi lưu nguyên liệu');
+      toast.error(err.message || t('Lỗi khi lưu nguyên liệu'));
     } finally {
       setIsSubmitting(false);
     }
@@ -187,20 +186,20 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
         <DialogHeader className="mb-4">
           <DialogTitle className="text-xl font-bold tracking-tight text-neutral-900">
             {isReadOnly ? (
-              <span>👁️ Chi tiết nguyên liệu</span>
+              <span>👁️ {t('Chi tiết nguyên liệu')}</span>
             ) : editingIngredient ? (
-              isSuperAdmin ? '✏️ Sửa nguyên liệu hệ thống' : '✏️ Sửa nguyên liệu tùy chỉnh'
+              isSuperAdmin ? `✏️ ${t('Sửa nguyên liệu hệ thống')}` : `✏️ ${t('Sửa nguyên liệu tùy chỉnh')}`
             ) : (
-              isSuperAdmin ? '✨ Thêm nguyên liệu hệ thống' : '✨ Thêm nguyên liệu tùy chỉnh'
+              isSuperAdmin ? `✨ ${t('Thêm nguyên liệu hệ thống')}` : `✨ ${t('Thêm nguyên liệu tùy chỉnh')}`
             )}
           </DialogTitle>
           <DialogDescription className="text-xs text-neutral-500 mt-1">
             {isReadOnly ? (
-              'Xem chi tiết thông tin cơ bản, hàm lượng dinh dưỡng và chất gây dị ứng của nguyên liệu.'
+              t('Xem chi tiết thông tin cơ bản, hàm lượng dinh dưỡng và chất gây dị ứng của nguyên liệu.')
             ) : isSuperAdmin ? (
-              'Dữ liệu này sẽ xuất hiện làm mặc định cho tất cả các nhà hàng để so khớp dinh dưỡng.'
+              t('Dữ liệu này sẽ xuất hiện làm mặc định cho tất cả các nhà hàng để so khớp dinh dưỡng.')
             ) : (
-              'Dữ liệu nguyên liệu custom chỉ có hiệu lực và hiển thị riêng cho nhà hàng này.'
+              t('Dữ liệu nguyên liệu custom chỉ có hiệu lực và hiển thị riêng cho nhà hàng này.')
             )}
           </DialogDescription>
         </DialogHeader>
@@ -214,7 +213,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
               activeTab === 'basic' ? 'text-green-600' : 'text-neutral-400 hover:text-neutral-600'
             }`}
           >
-            Thông tin cơ bản
+            {t('Thông tin cơ bản')}
             {activeTab === 'basic' && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-500 rounded-full animate-fade-in" />
             )}
@@ -226,7 +225,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
               activeTab === 'nutrition' ? 'text-green-600' : 'text-neutral-400 hover:text-neutral-600'
             }`}
           >
-            Giá trị dinh dưỡng
+            {t('Giá trị dinh dưỡng')}
             {activeTab === 'nutrition' && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-500 rounded-full animate-fade-in" />
             )}
@@ -238,7 +237,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
               activeTab === 'allergens' ? 'text-green-600' : 'text-neutral-400 hover:text-neutral-600'
             }`}
           >
-            Chất gây dị ứng
+            {t('Chất gây dị ứng')}
             {activeTab === 'allergens' && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-500 rounded-full animate-fade-in" />
             )}
@@ -252,23 +251,23 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-xs text-neutral-600 font-bold">Tên nguyên liệu *</Label>
+                  <Label className="text-xs text-neutral-600 font-bold">{t('Tên nguyên liệu *')}</Label>
                   <Input
                     disabled={isReadOnly}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ví dụ: Ức gà áp chảo, Bơ lạt Anchor..."
+                    placeholder={t('Ví dụ: Ức gà áp chảo, Bơ lạt Anchor...')}
                     className="rounded-xl h-10 border-neutral-200/80 focus:border-green-400 text-xs font-semibold focus-visible:ring-0 focus-visible:ring-offset-0 focus:shadow-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs text-neutral-600 font-bold">Phân loại *</Label>
+                  <Label className="text-xs text-neutral-600 font-bold">{t('Phân loại *')}</Label>
                   <Select disabled={isReadOnly} value={category} onValueChange={(v) => setCategory(v || 'protein')}>
                     <SelectTrigger className="h-10 rounded-xl border-neutral-200/80 text-xs font-semibold focus:border-green-400 focus:ring-0 focus:ring-offset-0 focus:shadow-sm bg-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white rounded-xl shadow-md border-neutral-100">
-                      {CATEGORIES.map((c) => (
+                  {categories.map((c) => (
                         <SelectItem key={c.value} value={c.value} className="text-xs font-semibold text-neutral-700 focus:bg-neutral-50 focus:text-neutral-900 rounded-lg">
                           {c.label}
                         </SelectItem>
@@ -280,13 +279,13 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-xs text-neutral-600 font-bold">Đơn vị mặc định *</Label>
+                  <Label className="text-xs text-neutral-600 font-bold">{t('Đơn vị mặc định *')}</Label>
                   <Select disabled={isReadOnly} value={defaultUnit} onValueChange={(v) => setDefaultUnit(v as IngredientUnit)}>
                     <SelectTrigger className="h-10 rounded-xl border-neutral-200/80 text-xs font-semibold focus:border-green-400 focus:ring-0 focus:ring-offset-0 focus:shadow-sm bg-white">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white rounded-xl shadow-md border-neutral-100">
-                      {UNITS.map((u) => (
+                  {units.map((u) => (
                         <SelectItem key={u.value} value={u.value} className="text-xs font-semibold text-neutral-700 focus:bg-neutral-50 focus:text-neutral-900 rounded-lg">
                           {u.label}
                         </SelectItem>
@@ -296,7 +295,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                 </div>
                 {defaultUnit === 'piece' && (
                   <div className="space-y-2">
-                    <Label className="text-xs text-neutral-600 font-bold">Khối lượng quy đổi (g / cái) *</Label>
+                    <Label className="text-xs text-neutral-600 font-bold">{t('Khối lượng quy đổi (g / cái) *')}</Label>
                     <Input
                       disabled={isReadOnly}
                       type="number"
@@ -316,14 +315,14 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-500 mb-2 bg-neutral-50 p-2.5 rounded-xl border border-neutral-200/40">
                 <Info className="w-3.5 h-3.5 text-neutral-400" />
-                Nhập hàm lượng giá trị dinh dưỡng dựa trên <strong>100g</strong> hoặc <strong>100ml</strong> nguyên liệu.
+                {t('Nhập hàm lượng giá trị dinh dưỡng dựa trên {amount} nguyên liệu.', { amount: defaultUnit === 'ml' ? '100ml' : '100g' })}
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Calories Card */}
                 <div className="bg-neutral-50 border border-neutral-200/60 rounded-2xl p-3 flex flex-col justify-between transition-all hover:border-amber-300 hover:shadow-sm group">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Calo (kcal)</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('Calo (kcal)')}</span>
                     <span className="text-base group-hover:scale-110 transition-transform">🔥</span>
                   </div>
                   <Input
@@ -339,7 +338,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                 {/* Protein Card */}
                 <div className="bg-neutral-50 border border-neutral-200/60 rounded-2xl p-3 flex flex-col justify-between transition-all hover:border-emerald-300 hover:shadow-sm group">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Đạm (g)</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('Đạm (g)')}</span>
                     <span className="text-base group-hover:scale-110 transition-transform">💪</span>
                   </div>
                   <Input
@@ -356,7 +355,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                 {/* Carb Card */}
                 <div className="bg-neutral-50 border border-neutral-200/60 rounded-2xl p-3 flex flex-col justify-between transition-all hover:border-sky-300 hover:shadow-sm group">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Carbs (g)</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('Carbs (g)')}</span>
                     <span className="text-base group-hover:scale-110 transition-transform">🍚</span>
                   </div>
                   <Input
@@ -373,7 +372,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                 {/* Fat Card */}
                 <div className="bg-neutral-50 border border-neutral-200/60 rounded-2xl p-3 flex flex-col justify-between transition-all hover:border-lime-300 hover:shadow-sm group">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Béo (g)</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('Béo (g)')}</span>
                     <span className="text-base group-hover:scale-110 transition-transform">🥑</span>
                   </div>
                   <Input
@@ -390,7 +389,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                 {/* Fiber Card */}
                 <div className="bg-neutral-50 border border-neutral-200/60 rounded-2xl p-3 flex flex-col justify-between transition-all hover:border-green-300 hover:shadow-sm group">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Chất xơ (g)</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('Chất xơ (g)')}</span>
                     <span className="text-base group-hover:scale-110 transition-transform">🌿</span>
                   </div>
                   <Input
@@ -407,7 +406,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                 {/* Sugar Card */}
                 <div className="bg-neutral-50 border border-neutral-200/60 rounded-2xl p-3 flex flex-col justify-between transition-all hover:border-purple-300 hover:shadow-sm group">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Đường (g)</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('Đường (g)')}</span>
                     <span className="text-base group-hover:scale-110 transition-transform">🍬</span>
                   </div>
                   <Input
@@ -424,7 +423,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                 {/* Sodium Card */}
                 <div className="bg-neutral-50 border border-neutral-200/60 rounded-2xl p-3 flex flex-col justify-between transition-all hover:border-rose-300 hover:shadow-sm group">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Muối/Natri (mg)</span>
+                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">{t('Muối/Natri (mg)')}</span>
                     <span className="text-base group-hover:scale-110 transition-transform">🧂</span>
                   </div>
                   <Input
@@ -445,21 +444,21 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
             <div className="space-y-4">
               <div className={`rounded-xl border p-3 text-xs leading-5 ${allergenSummary.kind.startsWith('REVIEWED') ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-950'}`}>
                 <strong>{allergenSummary.kind === 'REVIEWED_EMPTY'
-                  ? 'Đã xác nhận: không có allergen trong danh sách hỗ trợ.'
+                  ? t('Đã xác nhận: không có allergen trong danh sách hỗ trợ.')
                   : allergenSummary.kind === 'REVIEWED_WITH_CODES'
-                    ? 'Đã xác nhận allergen được chọn bên dưới.'
+                    ? t('Đã xác nhận allergen được chọn bên dưới.')
                     : allergenSummary.kind === 'UNKNOWN_WITH_CANDIDATES'
-                      ? 'Các mã bên dưới mới là ứng viên, chưa được xác minh.'
-                      : 'Chưa có dữ liệu allergen được xác minh.'}</strong>
+                      ? t('Các mã bên dưới mới là ứng viên, chưa được xác minh.')
+                      : t('Chưa có dữ liệu allergen được xác minh.')}</strong>
                 {isReadOnly && editingIngredient?.allergenInfoSourceNote && (
-                  <p className="mt-1">Nguồn: {editingIngredient.allergenInfoSourceType || 'không rõ'} · {editingIngredient.allergenInfoSourceNote}</p>
+                  <p className="mt-1">{t('Nguồn:')} {editingIngredient.allergenInfoSourceType || t('không rõ')} · {editingIngredient.allergenInfoSourceNote}</p>
                 )}
               </div>
               <Label className="text-xs text-neutral-500 font-bold block mb-1">
-                Chọn các chất gây dị ứng có trong nguyên liệu này:
+                {t('Chọn các chất gây dị ứng có trong nguyên liệu này:')}
               </Label>
               <div className="flex flex-wrap gap-3">
-                {ALLERGEN_OPTIONS.map((a) => {
+                {allergens.map((a) => {
                   const selected = selectedAllergens.includes(a.value);
                   return (
                     <button
@@ -490,28 +489,28 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                         if (event.target.checked) setClearAllergenReview(false);
                       }}
                     />
-                    <span><strong>Tôi đã kiểm tra và xác nhận danh sách trên.</strong> Nếu để trống, tôi xác nhận nguyên liệu không có allergen nào trong danh sách hỗ trợ.</span>
+                    <span>{t('Tôi đã kiểm tra và xác nhận danh sách trên. Nếu để trống, tôi xác nhận nguyên liệu không có allergen nào trong danh sách hỗ trợ.')}</span>
                   </label>
                   {confirmAllergenReview && (
                     <div className="space-y-2 pl-5">
-                      <Label htmlFor="ingredient-allergen-source" className="text-xs">Nguồn xác nhận</Label>
+                      <Label htmlFor="ingredient-allergen-source" className="text-xs">{t('Nguồn xác nhận')}</Label>
                       <Select value={allergenSourceType} onValueChange={(value) => setAllergenSourceType(value as IngredientAllergenSource)}>
                         <SelectTrigger id="ingredient-allergen-source" className="h-9 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent className="bg-white">
-                          <SelectItem value="SUPPLIER_LABEL">Nhãn nhà cung cấp</SelectItem>
-                          <SelectItem value="RESTAURANT_RECIPE">Công thức nhà hàng</SelectItem>
-                          <SelectItem value="STAFF_ATTESTATION">Nhân viên đối chiếu</SelectItem>
-                          <SelectItem value="CURATED_MENU_DESCRIPTION">Mô tả thực đơn (cần nhân viên đối chiếu)</SelectItem>
-                          <SelectItem value="CURATED_REFERENCE_CATALOG">Danh mục nguyên liệu tham khảo (chỉ ứng viên)</SelectItem>
+                          <SelectItem value="SUPPLIER_LABEL">{t('Nhãn nhà cung cấp')}</SelectItem>
+                          <SelectItem value="RESTAURANT_RECIPE">{t('Công thức nhà hàng')}</SelectItem>
+                          <SelectItem value="STAFF_ATTESTATION">{t('Nhân viên đối chiếu')}</SelectItem>
+                          <SelectItem value="CURATED_MENU_DESCRIPTION">{t('Mô tả thực đơn (cần nhân viên đối chiếu)')}</SelectItem>
+                          <SelectItem value="CURATED_REFERENCE_CATALOG">{t('Danh mục nguyên liệu tham khảo (chỉ ứng viên)')}</SelectItem>
                         </SelectContent>
                       </Select>
-                      <Label htmlFor="ingredient-allergen-source-note" className="text-xs">Ghi chú nguồn / nội dung đã đối chiếu *</Label>
+                      <Label htmlFor="ingredient-allergen-source-note" className="text-xs">{t('Ghi chú nguồn / nội dung đã đối chiếu *')}</Label>
                       <Textarea
                         id="ingredient-allergen-source-note"
                         value={allergenSourceNote}
                         maxLength={500}
                         onChange={(event) => setAllergenSourceNote(event.target.value)}
-                        placeholder="Ví dụ: Theo nhãn nhà cung cấp, thành phần có đậu phộng."
+                        placeholder={t('Ví dụ: Theo nhãn nhà cung cấp, thành phần có đậu phộng.')}
                         className="min-h-16 text-xs"
                       />
                       <p className="text-right text-[10px] text-neutral-500">{allergenSourceNote.trim().length}/500</p>
@@ -527,7 +526,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
                           if (event.target.checked) setConfirmAllergenReview(false);
                         }}
                       />
-                      <span>Gỡ xác nhận hiện tại và đưa nguyên liệu về trạng thái chưa xác minh.</span>
+                      <span>{t('Gỡ xác nhận hiện tại và đưa nguyên liệu về trạng thái chưa xác minh.')}</span>
                     </label>
                   )}
                 </div>
@@ -538,7 +537,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
 
         <DialogFooter className="mt-8 gap-2 border-t border-neutral-100 pt-4 flex flex-col-reverse sm:flex-row justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl border-neutral-200/80 font-bold text-xs h-9 cursor-pointer">
-            {isReadOnly ? 'Đóng' : 'Hủy'}
+            {isReadOnly ? t('Đóng') : t('Hủy')}
           </Button>
           {!isReadOnly && (
             <Button
@@ -546,7 +545,7 @@ export const IngredientModal: React.FC<IngredientModalProps> = ({
               disabled={isSubmitting}
               className="bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-sm px-6 text-xs h-9 cursor-pointer"
             >
-              {isSubmitting ? 'Đang lưu...' : 'Lưu nguyên liệu'}
+              {isSubmitting ? t('Đang lưu...') : t('Lưu nguyên liệu')}
             </Button>
           )}
         </DialogFooter>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { MenuItem } from '@/types';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -47,6 +48,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
   showCopyButton,
   onCopyClick
 }) => {
+  const { t } = useOwnerConsoleLocale();
   const isMobile = useIsMobile(640);
   const [needsAllergenReviewOnly, setNeedsAllergenReviewOnly] = React.useState(false);
   const [translationItem, setTranslationItem] = React.useState<MenuItem | null>(null);
@@ -59,8 +61,8 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-900">Quản lý Món ăn (Menu)</h2>
-          <p className="text-neutral-500 text-xs mt-0.5">Quản lý danh sách món ăn, giá bán và thông tin dị ứng đã xác minh.</p>
+          <h2 className="text-xl font-bold tracking-tight text-neutral-900">{t('Quản lý Món ăn (Menu)')}</h2>
+          <p className="text-neutral-500 text-xs mt-0.5">{t('Quản lý danh sách món ăn, giá bán và thông tin dị ứng đã xác minh.')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <Button
@@ -70,7 +72,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
             onClick={() => setBulkTranslationOpen(true)}
             className="min-h-11 rounded-xl border-emerald-200 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"
           >
-            <Languages className="mr-1.5 h-4 w-4" /> Dịch menu hàng loạt
+            <Languages className="mr-1.5 h-4 w-4" /> {t('Dịch menu hàng loạt')}
           </Button>
           <Button
             type="button"
@@ -79,7 +81,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
             onClick={() => setNeedsAllergenReviewOnly((current) => !current)}
             className="rounded-xl gap-1.5 h-9 text-xs"
           >
-            <ShieldAlert className="h-4 w-4" /> Cần xác nhận dị ứng ({unreviewedCount})
+            <ShieldAlert className="h-4 w-4" /> {t('Cần xác nhận dị ứng ({count})', { count: unreviewedCount })}
           </Button>
           {showCopyButton && (
             <Button
@@ -88,17 +90,17 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
               className="rounded-xl border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-semibold gap-1.5 h-9"
             >
               <Copy className="w-4 h-4 text-neutral-500" />
-              Sao chép thực đơn
+              {t('Sao chép thực đơn')}
             </Button>
           )}
           <Button onClick={() => onOpenMenuModal()} className="rounded-xl bg-neutral-900 hover:bg-black text-white font-semibold shadow-sm gap-1.5 h-9">
-            <Plus className="w-4 h-4" /> Thêm món mới
+            <Plus className="w-4 h-4" /> {t('Thêm món mới')}
           </Button>
         </div>
       </div>
 
       {isLoadingMenu && (
-        <p role="status" className="text-xs font-medium text-neutral-500">Đang tải danh sách món ăn…</p>
+        <p role="status" className="text-xs font-medium text-neutral-500">{t('Đang tải danh sách món ăn…')}</p>
       )}
 
       {isMobile ? (
@@ -130,21 +132,21 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                             onClick={() => setTranslationItem(item)}
                             className="text-emerald-800 font-semibold text-xs rounded-lg cursor-pointer h-10 flex items-center"
                           >
-                            <Languages className="w-3.5 h-3.5 mr-2" /> Dịch Anh / Trung
+                            <Languages className="w-3.5 h-3.5 mr-2" /> {t('Dịch Anh / Trung')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => onConfirmAllergenReview(item)}
                             className="text-amber-800 font-semibold text-xs rounded-lg cursor-pointer h-10 flex items-center"
                           >
                             <ShieldAlert className="w-3.5 h-3.5 mr-2" />
-                            {item.allergenInfoStatus === 'REVIEWED' ? 'Sửa xác nhận dị ứng' : 'Xác nhận dị ứng'}
+                            {item.allergenInfoStatus === 'REVIEWED' ? t('Sửa xác nhận dị ứng') : t('Xác nhận dị ứng')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => onOpenMenuModal(item)}
                             className="text-neutral-700 font-semibold text-xs rounded-lg cursor-pointer h-10 flex items-center"
                           >
                             <Edit2 className="w-3.5 h-3.5 mr-2 text-neutral-400" />
-                            Chỉnh sửa
+                            {t('Chỉnh sửa')}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator className="bg-neutral-100 my-1" />
                           <DropdownMenuItem
@@ -152,7 +154,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                             className="text-rose-600 font-bold text-xs rounded-lg cursor-pointer focus:text-rose-700 focus:bg-rose-50 h-10 flex items-center"
                           >
                             <Trash2 className="w-3.5 h-3.5 mr-2 text-rose-450" />
-                            Xóa món ăn
+                            {t('Xóa món ăn')}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -173,10 +175,10 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                     )}
                     <p className={`text-[10px] font-semibold mt-1.5 ${item.allergenInfoStatus === 'REVIEWED' ? 'text-emerald-700' : 'text-amber-800'}`}>
                       {item.allergenInfoStatus === 'REVIEWED'
-                        ? `Có chứa: ${item.reviewedAllergens?.length ? item.reviewedAllergens.join(', ') : 'đã xác nhận không có allergen trong danh sách hỗ trợ'}`
-                        : `Ứng viên allergen: ${item.allergens?.length ? item.allergens.join(', ') : 'chưa có dữ liệu'}`}
-                      {item.allergenInfoStatus === 'REVIEWED' ? ' · Đã xác nhận' : ' · Chưa xác minh'}
-                      {item.allergenInfoStatus !== 'REVIEWED' && item.allergenCoverageStatus === 'INCOMPLETE' && ` · ${item.allergenUnverifiedIngredientCount ?? 0} nguyên liệu chưa xác minh`}
+                        ? `${t('Có chứa:')} ${item.reviewedAllergens?.length ? item.reviewedAllergens.join(', ') : t('đã xác nhận không có allergen trong danh sách hỗ trợ')}`
+                        : `${t('Ứng viên allergen:')} ${item.allergens?.length ? item.allergens.join(', ') : t('chưa có dữ liệu')}`}
+                      {item.allergenInfoStatus === 'REVIEWED' ? t('· Đã xác nhận') : t('· Chưa xác minh')}
+                      {item.allergenInfoStatus !== 'REVIEWED' && item.allergenCoverageStatus === 'INCOMPLETE' && ` ${t('· {count} nguyên liệu chưa xác minh', { count: item.allergenUnverifiedIngredientCount ?? 0 })}`}
                     </p>
                   </div>
 
@@ -192,7 +194,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                         className="scale-90"
                       />
                       <span className={`text-[10px] font-extrabold ${item.available ? 'text-emerald-700' : 'text-neutral-400'}`}>
-                        {item.available ? 'Bán' : 'Ngưng'}
+                        {item.available ? t('Bán') : t('Ngưng')}
                       </span>
                     </div>
                   </div>
@@ -208,8 +210,8 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                   <ClipboardList className="w-6 h-6 text-neutral-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-neutral-800">{needsAllergenReviewOnly ? 'Không còn món cần xác nhận' : 'Chưa có món ăn nào'}</h3>
-                  <p className="text-xs text-neutral-400 mt-1">{needsAllergenReviewOnly ? 'Các món trong thực đơn đã được xác nhận allergen.' : 'Bấm nút "Thêm món mới" để bắt đầu thiết lập menu.'}</p>
+                  <h3 className="text-sm font-bold text-neutral-800">{needsAllergenReviewOnly ? t('Không còn món cần xác nhận') : t('Chưa có món ăn nào')}</h3>
+                  <p className="text-xs text-neutral-400 mt-1">{needsAllergenReviewOnly ? t('Các món trong thực đơn đã được xác nhận allergen.') : t('Bấm nút "Thêm món mới" để bắt đầu thiết lập menu.')}</p>
                 </div>
               </div>
             </div>
@@ -221,13 +223,13 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
             <Table>
               <TableHeader>
                 <TableRow className="border-neutral-100 hover:bg-transparent">
-                  <TableHead className="text-xs font-bold text-neutral-400 pl-6 w-[80px]">Món</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400">Tên món</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400 w-[120px]">Giá</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400 w-[120px]">Danh mục</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400">Chỉ số QDish</TableHead>
-                  <TableHead className="text-xs font-bold text-neutral-400 w-[110px]">Trạng thái</TableHead>
-                  <TableHead className="text-right text-xs font-bold text-neutral-400 w-[100px] pr-6">Thao tác</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400 pl-6 w-[80px]">{t('Món')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400">{t('Tên món')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400 w-[120px]">{t('Giá')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400 w-[120px]">{t('Danh mục')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400">{t('Chỉ số QDish')}</TableHead>
+                  <TableHead className="text-xs font-bold text-neutral-400 w-[110px]">{t('Trạng thái')}</TableHead>
+                  <TableHead className="text-right text-xs font-bold text-neutral-400 w-[100px] pr-6">{t('Thao tác')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -313,10 +315,10 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                           </div>
                           <div className={`text-[10px] font-semibold ${item.allergenInfoStatus === 'REVIEWED' ? 'text-emerald-700' : 'text-amber-800'}`}>
                             {item.allergenInfoStatus === 'REVIEWED'
-                              ? `Có chứa: ${item.reviewedAllergens?.length ? item.reviewedAllergens.join(', ') : 'đã xác nhận không có allergen trong danh sách hỗ trợ'}`
-                              : `Ứng viên allergen: ${item.allergens?.length ? item.allergens.join(', ') : 'chưa có dữ liệu'}`}
-                            {item.allergenInfoStatus === 'REVIEWED' ? ' · Đã xác nhận' : ' · Chưa xác minh'}
-                            {item.allergenInfoStatus !== 'REVIEWED' && item.allergenCoverageStatus === 'INCOMPLETE' && ` · ${item.allergenUnverifiedIngredientCount ?? 0} nguyên liệu chưa xác minh`}
+                              ? `${t('Có chứa:')} ${item.reviewedAllergens?.length ? item.reviewedAllergens.join(', ') : t('đã xác nhận không có allergen trong danh sách hỗ trợ')}`
+                              : `${t('Ứng viên allergen:')} ${item.allergens?.length ? item.allergens.join(', ') : t('chưa có dữ liệu')}`}
+                            {item.allergenInfoStatus === 'REVIEWED' ? t('· Đã xác nhận') : t('· Chưa xác minh')}
+                            {item.allergenInfoStatus !== 'REVIEWED' && item.allergenCoverageStatus === 'INCOMPLETE' && ` ${t('· {count} nguyên liệu chưa xác minh', { count: item.allergenUnverifiedIngredientCount ?? 0 })}`}
                           </div>
                         </div>
                       </TableCell>
@@ -327,7 +329,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                             onCheckedChange={() => onToggleAvailable(itemId, item.available)}
                           />
                           <span className={`text-[10px] font-bold ${item.available ? 'text-emerald-700' : 'text-neutral-400'}`}>
-                            {item.available ? 'Bán' : 'Ngưng'}
+                            {item.available ? t('Bán') : t('Ngưng')}
                           </span>
                         </div>
                       </TableCell>
@@ -343,21 +345,21 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                               onClick={() => setTranslationItem(item)}
                               className="text-emerald-800 font-semibold text-xs rounded-lg cursor-pointer"
                             >
-                              <Languages className="w-3.5 h-3.5 mr-2" /> Dịch Anh / Trung
+                              <Languages className="w-3.5 h-3.5 mr-2" /> {t('Dịch Anh / Trung')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => onConfirmAllergenReview(item)}
                               className="text-amber-800 font-semibold text-xs rounded-lg cursor-pointer"
                             >
                               <ShieldAlert className="w-3.5 h-3.5 mr-2" />
-                              {item.allergenInfoStatus === 'REVIEWED' ? 'Sửa xác nhận dị ứng' : 'Xác nhận dị ứng'}
+                              {item.allergenInfoStatus === 'REVIEWED' ? t('Sửa xác nhận dị ứng') : t('Xác nhận dị ứng')}
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => onOpenMenuModal(item)}
                               className="text-neutral-700 font-semibold text-xs rounded-lg cursor-pointer"
                             >
                               <Edit2 className="w-3.5 h-3.5 mr-2 text-neutral-400" />
-                              Chỉnh sửa
+                              {t('Chỉnh sửa')}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-neutral-100 my-1" />
                             <DropdownMenuItem 
@@ -365,7 +367,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                               className="text-rose-600 font-bold text-xs rounded-lg cursor-pointer focus:text-rose-700 focus:bg-rose-50"
                             >
                               <Trash2 className="w-3.5 h-3.5 mr-2 text-rose-450" />
-                              Xóa món ăn
+                              {t('Xóa món ăn')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -381,8 +383,8 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                           <ClipboardList className="w-6 h-6 text-neutral-400" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-bold text-neutral-800">{needsAllergenReviewOnly ? 'Không còn món cần xác nhận' : 'Chưa có món ăn nào'}</h3>
-                          <p className="text-xs text-neutral-400 mt-1">{needsAllergenReviewOnly ? 'Các món trong thực đơn đã được xác nhận allergen.' : 'Bấm nút "Thêm món mới" để bắt đầu thiết lập menu.'}</p>
+                          <h3 className="text-sm font-bold text-neutral-800">{needsAllergenReviewOnly ? t('Không còn món cần xác nhận') : t('Chưa có món ăn nào')}</h3>
+                          <p className="text-xs text-neutral-400 mt-1">{needsAllergenReviewOnly ? t('Các món trong thực đơn đã được xác nhận allergen.') : t('Bấm nút "Thêm món mới" để bắt đầu thiết lập menu.')}</p>
                         </div>
                       </div>
                     </TableCell>
