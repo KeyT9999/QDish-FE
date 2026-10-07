@@ -654,7 +654,6 @@ export const ownerConsoleMessages = {
   'Hủy đơn hàng': { en: 'Cancel order', 'zh-CN': '取消订单' },
   'Đã copy mã đơn hàng': { en: 'Order ID copied', 'zh-CN': '订单编号已复制' },
   'Sao chép mã đơn': { en: 'Copy order ID', 'zh-CN': '复制订单编号' },
-  '{count} orders': { en: '{count} orders', 'zh-CN': '{count} 笔订单' },
   'Không thể tải ngôn ngữ giao diện': { en: 'Could not load interface language', 'zh-CN': '无法加载界面语言' }
   , 'Quản lý Nguyên liệu': { en: 'Ingredient management', 'zh-CN': '食材管理' }
   , 'Quản lý nguyên liệu tùy chỉnh của nhà hàng và xem các nguyên liệu mặc định từ hệ thống.': { en: 'Manage restaurant ingredients and review system defaults.', 'zh-CN': '管理餐厅自定义食材并查看系统默认食材。' }
@@ -1018,7 +1017,7 @@ export const ownerConsoleMessages = {
   , 'Hiệu suất món ăn Smart-Menu': { en: 'Smart Menu performance', 'zh-CN': '智能菜单表现' }
   , 'Khung giờ đặt món (Peak Hours)': { en: 'Peak ordering hours', 'zh-CN': '高峰点餐时段' }
   , 'Báo cáo khung giờ': { en: 'Hours report', 'zh-CN': '时段报告' }
-  , '{count} orders ({percentage}%)': { en: '{count} orders ({percentage}%)', 'zh-CN': '{count} 单（{percentage}%）' }
+  , '{count} đơn ({percentage}%)': { en: '{count} orders ({percentage}%)', 'zh-CN': '{count} 单（{percentage}%）' }
   , 'Khung giờ cao điểm:': { en: 'Peak hours:', 'zh-CN': '高峰时段：' }
   , 'Tính năng Phân tích giờ vàng bị khóa': { en: 'Peak hours analytics is locked', 'zh-CN': '高峰时段分析已锁定' }
   , 'Biểu đồ khung giờ đặt món và mật độ cao điểm chỉ dành cho khách hàng dùng gói PRO.': { en: 'Peak ordering hours and order density charts are available on the PRO plan.', 'zh-CN': '点餐时段和订单密度图表仅限 PRO 套餐使用。' }
@@ -1027,11 +1026,11 @@ export const ownerConsoleMessages = {
   , 'từ các món ăn có công thức dinh dưỡng': { en: 'from dishes with nutrition recipes', 'zh-CN': '来自已配置营养配方的菜品' }
   , 'Tổng giá trị đơn hàng được tạo bởi các món phổ biến có cấu hình dinh dưỡng.': { en: 'Total order value from popular dishes with nutrition details configured.', 'zh-CN': '已配置营养信息的热门菜品所产生的订单总额。' }
   , 'Doanh thu phản ánh đơn hàng trong kỳ đã chọn và không dự báo kết quả tương lai.': { en: 'Revenue reflects orders in the selected period and does not predict future results.', 'zh-CN': '收入反映所选周期的订单，不代表未来预测。' }
-  , 'Số đơn đã phục vụ hoặc hoàn tất chỉ có trên gói PRO.': { en: 'Served or completed order counts are available on the PRO plan.', 'zh-CN': '已上菜或已完成订单数仅限 PRO 套餐查看。' }
-  , '{count} orders served or completed': { en: '{count} orders served or completed', 'zh-CN': '{count} 单已上菜或完成' }
+  , 'Số đơn đã phục vụ/hoàn tất chỉ khả dụng trên gói PRO.': { en: 'Served or completed order counts are available on the PRO plan.', 'zh-CN': '已上菜或已完成订单数仅限 PRO 套餐查看。' }
+  , '{count} đơn đã phục vụ/hoàn tất': { en: '{count} orders served or completed', 'zh-CN': '{count} 单已上菜或完成' }
   , 'Số lượng món đã bán': { en: 'Dishes sold', 'zh-CN': '已售菜品数量' }
   , 'Doanh thu tạo ra': { en: 'Revenue generated', 'zh-CN': '产生的收入' }
-  , 'Chưa có số liệu bán cho các món có công thức.': { en: 'No sales data for dishes with recipes yet.', 'zh-CN': '暂无配置配方菜品的销售数据。' }
+  , 'Chưa có số lượng món bán cho các món có recipe.': { en: 'No items have been sold for dishes with recipes yet.', 'zh-CN': '暂无配置配方菜品的销售数据。' }
   , 'Nguồn dữ liệu khảo sát': { en: 'Survey data source', 'zh-CN': '问卷数据来源' }
   , 'Minh bạch dữ liệu khảo sát': { en: 'Survey data transparency', 'zh-CN': '问卷数据说明' }
   , 'Trong kỳ đã chọn, báo cáo gồm {count} lượt khảo sát: {real} phản hồi thực tế và {demo} phản hồi mẫu.': { en: 'For the selected period, the report includes {count} survey responses: {real} real and {demo} sample responses.', 'zh-CN': '所选周期的报告包含 {count} 份问卷：{real} 份真实反馈和 {demo} 份示例反馈。' }
@@ -1039,7 +1038,7 @@ export const ownerConsoleMessages = {
   , 'Kỳ đã chọn không có phản hồi khảo sát mẫu.': { en: 'There are no sample survey responses in the selected period.', 'zh-CN': '所选周期没有示例问卷反馈。' }
   , 'Xu hướng từ lượt khảo sát QR': { en: 'QR survey trends', 'zh-CN': '二维码问卷趋势' }
   , 'Xu hướng ăn uống': { en: 'Dining trends', 'zh-CN': '饮食趋势' }
-  , '{count} selections': { en: '{count} selections', 'zh-CN': '{count} 次选择' }
+  , '{count} lượt chọn': { en: '{count} selections', 'zh-CN': '{count} 次选择' }
   , 'Xu hướng khảo sát chuyên sâu bị khóa': { en: 'Advanced survey trends are locked', 'zh-CN': '深度问卷趋势分析已锁定' }
   , 'Phân tích chuyên sâu lựa chọn khảo sát QR chỉ có trên gói PRO. Nâng cấp để theo dõi xu hướng tại nhà hàng.': { en: 'Advanced analysis of QR survey choices is available on the PRO plan. Upgrade to follow dining trends at your restaurant.', 'zh-CN': '二维码问卷选项的深度分析仅限 PRO 套餐使用。升级后即可跟踪餐厅饮食趋势。' }
   , 'Đầy đủ ✨': { en: 'Complete ✨', 'zh-CN': '齐全 ✨' }
@@ -1085,10 +1084,9 @@ export const ownerConsoleMessages = {
   , 'Không có khoảng trống thực đơn cần xử lý. Các nhóm thuộc tính đang theo dõi đã có món phù hợp.': { en: 'There are no menu gaps to address. The tracked attribute groups already have suitable dishes.', 'zh-CN': '暂无需要处理的菜单缺口。已跟踪的属性组均有合适菜品。' }
   , 'Mở Recipe Builder': { en: 'Open Recipe Builder', 'zh-CN': '打开配方编辑器' }
   , 'Xem thực đơn': { en: 'View menu', 'zh-CN': '查看菜单' }
-  , '{label}: {count} dishes. {description}': { en: '{label}: {count} dishes. {description}', 'zh-CN': '{label}：{count} 道菜。{description}' }
-  , '{count} dishes': { en: '{count} dishes', 'zh-CN': '{count} 道菜' }
-  , '{count} of {max} dishes in this group': { en: '{count} of {max} dishes in this group', 'zh-CN': '此组共 {max} 道菜中的 {count} 道' }
-  , '{count} tags': { en: '{count} tags', 'zh-CN': '{count} 个标签' }
+  , '{label}: {count} món. {description}': { en: '{label}: {count} dishes. {description}', 'zh-CN': '{label}：{count} 道菜。{description}' }
+  , '{count}/{max} món trong nhóm này': { en: '{count} of {max} dishes in this group', 'zh-CN': '此组共 {max} 道菜中的 {count} 道' }
+  , '{count} nhãn': { en: '{count} tags', 'zh-CN': '{count} 个标签' }
   , 'Các thuộc tính nhóm {group}': { en: 'Attributes in the {group} group', 'zh-CN': '{group}组属性' }
   , 'Gợi ý đọc báo cáo thuộc tính': { en: 'How to read attribute insights', 'zh-CN': '如何查看属性分析' }
   , 'Gợi ý cho nhà hàng': { en: 'Suggestions for your restaurant', 'zh-CN': '餐厅建议' }
@@ -1101,12 +1099,12 @@ export const ownerConsoleMessages = {
   , 'Xem nhãn dinh dưỡng, chế độ ăn và ngữ cảnh sử dụng của thực đơn. Một món có thể có nhiều thuộc tính, vì vậy số liệu không cộng lại thành tổng số món.': { en: 'Review nutrition, dietary, and usage labels on your menu. A dish can have multiple attributes, so counts do not add up to the total number of dishes.', 'zh-CN': '查看菜单中的营养、饮食和使用场景标签。一道菜可能有多个属性，因此数量相加不等于菜品总数。' }
   , 'Số món hiện có trong thực đơn': { en: 'Dishes currently on the menu', 'zh-CN': '当前菜单菜品数' }
   , 'Món có Recipe': { en: 'Dishes with a recipe', 'zh-CN': '已配置配方的菜品' }
-  , '{percent}% of the menu has data for classification': { en: '{percent}% of the menu has data for classification', 'zh-CN': '{percent}% 的菜单菜品有分类数据' }
+  , 'Thực đơn có dữ liệu phân loại cho {percent}% số món.': { en: '{percent}% of the menu has data for classification', 'zh-CN': '{percent}% 的菜品具备分类数据。' }
   , 'Nhóm thuộc tính': { en: 'Attribute groups', 'zh-CN': '属性组' }
   , 'Đang có dữ liệu trong 3 nhóm chính': { en: 'Data is available in 3 main groups', 'zh-CN': '3 个主要类别中有数据' }
   , 'Đây là số món được gắn nhãn, không phải số lượt bán hay doanh thu. Di chuột vào biểu tượng trợ giúp để xem ý nghĩa của từng nhãn.': { en: 'These are counts of labeled dishes, not sales or revenue. Hover over the help icon to learn what each label means.', 'zh-CN': '此处统计的是已标记菜品数，并非销量或收入。将鼠标悬停在帮助图标上可查看标签说明。' }
   , 'Chưa có dữ liệu thuộc tính': { en: 'No attribute data yet', 'zh-CN': '暂无属性数据' }
-  , 'Chưa có món nào được cấu hình Recipe để phân loại thuộc tính.': { en: 'No dishes have recipe details for attribute classification yet.', 'zh-CN': '暂无已配置配方信息、可用于属性分类的菜品。' }
+  , 'Chưa có món ăn nào cấu hình Recipe để phân loại thuộc tính.': { en: 'No dishes have recipe details for attribute classification yet.', 'zh-CN': '暂无已配置配方信息、可用于属性分类的菜品。' }
   , 'Vui lòng chọn chi nhánh nguồn để sao chép thực đơn.': { en: 'Select a source branch to copy the menu.', 'zh-CN': '请选择要复制菜单的源分店。' }
   , 'Đang tiến hành nhân bản thực đơn, vui lòng đợi...': { en: 'Copying the menu. Please wait…', 'zh-CN': '正在复制菜单，请稍候…' }
   , 'Sao chép thực đơn thành công!': { en: 'Menu copied successfully!', 'zh-CN': '菜单复制成功！' }
@@ -1145,7 +1143,7 @@ export const ownerConsoleMessages = {
   , 'Ứng viên hiện có': { en: 'Current candidates', 'zh-CN': '当前候选项' }
   , 'Chưa có allergen ứng viên.': { en: 'No allergen candidates yet.', 'zh-CN': '暂无候选过敏原。' }
   , 'Độ bao phủ công thức: chưa đầy đủ': { en: 'Recipe coverage: incomplete', 'zh-CN': '配方覆盖：不完整' }
-  , '{count} ingredients not verified': { en: '{count} ingredients not verified', 'zh-CN': '{count} 种食材未核实' }
+  , '{count} nguyên liệu chưa xác minh': { en: '{count} ingredients not verified', 'zh-CN': '{count} 种食材未核实' }
   , 'Ghi chú nguồn / nội dung đã kiểm tra *': { en: 'Source / verification notes *', 'zh-CN': '来源/核对说明 *' }
   , 'Ví dụ: Đối chiếu công thức và nhãn của nhà cung cấp.': { en: 'Example: Checked the recipe and supplier label.', 'zh-CN': '示例：已核对配方和供应商标签。' }
   , 'Thông tin chỉ có hiệu lực sau khi lưu xác nhận.': { en: 'This information takes effect after it is saved and confirmed.', 'zh-CN': '保存并确认后，此信息才会生效。' }

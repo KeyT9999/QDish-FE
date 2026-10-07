@@ -60,7 +60,7 @@ export const SurveyTrendsPanel = ({
               <div key={segment.segment} className="space-y-1">
                 <div className="flex justify-between text-xs font-semibold text-neutral-700">
                   <span>{segment.label}</span>
-                  <span className="font-bold text-green-600">{t('{count} selections', { count: segment.count })}</span>
+                  <span className="font-bold text-green-600">{t('{count} lượt chọn', { count: segment.count })}</span>
                 </div>
                 <div className="h-3 w-full overflow-hidden rounded-full border border-neutral-100/50 bg-neutral-50">
                   <div className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-600" style={{ width: `${widthPct}%` }} />

@@ -230,7 +230,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
                       </div>
                       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-medium text-neutral-500">
                         <span>Session: <span className="font-mono">{bill.sessionCode || '-'}</span></span>
-                        <span>{t('{count} orders', { count: bill.orderCount })}</span>
+                        <span>{t('{count} đơn', { count: bill.orderCount })}</span>
                         <span>{t('{count} món', { count: bill.totalItems })}</span>
                       </div>
                     </div>

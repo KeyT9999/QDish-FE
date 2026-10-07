@@ -47,10 +47,10 @@ export const SmartMenuPerformancePanel = ({
         <h3 className="text-sm font-bold text-neutral-800">{t('Hiệu suất món ăn Smart-Menu')}</h3>
         {completedOrderCount === null ? (
           <span className="text-right text-[10px] font-semibold text-neutral-500">
-            {t('Số đơn đã phục vụ hoặc hoàn tất chỉ có trên gói PRO.')}
+            {t('Số đơn đã phục vụ/hoàn tất chỉ khả dụng trên gói PRO.')}
           </span>
         ) : (
-          <span className="text-right text-[10px] font-semibold text-neutral-500">{t('{count} orders served or completed', { count: completedOrderCount })}</span>
+          <span className="text-right text-[10px] font-semibold text-neutral-500">{t('{count} đơn đã phục vụ/hoàn tất', { count: completedOrderCount })}</span>
         )}
       </div>
 
@@ -75,7 +75,7 @@ export const SmartMenuPerformancePanel = ({
             {topDishes.length === 0 && (
               <tr>
                 <td colSpan={3} className="py-8 text-center italic text-neutral-400">
-                  {t('Chưa có số liệu bán cho các món có công thức.')}
+                  {t('Chưa có số lượng món bán cho các món có recipe.')}
                 </td>
               </tr>
             )}

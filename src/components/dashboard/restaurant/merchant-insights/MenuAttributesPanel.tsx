@@ -106,7 +106,7 @@ function AttributeBar({ attribute, maxCount }: { attribute: MenuAttributeEntry; 
   return (
     <div
       role="listitem"
-      aria-label={t('{label}: {count} dishes. {description}', { label, count: formatNumber(attribute.count, language), description })}
+      aria-label={t('{label}: {count} món. {description}', { label, count: formatNumber(attribute.count, language), description })}
       className="group rounded-xl border border-slate-100 bg-white px-3 py-3 shadow-[0_1px_4px_rgba(15,23,42,0.04)]"
     >
       <div className="flex items-center justify-between gap-3">
@@ -118,13 +118,13 @@ function AttributeBar({ attribute, maxCount }: { attribute: MenuAttributeEntry; 
           </span>
         </div>
         <span className="shrink-0 text-xs font-black tabular-nums text-slate-700">
-          {t('{count} dishes', { count: formatNumber(attribute.count, language) })}
+          {t('{count} món', { count: formatNumber(attribute.count, language) })}
         </span>
       </div>
       <div
         className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"
         role="img"
-        aria-label={t('{count} of {max} dishes in this group', { count: attribute.count, max: maxCount })}
+        aria-label={t('{count}/{max} món trong nhóm này', { count: attribute.count, max: maxCount })}
       >
         <div
           className={`h-full rounded-full ${attribute.barClassName} motion-safe:transition-[width] motion-safe:duration-500 motion-reduce:transition-none`}
@@ -150,7 +150,7 @@ function AttributeGroupCard({ group }: { group: MenuAttributeGroup }) {
           <p className="mt-1 text-[11px] leading-4 text-slate-500">{groupDescription}</p>
         </div>
         <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-slate-500 shadow-sm">
-          {t('{count} tags', { count: group.attributes.length })}
+          {t('{count} nhãn', { count: group.attributes.length })}
         </span>
       </div>
       <div role="list" aria-label={t('Các thuộc tính nhóm {group}', { group: groupLabel })} className="space-y-2">
@@ -232,7 +232,7 @@ export const MenuAttributesPanel = ({ attributeDistribution, menuCoverage }: Men
           <MetricCard
             label={t('Món có Recipe')}
             value={formatNumber(menuCoverage.itemsWithRecipe, language)}
-            detail={t('{percent}% of the menu has data for classification', { percent: coveragePercent })}
+            detail={t('Thực đơn có dữ liệu phân loại cho {percent}% số món.', { percent: coveragePercent })}
           />
           <MetricCard
             label={t('Nhóm thuộc tính')}
@@ -261,7 +261,7 @@ export const MenuAttributesPanel = ({ attributeDistribution, menuCoverage }: Men
             <BarChart3 aria-hidden="true" className="mx-auto h-8 w-8 text-slate-300" />
             <h4 className="mt-3 text-sm font-black text-slate-700">{t('Chưa có dữ liệu thuộc tính')}</h4>
             <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-slate-500">
-              {t('Chưa có món nào được cấu hình Recipe để phân loại thuộc tính.')}
+              {t('Chưa có món ăn nào cấu hình Recipe để phân loại thuộc tính.')}
             </p>
           </div>
         )}

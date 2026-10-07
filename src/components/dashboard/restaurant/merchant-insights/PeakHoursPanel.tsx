@@ -30,7 +30,7 @@ export const PeakHoursPanel = ({ peakHours, isPlus }: PeakHoursPanelProps) => {
             <div key={period.period} className="space-y-1">
               <div className="flex justify-between text-xs font-semibold text-neutral-700">
                 <span>{period.period}</span>
-                <span className="font-bold text-indigo-600">{t('{count} orders ({percentage}%)', { count: period.count, percentage: period.percentage })}</span>
+                <span className="font-bold text-indigo-600">{t('{count} đơn ({percentage}%)', { count: period.count, percentage: period.percentage })}</span>
               </div>
               <div className="h-3 w-full overflow-hidden rounded-full border border-neutral-100/50 bg-neutral-50">
                 <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-600" style={{ width: `${widthPct}%` }} />

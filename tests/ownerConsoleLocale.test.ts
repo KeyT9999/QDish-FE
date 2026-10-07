@@ -18,6 +18,21 @@ assert.equal(
   'Simplified Chinese catalog values are selected for the Chinese locale'
 );
 assert.equal(
+  translateOwnerConsoleMessage('vi', '{count} đơn'),
+  '{count} đơn',
+  'Vietnamese source keys stay Vietnamese for interpolated counts'
+);
+assert.equal(
+  translateOwnerConsoleMessage('en', '{count} đơn'),
+  '{count} orders',
+  'interpolated counts use the English catalog value'
+);
+assert.equal(
+  translateOwnerConsoleMessage('vi', 'Chưa có món ăn nào cấu hình Recipe để phân loại thuộc tính.'),
+  'Chưa có món ăn nào cấu hình Recipe để phân loại thuộc tính.',
+  'existing Vietnamese empty-state copy is preserved'
+);
+assert.equal(
   translateOwnerConsoleMessage('en', 'Chúc {restaurant} ngày mới kinh doanh phát đạt.', {
     restaurant: 'KURUMI'
   }),

@@ -203,7 +203,7 @@ export const MenuAllergenReviewModal: React.FC<MenuAllergenReviewModalProps> = (
             <p className="mt-1">{t('Các lựa chọn được gợi ý từ dữ liệu hiện có để tránh bỏ sót. Hãy đối chiếu từng mục với nguồn thực tế; chỉ bỏ chọn khi nguồn xác nhận món không chứa allergen đó. Danh sách để trống chỉ lưu khi nhân viên chủ động xác nhận đã kiểm tra đầy đủ.')}</p>
             <p className="mt-2"><strong>{t('Ứng viên hiện có')}:</strong> {candidateLabels.length ? candidateLabels.join(', ') : t('Chưa có allergen ứng viên.')}</p>
             {item?.allergenCoverageStatus !== 'COMPLETE' && (
-              <p className="mt-1">{t('Độ bao phủ công thức: chưa đầy đủ')}{(item?.allergenUnverifiedIngredientCount ?? 0) > 0 ? ` · ${t('{count} ingredients not verified', { count: item?.allergenUnverifiedIngredientCount ?? 0 })}` : ''}.</p>
+              <p className="mt-1">{t('Độ bao phủ công thức: chưa đầy đủ')}{(item?.allergenUnverifiedIngredientCount ?? 0) > 0 ? ` · ${t('{count} nguyên liệu chưa xác minh', { count: item?.allergenUnverifiedIngredientCount ?? 0 })}` : ''}.</p>
             )}
           </div>
 
