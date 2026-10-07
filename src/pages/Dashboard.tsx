@@ -19,6 +19,7 @@ import { orderService } from '@/services/orderService';
 import { billService } from '@/services/billService';
 import { staffService } from '@/services/staffService';
 import { tableService, RestaurantTable } from '@/services/tableService';
+import type { CategoryTranslationValue, MenuItemTranslationValue, MenuLocale } from '@/types/menuTranslation';
 
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -196,13 +197,60 @@ export const Dashboard: React.FC<DashboardProps> = ({
     if (!restaurantId) return;
     setIsLoadingCategories(true);
     try {
-      const data = await categoryService.getAll(restaurantId);
+      const data = await categoryService.getManagement();
       setCategories(data);
     } catch (err) {
       toast.error('Không thể tải danh mục');
     } finally {
       setIsLoadingCategories(false);
     }
+  };
+
+  const handleGenerateMenuTranslations = async (id: string, options?: { preserveExisting: true }) => {
+    const updated = await menuService.generateTranslationDraft(id, options);
+    setMenuItems((current) => current.map((item) => (item.id || item._id) === id ? updated : item));
+    return updated;
+  };
+
+  const handlePublishMenuTranslations = async (itemIds: string[]) => {
+    const result = await menuService.bulkPublishTranslations(itemIds);
+    const publishedById = new Map(result.items.map((item) => [item.id || item._id, item]));
+    setMenuItems((current) => current.map((item) => publishedById.get(item.id || item._id) ?? item));
+    return result;
+  };
+
+  const handleRefreshMenuItems = async () => {
+    const refreshed = await menuService.getAll(restaurantId);
+    setMenuItems(refreshed);
+    return refreshed;
+  };
+
+  const handleSaveMenuTranslation = async (
+    id: string,
+    locale: Exclude<MenuLocale, 'vi'>,
+    value: MenuItemTranslationValue,
+    publish: boolean,
+  ) => {
+    const updated = await menuService.saveTranslation(id, locale, value, publish);
+    setMenuItems((current) => current.map((item) => (item.id || item._id) === id ? updated : item));
+    return updated;
+  };
+
+  const handleGenerateCategoryTranslations = async (id: string) => {
+    const updated = await categoryService.generateTranslationDraft(id);
+    setCategories((current) => current.map((category) => category._id === id ? updated : category));
+    return updated;
+  };
+
+  const handleSaveCategoryTranslation = async (
+    id: string,
+    locale: Exclude<MenuLocale, 'vi'>,
+    value: CategoryTranslationValue,
+    publish: boolean,
+  ) => {
+    const updated = await categoryService.saveTranslation(id, locale, value, publish);
+    setCategories((current) => current.map((category) => category._id === id ? updated : category));
+    return updated;
   };
 
   const loadOrderBillGroups = useCallback(async () => {
@@ -268,6 +316,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       loadCategories();
     } else if (activeTab === 'categories') {
       loadCategories();
+      loadMenu();
     } else if (activeTab === 'orders') {
       loadOrderBillGroups();
     } else if (activeTab === 'tables') {
@@ -759,8 +808,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
             onDeleteMenuItem={handleDeleteMenuItem}
             onToggleAvailable={handleToggleAvailable}
             onConfirmAllergenReview={setAllergenReviewItem}
+            onGenerateTranslations={handleGenerateMenuTranslations}
+            onPublishTranslations={handlePublishMenuTranslations}
+            onRefreshMenuItems={handleRefreshMenuItems}
+            onSaveTranslation={handleSaveMenuTranslation}
             showCopyButton={user?.role === 'RESTAURANT_OWNER' && ownerRestaurants.length > 1}
             onCopyClick={() => setIsCopyModalOpen(true)}
+          />
+        </TabsContent>
+
+        <TabsContent value="categories" className="space-y-6">
+          <RestaurantCategoriesTab
+            categories={categories}
+            menuItems={menuItems}
+            isLoadingCategories={isLoadingCategories}
+            onOpenCategoryModal={handleOpenCategoryModal}
+            onDeleteCategory={handleDeleteCategory}
+            onGenerateTranslations={handleGenerateCategoryTranslations}
+            onSaveTranslation={handleSaveCategoryTranslation}
           />
         </TabsContent>
 

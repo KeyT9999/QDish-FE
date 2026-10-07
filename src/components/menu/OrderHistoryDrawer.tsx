@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatCurrency } from '@/lib/utils';
 import { Clock, CheckCircle2, AlertCircle, RefreshCw, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
+import type { MenuLocale } from '@/types/menuTranslation';
 
 interface OrderHistoryDrawerProps {
   isOpen: boolean;
@@ -14,6 +15,8 @@ interface OrderHistoryDrawerProps {
   tableNumber: string;
   sessionId?: string;
   onSessionClosed?: () => void;
+  locale?: MenuLocale;
+  localizeItemName?: (menuItemId: string, fallbackName: string) => string;
 }
 
 const getOrderId = (order: Order) => String(order.id || (order as any)._id || '');
@@ -36,17 +39,17 @@ const areOrdersEquivalent = (current: Order[], next: Order[]) => {
   });
 };
 
-const getBillStatusLabel = (status?: BillStatus) => {
+const getBillStatusLabel = (status: BillStatus | undefined, locale: MenuLocale) => {
   switch (status) {
     case BillStatus.PAYMENT_REQUESTED:
-      return 'Chờ thanh toán';
+      return locale === 'en' ? 'Payment requested' : locale === 'zh-CN' ? '等待付款' : 'Chờ thanh toán';
     case BillStatus.PAID:
-      return 'Đã thanh toán';
+      return locale === 'en' ? 'Paid' : locale === 'zh-CN' ? '已付款' : 'Đã thanh toán';
     case BillStatus.CANCELLED:
-      return 'Đã hủy';
+      return locale === 'en' ? 'Cancelled' : locale === 'zh-CN' ? '已取消' : 'Đã hủy';
     case BillStatus.UNPAID:
     default:
-      return 'Chưa thanh toán';
+      return locale === 'en' ? 'Unpaid' : locale === 'zh-CN' ? '未付款' : 'Chưa thanh toán';
   }
 };
 
@@ -56,7 +59,9 @@ export const OrderHistoryDrawer: React.FC<OrderHistoryDrawerProps> = ({
   restaurantId,
   tableNumber,
   sessionId,
-  onSessionClosed
+  onSessionClosed,
+  locale = 'vi',
+  localizeItemName = (_id, name) => name,
 }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [bill, setBill] = useState<Bill | null>(null);
@@ -139,15 +144,15 @@ export const OrderHistoryDrawer: React.FC<OrderHistoryDrawerProps> = ({
   const getStatusConfig = (status: OrderStatus) => {
     switch (status) {
       case OrderStatus.PENDING:
-        return { label: 'Đang chờ bếp nhận', color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Clock };
+        return { label: locale === 'en' ? 'Waiting for kitchen' : locale === 'zh-CN' ? '等待厨房接单' : 'Đang chờ bếp nhận', color: 'bg-amber-100 text-amber-800 border-amber-200', icon: Clock };
       case OrderStatus.CONFIRMED:
-        return { label: 'Đang chế biến', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: RefreshCw };
+        return { label: locale === 'en' ? 'Preparing' : locale === 'zh-CN' ? '制作中' : 'Đang chế biến', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: RefreshCw };
       case OrderStatus.SERVED:
-        return { label: 'Đã phục vụ', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle2 };
+        return { label: locale === 'en' ? 'Served' : locale === 'zh-CN' ? '已上菜' : 'Đã phục vụ', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle2 };
       case OrderStatus.COMPLETED:
-        return { label: 'Đã thanh toán', color: 'bg-gray-100 text-gray-800 border-gray-200', icon: CheckCircle2 };
+        return { label: locale === 'en' ? 'Paid' : locale === 'zh-CN' ? '已付款' : 'Đã thanh toán', color: 'bg-gray-100 text-gray-800 border-gray-200', icon: CheckCircle2 };
       case OrderStatus.CANCELLED:
-        return { label: 'Đã hủy', color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle };
+        return { label: locale === 'en' ? 'Cancelled' : locale === 'zh-CN' ? '已取消' : 'Đã hủy', color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle };
     }
   };
 
@@ -156,24 +161,24 @@ export const OrderHistoryDrawer: React.FC<OrderHistoryDrawerProps> = ({
       <SheetContent side="right" className="w-[100vw] sm:max-w-md p-0 flex flex-col bg-surface border-none shadow-xl">
         <SheetHeader className="px-5 pt-5 pb-3 border-b border-gray-100">
           <SheetTitle className="text-lg font-heading font-bold text-gray-900 flex items-center justify-between">
-            <span>Đơn hàng đã gọi (Bàn {tableNumber})</span>
+            <span>{locale === 'en' ? `Orders (Table ${tableNumber})` : locale === 'zh-CN' ? `订单（桌号 ${tableNumber}）` : `Đơn hàng đã gọi (Bàn ${tableNumber})`}</span>
           </SheetTitle>
           <SheetDescription className="text-gray-500 text-xs">
-            Theo dõi trạng thái chế biến và tổng bill hiện tại. Thanh toán sẽ do nhân viên xác nhận tại bàn.
+            {locale === 'en' ? 'Track preparation and the current bill. Ask a staff member to confirm payment at the table.' : locale === 'zh-CN' ? '查看制作进度和当前账单。请联系工作人员确认付款。' : 'Theo dõi trạng thái chế biến và tổng bill hiện tại. Thanh toán sẽ do nhân viên xác nhận tại bàn.'}
           </SheetDescription>
         </SheetHeader>
 
         {isLoading && orders.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <RefreshCw className="w-8 h-8 animate-spin text-green-600 mb-2" />
-            <p className="text-gray-500 text-sm">Đang tải đơn hàng...</p>
+            <p className="text-gray-500 text-sm">{locale === 'en' ? 'Loading orders...' : locale === 'zh-CN' ? '正在加载订单…' : 'Đang tải đơn hàng...'}</p>
           </div>
         ) : orders.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
             <ShoppingBag className="w-12 h-12 text-gray-300 mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-1">Chưa có món nào được gọi</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">{locale === 'en' ? 'No dishes ordered yet' : locale === 'zh-CN' ? '还没有点餐' : 'Chưa có món nào được gọi'}</h3>
             <p className="text-gray-500 text-xs max-w-[250px]">
-              Hãy chọn món từ thực đơn và nhấn đặt món để bắt đầu thưởng thức bữa ăn.
+              {locale === 'en' ? 'Choose dishes from the menu and place an order to get started.' : locale === 'zh-CN' ? '从菜单中选择菜品并下单，即可开始用餐。' : 'Hãy chọn món từ thực đơn và nhấn đặt món để bắt đầu thưởng thức bữa ăn.'}
             </p>
           </div>
         ) : (
@@ -184,24 +189,24 @@ export const OrderHistoryDrawer: React.FC<OrderHistoryDrawerProps> = ({
                   <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">Bill hiện tại</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">{locale === 'en' ? 'Current bill' : locale === 'zh-CN' ? '当前账单' : 'Bill hiện tại'}</p>
                         <p className="mt-1 font-mono text-sm font-bold text-gray-900">{bill.billCode}</p>
                       </div>
                       <span className="rounded-full border border-emerald-200 bg-white px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-                        {getBillStatusLabel(bill.status)}
+                        {getBillStatusLabel(bill.status, locale)}
                       </span>
                     </div>
                     <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                       <div>
-                        <span className="block text-gray-500">Số đơn</span>
+                        <span className="block text-gray-500">{locale === 'en' ? 'Orders' : locale === 'zh-CN' ? '订单数' : 'Số đơn'}</span>
                         <span className="font-bold text-gray-900">{bill.orderIds.length || orders.length}</span>
                       </div>
                       <div>
-                        <span className="block text-gray-500">Tổng món</span>
+                        <span className="block text-gray-500">{locale === 'en' ? 'Items' : locale === 'zh-CN' ? '菜品总数' : 'Tổng món'}</span>
                         <span className="font-bold text-gray-900">{totalBillItems}</span>
                       </div>
                       <div className="text-right">
-                        <span className="block text-gray-500">Tổng bill</span>
+                        <span className="block text-gray-500">{locale === 'en' ? 'Bill total' : locale === 'zh-CN' ? '账单总额' : 'Tổng bill'}</span>
                         <span className="font-bold text-emerald-700">{formatCurrency(unpaidTotal)}</span>
                       </div>
                     </div>
@@ -213,14 +218,14 @@ export const OrderHistoryDrawer: React.FC<OrderHistoryDrawerProps> = ({
                   const StatusIcon = statusConfig.icon;
                   const rawTime = order.timestamp || (order as any).createdAt;
                   const dateStr = rawTime
-                    ? new Date(rawTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+                    ? new Date(rawTime).toLocaleTimeString(locale === 'en' ? 'en-US' : locale === 'zh-CN' ? 'zh-CN' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
                     : '';
 
                   return (
                     <div key={getOrderId(order)} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                       <div className="p-4 flex justify-between items-center bg-gray-50 border-b border-gray-100">
                         <div>
-                          <span className="text-xs text-gray-500 block">Mã đơn: #{getOrderId(order).slice(-6)}</span>
+                          <span className="text-xs text-gray-500 block">{locale === 'en' ? 'Order' : locale === 'zh-CN' ? '订单号' : 'Mã đơn'}: #{getOrderId(order).slice(-6)}</span>
                           <span className="text-xs font-semibold text-gray-700">{dateStr}</span>
                         </div>
                         <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusConfig.color}`}>
@@ -232,18 +237,18 @@ export const OrderHistoryDrawer: React.FC<OrderHistoryDrawerProps> = ({
                         {order.items.map((item, itemIdx) => (
                           <div key={itemIdx} className="flex justify-between items-center text-sm">
                             <span className="text-gray-900 font-medium">
-                              {item.name} <span className="text-gray-400 font-normal">x{item.quantity}</span>
+                              {localizeItemName(item.menuItemId, item.name)} <span className="text-gray-400 font-normal">x{item.quantity}</span>
                             </span>
                             <span className="text-gray-600 font-semibold">{formatCurrency(item.price * item.quantity)}</span>
                           </div>
                         ))}
                         {order.note && (
                           <div className="text-xs bg-yellow-50/50 text-yellow-800 p-2 rounded-lg border border-yellow-100/50">
-                            <span className="font-semibold">Ghi chú:</span> {order.note}
+                            <span className="font-semibold">{locale === 'en' ? 'Note:' : locale === 'zh-CN' ? '备注：' : 'Ghi chú:'}</span> {order.note}
                           </div>
                         )}
                         <div className="pt-3 border-t border-gray-100 flex justify-between items-center text-sm">
-                          <span className="font-bold text-gray-900">Tổng tiền đơn</span>
+                          <span className="font-bold text-gray-900">{locale === 'en' ? 'Order total' : locale === 'zh-CN' ? '订单总额' : 'Tổng tiền đơn'}</span>
                           <span className="font-bold text-green-700">{formatCurrency(order.totalAmount)}</span>
                         </div>
                       </div>
@@ -256,11 +261,11 @@ export const OrderHistoryDrawer: React.FC<OrderHistoryDrawerProps> = ({
             {showBillSummary && (
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur border-t border-gray-100 z-10 flex flex-col gap-2">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="font-semibold text-gray-600">Tổng bill hiện tại:</span>
+                  <span className="font-semibold text-gray-600">{locale === 'en' ? 'Current bill total:' : locale === 'zh-CN' ? '当前账单总额：' : 'Tổng bill hiện tại:'}</span>
                   <span className="text-lg font-bold text-green-700">{formatCurrency(unpaidTotal)}</span>
                 </div>
                 <p className="text-xs font-medium text-gray-500">
-                  Khi muốn thanh toán, vui lòng gọi nhân viên. Nhà hàng sẽ chọn tiền mặt hoặc chuyển khoản trên hệ thống.
+                  {locale === 'en' ? 'Please ask a staff member when you are ready to pay.' : locale === 'zh-CN' ? '需要付款时，请联系工作人员。' : 'Khi muốn thanh toán, vui lòng gọi nhân viên. Nhà hàng sẽ chọn tiền mặt hoặc chuyển khoản trên hệ thống.'}
                 </p>
               </div>
             )}

@@ -1,4 +1,5 @@
 type AllergenInfoStatus = 'UNKNOWN' | 'REVIEWED';
+type MenuLocale = import('@/types/menuTranslation').MenuLocale;
 type AllergenCode = 'GLUTEN' | 'DAIRY' | 'PEANUT' | 'TREE_NUTS' | 'SESAME' | 'SHELLFISH' | 'SOY' | 'EGGS' | 'FISH';
 
 type MenuAllergenInput = {
@@ -38,16 +39,16 @@ const LEGACY_ALLERGEN_ALIASES: Readonly<Record<string, readonly AllergenCode[]>>
   NUTS: ['PEANUT', 'TREE_NUTS']
 };
 
-const ALLERGEN_LABELS: Record<AllergenCode, string> = {
-  GLUTEN: 'gluten',
-  DAIRY: 'sữa',
-  PEANUT: 'đậu phộng',
-  TREE_NUTS: 'hạt cây',
-  SESAME: 'mè',
-  SHELLFISH: 'hải sản có vỏ',
-  SOY: 'đậu nành',
-  EGGS: 'trứng',
-  FISH: 'cá'
+const ALLERGEN_LABELS: Record<AllergenCode, Record<MenuLocale, string>> = {
+  GLUTEN: { vi: 'gluten', en: 'gluten', 'zh-CN': '麸质' },
+  DAIRY: { vi: 'sữa', en: 'dairy', 'zh-CN': '乳制品' },
+  PEANUT: { vi: 'đậu phộng', en: 'peanuts', 'zh-CN': '花生' },
+  TREE_NUTS: { vi: 'hạt cây', en: 'tree nuts', 'zh-CN': '树坚果' },
+  SESAME: { vi: 'mè', en: 'sesame', 'zh-CN': '芝麻' },
+  SHELLFISH: { vi: 'hải sản có vỏ', en: 'shellfish', 'zh-CN': '甲壳类海鲜' },
+  SOY: { vi: 'đậu nành', en: 'soy', 'zh-CN': '大豆' },
+  EGGS: { vi: 'trứng', en: 'eggs', 'zh-CN': '鸡蛋' },
+  FISH: { vi: 'cá', en: 'fish', 'zh-CN': '鱼类' }
 };
 
 function normalizeAllergens(value: unknown): AllergenCode[] | undefined {
@@ -79,8 +80,8 @@ function normalizeSupportedAllergens(value: unknown): AllergenCode[] {
   return ALLERGEN_ORDER.filter((code) => normalized.has(code));
 }
 
-function displayAllergens(codes: readonly AllergenCode[]): string {
-  return codes.map((code) => ALLERGEN_LABELS[code]).join(', ');
+function displayAllergens(codes: readonly AllergenCode[], locale: MenuLocale = 'vi'): string {
+  return codes.map((code) => ALLERGEN_LABELS[code][locale]).join(', ');
 }
 
 function displayAllergensForStaff(codes: readonly AllergenCode[]): string {
@@ -102,10 +103,15 @@ export function hasReviewedAllergenDeclaration(item: MenuAllergenInput): boolean
 
 export function getMenuAllergenWarning(
   item: MenuAllergenInput,
-  reportedAllergies: readonly string[]
+  reportedAllergies: readonly string[],
+  locale: MenuLocale = 'vi'
 ): MenuAllergenWarning {
   const reported = new Set(normalizeSupportedAllergens(reportedAllergies));
-  const baseUnknownMessage = 'Chưa xác minh đầy đủ thông tin dị ứng của món này. Hãy hỏi nhân viên nếu bạn bị dị ứng.';
+  const baseUnknownMessage = locale === 'en'
+    ? 'Allergen information for this dish is not fully verified. Ask staff if you have an allergy.'
+    : locale === 'zh-CN'
+      ? '这道菜的过敏原信息尚未完全核实。如有过敏，请咨询工作人员。'
+      : 'Chưa xác minh đầy đủ thông tin dị ứng của món này. Hãy hỏi nhân viên nếu bạn bị dị ứng.';
 
   if (reported.size === 0) return { kind: 'NONE' };
 
@@ -122,7 +128,11 @@ export function getMenuAllergenWarning(
       codes: candidateConflicts,
       source: 'CANDIDATE',
       informationIncomplete: true,
-      message: `Món này có thể chứa ${displayAllergens(candidateConflicts)} bạn đã khai báo dị ứng. Thông tin dị ứng của món chưa được xác minh.`
+      message: locale === 'en'
+        ? `This dish may contain ${displayAllergens(candidateConflicts, locale)}, which you reported as an allergy. Allergen information has not been verified.`
+        : locale === 'zh-CN'
+          ? `这道菜可能含有您申报过敏的${displayAllergens(candidateConflicts, locale)}，过敏原信息尚未核实。`
+          : `Món này có thể chứa ${displayAllergens(candidateConflicts, locale)} bạn đã khai báo dị ứng. Thông tin dị ứng của món chưa được xác minh.`
     };
   }
 
@@ -135,8 +145,8 @@ export function getMenuAllergenWarning(
     : containsConflicts.length > 0 ? 'CONTAINS' : 'MAY_CONTAIN';
   const codes = ALLERGEN_ORDER.filter((code) => containsConflicts.includes(code) || mayContainConflicts.includes(code));
   const statements = [
-    containsConflicts.length > 0 ? `có chứa ${displayAllergens(containsConflicts)}` : '',
-    mayContainConflicts.length > 0 ? `có thể chứa ${displayAllergens(mayContainConflicts)}` : ''
+    containsConflicts.length > 0 ? `${locale === 'en' ? 'contains' : locale === 'zh-CN' ? '含有' : 'có chứa'} ${displayAllergens(containsConflicts, locale)}` : '',
+    mayContainConflicts.length > 0 ? `${locale === 'en' ? 'may contain' : locale === 'zh-CN' ? '可能含有' : 'có thể chứa'} ${displayAllergens(mayContainConflicts, locale)}` : ''
   ].filter(Boolean).join(' và ');
 
   return {
@@ -144,7 +154,11 @@ export function getMenuAllergenWarning(
     codes,
     source,
     informationIncomplete: false,
-    message: `Món này ${statements} bạn đã khai báo dị ứng.`
+    message: locale === 'en'
+      ? `This dish ${statements}, which you reported as an allergy.`
+      : locale === 'zh-CN'
+        ? `这道菜${statements}，与您申报的过敏原有关。`
+        : `Món này ${statements} bạn đã khai báo dị ứng.`
   };
 }
 

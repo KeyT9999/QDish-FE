@@ -1,3 +1,5 @@
+import { createApiGetRequestCacheKey } from '@/lib/apiRequestCache';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 const AUTH_TOKEN_KEY = 'qr_food_order_token';
 const inFlightGetRequests = new Map<string, Promise<unknown>>();
@@ -10,6 +12,18 @@ export const removeAuthToken = () => localStorage.removeItem(AUTH_TOKEN_KEY);
 
 interface FetchOptions extends RequestInit {
   requireAuth?: boolean;
+}
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+    readonly retryAfterSeconds?: number,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
 
 export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
@@ -36,7 +50,11 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
   const method = rest.method?.toUpperCase() || 'GET';
   const url = `${API_BASE_URL}${endpoint}`;
   const requestKey = method === 'GET'
-    ? `${url}|${requireAuth ? headers.get('Authorization') || 'no-token' : 'public'}`
+    ? createApiGetRequestCacheKey(
+        url,
+        requireAuth ? headers.get('Authorization') || 'no-token' : 'public',
+        headers.get('x-restaurant-id'),
+      )
     : null;
 
   if (requestKey && inFlightGetRequests.has(requestKey)) {
@@ -62,7 +80,15 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
+    const retryAfterHeader = response.headers.get('Retry-After');
+    const headerSeconds = retryAfterHeader ? Number(retryAfterHeader) : undefined;
+    const bodySeconds = typeof data?.retryAfterSeconds === 'number' ? data.retryAfterSeconds : undefined;
+    throw new ApiError(
+      data?.message || 'Có lỗi xảy ra, vui lòng thử lại',
+      response.status,
+      typeof data?.code === 'string' ? data.code : undefined,
+      bodySeconds ?? (Number.isFinite(headerSeconds) ? headerSeconds : undefined),
+    );
   }
 
   return data as T;

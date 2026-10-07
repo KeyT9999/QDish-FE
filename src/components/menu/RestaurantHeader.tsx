@@ -1,13 +1,15 @@
 import React from 'react';
 import { Restaurant } from '@/types';
 import { MapPin } from 'lucide-react';
+import type { MenuLocale } from '@/types/menuTranslation';
 
 interface RestaurantHeaderProps {
   restaurant: Restaurant | null;
   tableNumber: string | null;
+  locale?: MenuLocale;
 }
 
-export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({ restaurant, tableNumber }) => {
+export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({ restaurant, tableNumber, locale = 'vi' }) => {
   if (!restaurant) return null;
 
   return (
@@ -41,7 +43,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({ restaurant, 
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
             <span className="text-[11px] font-black text-emerald-800 tracking-wider uppercase">
-              Bàn {tableNumber}
+              {locale === 'en' ? 'Table' : locale === 'zh-CN' ? '桌号' : 'Bàn'} {tableNumber}
             </span>
           </div>
         )}

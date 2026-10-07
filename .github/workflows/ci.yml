@@ -60,6 +60,9 @@ jobs:
       - name: Run QR allergen order warning browser regression
         run: npm run test:e2e:allergen
 
+      - name: Run multilingual QR menu browser regression
+        run: npm run test:e2e:multilingual-menu
+
       - name: Build
         run: npm run build
 

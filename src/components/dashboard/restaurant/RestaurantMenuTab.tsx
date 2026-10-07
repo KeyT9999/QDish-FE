@@ -11,9 +11,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
-import { Plus, Edit2, Trash2, ClipboardList, MoreHorizontal, Copy, ShieldAlert } from 'lucide-react';
+import { Plus, Edit2, Trash2, ClipboardList, MoreHorizontal, Copy, ShieldAlert, Languages } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { TranslationEditorDialog } from '@/components/dashboard/restaurant/modals/TranslationEditorDialog';
+import { BulkMenuTranslationDialog } from '@/components/dashboard/restaurant/modals/BulkMenuTranslationDialog';
+import type { MenuItemTranslationValue, MenuLocale } from '@/types/menuTranslation';
 
 export interface RestaurantMenuTabProps {
   menuItems: MenuItem[];
@@ -22,6 +25,10 @@ export interface RestaurantMenuTabProps {
   onDeleteMenuItem: (id: string) => Promise<void>;
   onToggleAvailable: (id: string, currentAvailable: boolean) => Promise<void>;
   onConfirmAllergenReview: (item: MenuItem) => void;
+  onGenerateTranslations: (id: string, options?: { preserveExisting: true }) => Promise<MenuItem>;
+  onPublishTranslations?: (itemIds: string[]) => Promise<{ publishedCount: number; items: MenuItem[] }>;
+  onRefreshMenuItems?: () => Promise<MenuItem[]>;
+  onSaveTranslation: (id: string, locale: Exclude<MenuLocale, 'vi'>, value: MenuItemTranslationValue, publish: boolean) => Promise<MenuItem>;
   showCopyButton?: boolean;
   onCopyClick?: () => void;
 }
@@ -33,11 +40,17 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
   onDeleteMenuItem,
   onToggleAvailable,
   onConfirmAllergenReview,
+  onGenerateTranslations,
+  onPublishTranslations,
+  onRefreshMenuItems,
+  onSaveTranslation,
   showCopyButton,
   onCopyClick
 }) => {
   const isMobile = useIsMobile(640);
   const [needsAllergenReviewOnly, setNeedsAllergenReviewOnly] = React.useState(false);
+  const [translationItem, setTranslationItem] = React.useState<MenuItem | null>(null);
+  const [bulkTranslationOpen, setBulkTranslationOpen] = React.useState(false);
   const unreviewedCount = menuItems.filter((item) => item.allergenInfoStatus !== 'REVIEWED').length;
   const visibleMenuItems = needsAllergenReviewOnly
     ? menuItems.filter((item) => item.allergenInfoStatus !== 'REVIEWED')
@@ -50,6 +63,15 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
           <p className="text-neutral-500 text-xs mt-0.5">Quản lý danh sách món ăn, giá bán và thông tin dị ứng đã xác minh.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isLoadingMenu}
+            onClick={() => setBulkTranslationOpen(true)}
+            className="min-h-11 rounded-xl border-emerald-200 text-xs font-semibold text-emerald-800 hover:bg-emerald-50"
+          >
+            <Languages className="mr-1.5 h-4 w-4" /> Dịch menu hàng loạt
+          </Button>
           <Button
             type="button"
             variant={needsAllergenReviewOnly ? 'default' : 'outline'}
@@ -74,6 +96,10 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
           </Button>
         </div>
       </div>
+
+      {isLoadingMenu && (
+        <p role="status" className="text-xs font-medium text-neutral-500">Đang tải danh sách món ăn…</p>
+      )}
 
       {isMobile ? (
         <div className="grid grid-cols-1 gap-4">
@@ -100,6 +126,12 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-lg border border-neutral-100 p-1 w-36">
+                          <DropdownMenuItem
+                            onClick={() => setTranslationItem(item)}
+                            className="text-emerald-800 font-semibold text-xs rounded-lg cursor-pointer h-10 flex items-center"
+                          >
+                            <Languages className="w-3.5 h-3.5 mr-2" /> Dịch Anh / Trung
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => onConfirmAllergenReview(item)}
                             className="text-amber-800 font-semibold text-xs rounded-lg cursor-pointer h-10 flex items-center"
@@ -308,6 +340,12 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="bg-white rounded-xl shadow-lg border border-neutral-100 p-1 w-36">
                             <DropdownMenuItem
+                              onClick={() => setTranslationItem(item)}
+                              className="text-emerald-800 font-semibold text-xs rounded-lg cursor-pointer"
+                            >
+                              <Languages className="w-3.5 h-3.5 mr-2" /> Dịch Anh / Trung
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() => onConfirmAllergenReview(item)}
                               className="text-amber-800 font-semibold text-xs rounded-lg cursor-pointer"
                             >
@@ -355,6 +393,35 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
           </CardContent>
         </Card>
       )}
+      <BulkMenuTranslationDialog
+        open={bulkTranslationOpen}
+        onOpenChange={setBulkTranslationOpen}
+        menuItems={menuItems}
+        onGenerate={onGenerateTranslations}
+        onPublish={onPublishTranslations}
+        onRefreshMenuItems={onRefreshMenuItems}
+        onSaveTranslation={onSaveTranslation}
+      />
+      <TranslationEditorDialog<MenuItemTranslationValue>
+        open={Boolean(translationItem)}
+        onOpenChange={(open) => { if (!open) setTranslationItem(null); }}
+        kind="dish"
+        sourceName={translationItem?.name ?? ''}
+        sourceDescription={translationItem?.description}
+        translations={translationItem?.translationManagement}
+        onGenerate={async () => {
+          const id = translationItem?.id || translationItem?._id || '';
+          const updated = await onGenerateTranslations(id);
+          setTranslationItem(updated);
+          return updated.translationManagement ?? {};
+        }}
+        onSave={async (locale, value, publish) => {
+          const id = translationItem?.id || translationItem?._id || '';
+          const updated = await onSaveTranslation(id, locale, value, publish);
+          setTranslationItem(updated);
+          return updated.translationManagement ?? {};
+        }}
+      />
     </div>
   );
 };

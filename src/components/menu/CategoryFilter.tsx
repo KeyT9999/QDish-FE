@@ -1,16 +1,22 @@
 import React from 'react';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import type { MenuLocale } from '@/types/menuTranslation';
+import { getMenuMessage } from '@/lib/menuLocale';
 
 interface CategoryFilterProps {
   categories: string[];
   selectedCategory: string;
   onSelect: (category: string) => void;
+  locale?: MenuLocale;
+  getCategoryLabel?: (category: string) => string;
 }
 
 export const CategoryFilter: React.FC<CategoryFilterProps> = ({ 
   categories, 
   selectedCategory, 
-  onSelect 
+  onSelect,
+  locale = 'vi',
+  getCategoryLabel = (category) => category,
 }) => {
   return (
     <div className="w-full bg-surface/90 backdrop-blur-xl sticky top-[118px] z-20 border-b border-slate-200/40 -mx-4 px-4 sm:mx-0 sm:px-0 transition-all">
@@ -24,7 +30,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                 : 'bg-white/90 border-slate-200/80 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-300 shadow-xs'
             }`}
           >
-            Tất cả
+            {getMenuMessage(locale, 'allCategories')}
           </button>
           
           {categories.map((category) => (
@@ -37,7 +43,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                   : 'bg-white/90 border-slate-200/80 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-slate-300 shadow-xs'
               }`}
             >
-              {category}
+              {getCategoryLabel(category)}
             </button>
           ))}
         </div>

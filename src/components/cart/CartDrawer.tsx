@@ -10,6 +10,8 @@ import { CartItem } from './CartItem';
 import { formatCurrency } from '@/lib/utils';
 import { ShoppingBag, Loader2, ArrowRight } from 'lucide-react';
 import { buildCustomerContactPayload, isOptionalVietnamesePhoneValid } from '@/services/customerContact';
+import type { MenuLocale } from '@/types/menuTranslation';
+import { getMenuMessage } from '@/lib/menuLocale';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -26,6 +28,8 @@ interface CartDrawerProps {
     consentVersion?: string;
     note?: string;
   }) => Promise<void>;
+  locale?: MenuLocale;
+  localizeItemName?: (menuItemId: string, fallbackName: string) => string;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -36,7 +40,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   userAllergies,
   onUpdateQuantity,
   onRemove,
-  onSubmitOrder
+  onSubmitOrder,
+  locale = 'vi',
+  localizeItemName = (_id, name) => name,
 }) => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -90,7 +96,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
             {step === 1 ? (
               <>
                 <ShoppingBag className="w-5 h-5 mr-2 text-green-600" />
-                Giỏ hàng của bạn
+                {getMenuMessage(locale, 'cart')}
               </>
             ) : (
               <>
@@ -102,7 +108,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 >
                   <ArrowRight className="w-5 h-5 rotate-180" />
                 </Button>
-                Xác nhận thông tin
+                {getMenuMessage(locale, 'checkout')}
               </>
             )}
           </SheetTitle>
@@ -114,9 +120,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <ShoppingBag className="w-8 h-8 text-gray-300" />
               </div>
-              <p>Giỏ hàng trống</p>
+              <p>{getMenuMessage(locale, 'emptyCart')}</p>
               <Button variant="link" onClick={onClose} className="text-green-600 mt-2">
-                Tiếp tục chọn món
+                {getMenuMessage(locale, 'continueShopping')}
               </Button>
             </div>
           ) : (
@@ -126,8 +132,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   {cart.map((item) => (
                     <CartItem 
                       key={item.menuItemId} 
-                      item={item} 
+                      item={{ ...item, name: localizeItemName(item.menuItemId, item.name) }}
                       userAllergies={userAllergies}
+                      locale={locale}
                       onUpdateQuantity={onUpdateQuantity}
                       onRemove={onRemove}
                     />
@@ -135,15 +142,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   
                   <div className="mt-8 space-y-3">
                     <div className="flex justify-between text-sm text-gray-600">
-                      <span>Tạm tính</span>
+                      <span>{getMenuMessage(locale, 'subtotal')}</span>
                       <span>{formatCurrency(cartTotal)}</span>
                     </div>
                     <div className="flex justify-between text-sm text-gray-600">
-                      <span>Phí dịch vụ</span>
+                      <span>{getMenuMessage(locale, 'serviceFee')}</span>
                       <span>{formatCurrency(0)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg pt-3 border-t border-gray-200 text-gray-900">
-                      <span>Tổng cộng</span>
+                      <span>{getMenuMessage(locale, 'total')}</span>
                       <span className="text-green-600">{formatCurrency(cartTotal)}</span>
                     </div>
                   </div>
@@ -154,23 +161,23 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <div className="space-y-6 pt-2">
                   <div className="space-y-2">
                     <Label htmlFor="customerName" className="font-semibold text-gray-700">
-                      Tên của bạn (Tùy chọn)
+                      {getMenuMessage(locale, 'customerName')} ({getMenuMessage(locale, 'optional')})
                     </Label>
                     <Input 
                       id="customerName" 
-                      placeholder="VD: Anh Minh" 
+                      placeholder={getMenuMessage(locale, 'namePlaceholder')}
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       className="bg-white"
                     />
                     {!isCustomerNameValid && (
-                      <p className="text-xs font-medium text-red-600">Tên khách cần ít nhất 2 ký tự hoặc để trống.</p>
+                      <p className="text-xs font-medium text-red-600">{locale === 'en' ? 'Name must be at least 2 characters or left blank.' : locale === 'zh-CN' ? '姓名至少需要2个字符，也可以留空。' : 'Tên khách cần ít nhất 2 ký tự hoặc để trống.'}</p>
                     )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="customerPhone" className="font-semibold text-gray-700">
-                      Số điện thoại (Tùy chọn)
+                      {getMenuMessage(locale, 'customerPhone')} ({getMenuMessage(locale, 'optional')})
                     </Label>
                     <Input
                       id="customerPhone"
@@ -187,8 +194,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     />
                     <p id="customerPhoneHelp" className={`text-xs ${isCustomerPhoneValid ? 'text-gray-500' : 'font-medium text-red-600'}`}>
                       {isCustomerPhoneValid
-                        ? 'Nếu nhập, số sẽ được lưu vào hồ sơ khách hàng của quán. Bạn có thể bỏ trống và vẫn đặt món.'
-                        : 'Vui lòng nhập số điện thoại Việt Nam hợp lệ hoặc để trống.'}
+                        ? getMenuMessage(locale, 'phoneHint')
+                        : getMenuMessage(locale, 'invalidPhone')}
                     </p>
                   </div>
 
@@ -201,18 +208,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-green-600"
                       />
                       <span>
-                        Tôi đồng ý nhận thông tin ưu đãi từ nhà hàng qua số điện thoại này.
+                        {getMenuMessage(locale, 'consent')}
                       </span>
                     </label>
                   )}
 
                   <div className="space-y-2">
                     <Label htmlFor="note" className="font-semibold text-gray-700">
-                      Ghi chú cho quán (Tùy chọn)
+                      {getMenuMessage(locale, 'note')} ({getMenuMessage(locale, 'optional')})
                     </Label>
                     <Textarea 
                       id="note" 
-                      placeholder="VD: Không hành, ít cay..." 
+                      placeholder={getMenuMessage(locale, 'notePlaceholder')}
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
                       className="bg-white resize-none"
@@ -233,7 +240,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 className="w-full bg-green-600 hover:bg-green-700 text-white rounded-xl h-14 text-lg font-bold shadow-lg shadow-green-600/20"
                 onClick={() => setStep(2)}
               >
-                Tiếp tục • {formatCurrency(cartTotal)}
+                {getMenuMessage(locale, 'continue')} • {formatCurrency(cartTotal)}
               </Button>
             ) : (
               <Button 
@@ -244,10 +251,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Đang đặt món...
+                    {getMenuMessage(locale, 'placingOrder')}
                   </>
                 ) : (
-                  'Xác nhận đặt món'
+                  getMenuMessage(locale, 'placeOrder')
                 )}
               </Button>
             )}
