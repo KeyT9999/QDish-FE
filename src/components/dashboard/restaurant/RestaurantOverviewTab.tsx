@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React from 'react';
 import { RestaurantStats } from '@/types';
 import { DollarSign, ShoppingBag, TrendingUp, Flame, RefreshCw } from 'lucide-react';
@@ -35,7 +36,7 @@ export const RestaurantOverviewTab: React.FC<RestaurantOverviewTabProps> = ({
   onSetStatsPeriod
 }) => {
   const { t, language } = useOwnerConsoleLocale();
-  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const localeTag = getIntlLocale(language);
   const formatCurrency = (amount: number) => new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(amount);
   const revenueChartData = stats?.revenueByDate || [];
   const hourlyChartData = stats?.revenueByHour || [];

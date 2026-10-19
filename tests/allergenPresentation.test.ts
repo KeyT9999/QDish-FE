@@ -44,6 +44,12 @@ assert.equal(getMenuAllergenWarning({
   allergenInfoStatus: 'UNKNOWN',
   allergens: ['TREE_NUTS']
 }, ['NUTS'], 'zh-CN').message, '这道菜可能含有您申报过敏的树坚果，过敏原信息尚未核实。');
+assert.equal(getMenuAllergenWarning({ allergenInfoStatus: 'UNKNOWN' }, ['NUTS'], 'ru').message, 'Информация об аллергенах в этом блюде проверена не полностью. Если у вас есть аллергия, обратитесь к сотруднику.');
+assert.equal(getMenuAllergenWarning({ allergenInfoStatus: 'UNKNOWN' }, ['NUTS'], 'ko').message, '이 메뉴의 알레르기 정보가 완전히 확인되지 않았습니다. 알레르기가 있다면 직원에게 문의하세요.');
+assert.equal(getMenuAllergenWarning({ allergenInfoStatus: 'UNKNOWN' }, ['NUTS'], 'hi-IN').message, 'इस व्यंजन में मौजूद एलर्जी कारकों की जानकारी पूरी तरह सत्यापित नहीं है। यदि आपको एलर्जी है, तो कृपया कर्मचारी से पूछें।');
+assert.match(getMenuAllergenWarning({ allergenInfoStatus: 'UNKNOWN', allergens: ['PEANUT'] }, ['PEANUT'], 'ru').message, /арахис/);
+assert.match(getMenuAllergenWarning({ allergenInfoStatus: 'UNKNOWN', allergens: ['PEANUT'] }, ['PEANUT'], 'ko').message, /땅콩/);
+assert.match(getMenuAllergenWarning({ allergenInfoStatus: 'UNKNOWN', allergens: ['PEANUT'] }, ['PEANUT'], 'hi-IN').message, /मूंगफली/);
 
 assert.deepEqual(getMenuAllergenWarning({
   allergenInfoStatus: 'UNKNOWN',

@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React from 'react';
 import {
   ShoppingBag,
@@ -54,7 +55,7 @@ export const NotificationItemComponent: React.FC<NotificationItemProps> = ({
   compact = false
 }) => {
   const { t, language } = useOwnerConsoleLocale();
-  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const localeTag = getIntlLocale(language);
   const config = typeConfig[notification.type] || typeConfig[NotificationType.INFO];
   const Icon = config.icon;
 

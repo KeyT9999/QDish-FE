@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import { BarChart3, CircleHelp, Info, Sparkles } from 'lucide-react';
 import type { MerchantInsightsPayload } from '@/services/merchantInsightLoader';
 import {
@@ -16,7 +17,7 @@ interface MenuAttributesPanelProps {
 }
 
 const formatNumber = (value: number, language: OwnerConsoleLanguage) => new Intl.NumberFormat(
-  language === 'en' ? 'en-US' : language === 'zh-CN' ? 'zh-CN' : 'vi-VN'
+  getIntlLocale(language)
 ).format(value);
 
 const GROUP_LABEL_KEYS: Record<MenuAttributeGroupKey, OwnerConsoleTranslationKey> = {
@@ -137,7 +138,7 @@ function AttributeBar({ attribute, maxCount }: { attribute: MenuAttributeEntry; 
 }
 
 function AttributeGroupCard({ group }: { group: MenuAttributeGroup }) {
-  const { language, t } = useOwnerConsoleLocale();
+  const { t } = useOwnerConsoleLocale();
   const maxCount = Math.max(...group.attributes.map((attribute) => attribute.count), 1);
   const groupLabel = t(GROUP_LABEL_KEYS[group.key]);
   const groupDescription = t(GROUP_DESCRIPTION_KEYS[group.key]);

@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React, { useEffect, useState } from 'react';
 import { CalendarDays, Loader2, Phone, ReceiptText } from 'lucide-react';
 
@@ -57,7 +58,7 @@ export const CustomerDetailSheet: React.FC<CustomerDetailSheetProps> = ({
   }, [customerId, restaurantId, t]);
 
   const formatDateTime = (value?: string) => value
-    ? new Intl.DateTimeFormat(language === 'en' ? 'en-US' : language === 'zh-CN' ? 'zh-CN' : 'vi-VN', {
+    ? new Intl.DateTimeFormat(getIntlLocale(language), {
       dateStyle: 'medium',
       timeStyle: 'short'
     }).format(new Date(value))

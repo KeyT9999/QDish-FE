@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -16,7 +17,7 @@ import {
 import type { NotificationItem } from '@/types';
 import { NotificationType, NotificationPriority } from '@/types';
 import { formatNotificationSender } from '@/utils/notificationHelper';
-import { useOwnerConsoleLocale, type OwnerConsoleLocaleValue } from '@/i18n/OwnerConsoleLocaleContext';
+import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 import type { OwnerConsoleTranslationKey } from '@/i18n/ownerConsoleCatalog';
 
 interface NotificationDetailModalProps {
@@ -55,7 +56,7 @@ export const NotificationDetailModal: React.FC<NotificationDetailModalProps> = (
   onClose
 }) => {
   const { t, language } = useOwnerConsoleLocale();
-  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const localeTag = getIntlLocale(language);
   const navigate = useNavigate();
 
   // Handle ESC key press to close modal

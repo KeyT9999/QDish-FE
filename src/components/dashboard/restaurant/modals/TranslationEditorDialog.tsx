@@ -26,6 +26,9 @@ interface TranslationEditorDialogProps<T extends TranslationValue> {
 const LOCALES: Array<{ locale: Exclude<MenuLocale, 'vi'>; label: string; short: string }> = [
   { locale: 'en', label: 'English', short: 'EN' },
   { locale: 'zh-CN', label: '简体中文', short: '中文' },
+  { locale: 'ru', label: 'Русский', short: 'RU' },
+  { locale: 'ko', label: '한국어', short: 'KO' },
+  { locale: 'hi-IN', label: 'हिन्दी', short: 'HI' },
 ];
 
 function getStatusLabel<T>(entry: TranslationReviewEntry<T> | undefined, t: OwnerConsoleLocaleValue['t']) {
@@ -70,7 +73,7 @@ export function TranslationEditorDialog<T extends TranslationValue>({
         setName(value.name);
         setDescription(value.description ?? '');
       }
-      toast.success(t('Đã tạo bản nháp tiếng Anh và tiếng Trung. Hãy kiểm tra trước khi duyệt.'));
+      toast.success(t('Đã tạo bản nháp cho tất cả ngôn ngữ hỗ trợ. Hãy kiểm tra trước khi duyệt.'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('Không thể tạo bản dịch lúc này.'));
     } finally {

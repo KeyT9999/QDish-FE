@@ -12,6 +12,9 @@ const items = [
     translations: {
       en: { name: 'Beef pho', description: 'Rice noodles in slow-simmered beef broth.' },
       'zh-CN': { name: '越南牛肉粉', description: '米粉搭配慢炖牛肉汤。' },
+      ru: { name: 'Фо бо', description: 'Рисовая лапша в ароматном говяжьем бульоне.' },
+      ko: { name: '소고기 쌀국수', description: '진한 소고기 육수에 담긴 쌀국수.' },
+      'hi-IN': { name: 'बीफ़ फ़ो', description: 'धीमी आँच पर पकाए गए बीफ़ शोरबे के साथ चावल के नूडल्स।' },
     },
     price: 52000,
     category: 'Món nước',
@@ -82,7 +85,10 @@ test('QR guest switches languages, falls back to Vietnamese, and submits the Vie
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify([
-          { _id: '507f1f77bcf86cd799439093', restaurantId, name: 'Món nước', translations: { en: { name: 'Noodle soups' }, 'zh-CN': { name: '汤粉类' } } },
+          { _id: '507f1f77bcf86cd799439093', restaurantId, name: 'Món nước', translations: {
+            en: { name: 'Noodle soups' }, 'zh-CN': { name: '汤粉类' }, ru: { name: 'Супы с лапшой' },
+            ko: { name: '국수 메뉴' }, 'hi-IN': { name: 'नूडल सूप' },
+          } },
           { _id: '507f1f77bcf86cd799439095', restaurantId, name: 'Món chính', translations: {} },
         ]),
       });
@@ -121,6 +127,17 @@ test('QR guest switches languages, falls back to Vietnamese, and submits the Vie
   await expect(page.getByText('越南牛肉粉', { exact: true }).last()).toBeVisible();
   await expect(page.getByRole('button', { name: '汤粉类' })).toBeVisible();
   await expect(page.getByText('Cơm tấm', { exact: true })).toBeVisible();
+
+  await selector.getByRole('button', { name: 'Русский' }).click();
+  await expect(page.getByText('Фо бо', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Супы с лапшой' })).toBeVisible();
+  await selector.getByRole('button', { name: '한국어' }).click();
+  await expect(page.getByText('소고기 쌀국수', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '국수 메뉴' })).toBeVisible();
+  await selector.getByRole('button', { name: 'हिन्दी' }).click();
+  await expect(page.getByText('बीफ़ फ़ो', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'नूडल सूप' })).toBeVisible();
+  await selector.getByRole('button', { name: '中文' }).click();
   await page.reload();
   await expect(page.getByTestId('menu-language-selector').getByRole('button', { name: '中文' })).toHaveAttribute('aria-pressed', 'true');
 
@@ -138,8 +155,10 @@ test('QR guest switches languages, falls back to Vietnamese, and submits the Vie
 
 type ManagedEntry = TranslationReviewEntry<MenuItemTranslationValue>;
 type ManagedDish = Omit<typeof items[number], 'translations'> & {
-  translations: Partial<Record<'en' | 'zhCN', ManagedEntry>>;
+  translations: Partial<Record<'en' | 'zhCN' | 'ru' | 'ko' | 'hiIN', ManagedEntry>>;
 };
+const backendLocaleKeys = { en: 'en', 'zh-CN': 'zhCN', ru: 'ru', ko: 'ko', 'hi-IN': 'hiIN' } as const;
+const generatedLocaleNames = { en: 'English', 'zh-CN': '中文', ru: 'Русский', ko: '한국어', 'hi-IN': 'हिन्दी' } as const;
 
 const approvedEntry = (name: string, description = `${name} approved description`): ManagedEntry => ({
   displayStatus: 'APPROVED', approved: { status: 'APPROVED', value: { name, description } },
@@ -221,9 +240,9 @@ async function installBulkMenuApi(page: Page, menu: ManagedDish[]) {
       }
       if (fixture.failedGenerationIds.delete(generation[1])) return json(route, { message: 'AI temporarily unavailable' }, 503);
       const dish = menu.find((item) => item._id === generation[1])!;
-      for (const locale of ['en', 'zhCN'] as const) {
-        if (!dish.translations[locale]?.draft && dish.translations[locale]?.approved?.status !== 'APPROVED') {
-          dish.translations[locale] = draftEntry(locale === 'en' ? `English ${dish.name}` : `中文 ${dish.name}`);
+      for (const [locale, key] of Object.entries(backendLocaleKeys) as Array<[keyof typeof backendLocaleKeys, typeof backendLocaleKeys[keyof typeof backendLocaleKeys]]>) {
+        if (!dish.translations[key]?.draft && dish.translations[key]?.approved?.status !== 'APPROVED') {
+          dish.translations[key] = draftEntry(`${generatedLocaleNames[locale]} ${dish.name}`);
         }
       }
       return json(route, dish);
@@ -239,20 +258,20 @@ async function installBulkMenuApi(page: Page, menu: ManagedDish[]) {
       }
       const published = menu.filter((item) => itemIds.includes(item._id));
       for (const dish of published) {
-        for (const locale of ['en', 'zhCN'] as const) {
+        for (const locale of Object.values(backendLocaleKeys)) {
           const entry = dish.translations[locale]!;
           if (entry.draft) dish.translations[locale] = approvedEntry(entry.draft.value.name, entry.draft.value.description);
         }
       }
       return json(route, { publishedCount: published.length, items: published });
     }
-    const save = path.match(/^\/api\/menu\/([^/]+)\/translations\/(en|zh-CN)$/);
+    const save = path.match(/^\/api\/menu\/([^/]+)\/translations\/(en|zh-CN|ru|ko|hi-IN)$/);
     if (save) {
       expect(request.method()).toBe('PATCH');
       const body = request.postDataJSON() as { name: string; description: string; publish: boolean };
       fixture.saveRequests.push({ id: save[1], locale: save[2], body });
       const dish = menu.find((item) => item._id === save[1])!;
-      const locale = save[2] === 'en' ? 'en' : 'zhCN';
+      const locale = backendLocaleKeys[save[2] as keyof typeof backendLocaleKeys];
       dish.translations[locale] = { ...dish.translations[locale], ...draftEntry(body.name, body.description) };
       return json(route, dish);
     }
@@ -273,10 +292,16 @@ async function installBulkMenuApi(page: Page, menu: ManagedDish[]) {
 }
 
 test('owner bulk translation preserves drafts, reports sequential progress, retries failures and publishes selected dishes for guests', async ({ page }) => {
-  const stable = managedDish(101, 'Món đã duyệt', { en: approvedEntry('Stable English'), zhCN: approvedEntry('稳定中文') });
+  const stable = managedDish(101, 'Món đã duyệt', {
+    en: approvedEntry('Stable English'), zhCN: approvedEntry('稳定中文'), ru: approvedEntry('Перевод'),
+    ko: approvedEntry('번역'), hiIN: approvedEntry('अनुवाद'),
+  });
   const saved = managedDish(102, 'Món có nháp', {
     en: { ...draftEntry('Saved English draft'), approved: approvedEntry('Previously approved English').approved },
     zhCN: { ...draftEntry('已保存的中文草稿'), approved: approvedEntry('已批准中文').approved },
+    ru: { ...draftEntry('Сохранённый черновик'), approved: approvedEntry('Ранее утверждено').approved },
+    ko: { ...draftEntry('저장된 초안'), approved: approvedEntry('이전 승인본').approved },
+    hiIN: { ...draftEntry('सहेजा गया मसौदा'), approved: approvedEntry('पहले से स्वीकृत').approved },
   });
   const candidates = Array.from({ length: 8 }, (_, index) => managedDish(110 + index, `Món cần dịch ${index + 1}`));
   candidates[0].available = false;
@@ -288,7 +313,7 @@ test('owner bulk translation preserves drafts, reports sequential progress, retr
   await page.goto('/owner?tab=menu');
   await page.getByRole('button', { name: 'Dịch menu hàng loạt', exact: true }).click();
   const bulk = page.getByRole('dialog', { name: 'Dịch menu hàng loạt', exact: true });
-  await expect(bulk.getByText('Đã duyệt hai ngôn ngữ', { exact: true })).toBeVisible();
+  await expect(bulk.getByText('Món đã có đủ bản dịch được duyệt', { exact: true })).toBeVisible();
   await expect(bulk.getByText('Được bỏ qua lần này', { exact: true }).locator('..').getByText('1', { exact: true })).toBeVisible();
   await bulk.getByRole('button', { name: 'Bắt đầu dịch 8 món' }).click();
   await fixture.generationHeld.promise;
@@ -303,6 +328,9 @@ test('owner bulk translation preserves drafts, reports sequential progress, retr
   const unavailable = bulk.getByRole('article', { name: `Bản dịch ${candidates[0].name}`, exact: true });
   await expect(unavailable.getByText('Preserved unavailable English', { exact: true })).toBeVisible();
   await expect(unavailable.getByText(`中文 ${candidates[0].name}`, { exact: true })).toBeVisible();
+  await expect(unavailable.getByText(`Русский ${candidates[0].name}`, { exact: true })).toBeVisible();
+  await expect(unavailable.getByText(`한국어 ${candidates[0].name}`, { exact: true })).toBeVisible();
+  await expect(unavailable.getByText(`हिन्दी ${candidates[0].name}`, { exact: true })).toBeVisible();
   await expect(unavailable.getByText('Preserved unavailable English draft description', { exact: true })).toBeVisible();
   await expect(unavailable.getByText(`中文 ${candidates[0].name} draft description`, { exact: true })).toBeVisible();
   const savedRow = bulk.getByRole('article', { name: `Bản dịch ${saved.name}`, exact: true });
@@ -358,7 +386,7 @@ test('owner single dish AI action retains default generation request semantics',
   const fixture = await installBulkMenuApi(page, [dish]);
   await page.goto('/owner?tab=menu');
   await page.getByRole('row').filter({ hasText: dish.name }).getByRole('button').click();
-  await page.getByRole('menuitem', { name: 'Dịch Anh / Trung' }).click();
+  await page.getByRole('menuitem', { name: 'Dịch sang tất cả ngôn ngữ' }).click();
   const editor = page.getByRole('dialog', { name: 'Bản dịch món ăn', exact: true });
   await editor.getByRole('button', { name: 'Tạo bản nháp AI' }).click();
   await expect(editor.getByLabel('Tên · English')).toHaveValue(`English ${dish.name}`);
@@ -395,7 +423,9 @@ test('owner bulk translation pauses the remaining queue when the AI provider rat
 
 test('owner must refresh management state after publication and automatic refresh fail before retrying or editing', async ({ page }) => {
   const failed = managedDish(201, 'Món dịch lỗi');
-  const ready = managedDish(202, 'Món có thể duyệt');
+  const ready = managedDish(202, 'Món có thể duyệt', {
+    ru: draftEntry('Русский Món có thể duyệt'),
+  });
   const fixture = await installBulkMenuApi(page, [failed, ready]);
   fixture.failedGenerationIds.add(failed._id);
   await page.goto('/owner?tab=menu');

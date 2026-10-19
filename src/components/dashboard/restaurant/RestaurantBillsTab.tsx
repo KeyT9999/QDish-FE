@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Bill, BillStatus, Order } from '@/types';
 import { billService } from '@/services/billService';
@@ -45,7 +46,7 @@ const formatDate = (value: string | undefined, localeTag: string) => {
 
 export const RestaurantBillsTab: React.FC<RestaurantBillsTabProps> = ({ restaurantId }) => {
   const { t, language } = useOwnerConsoleLocale();
-  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const localeTag = getIntlLocale(language);
   const formatBillCurrency = (amount: number) => new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(amount);
   const isMobile = useIsMobile(640);
   const [bills, setBills] = useState<Bill[]>([]);

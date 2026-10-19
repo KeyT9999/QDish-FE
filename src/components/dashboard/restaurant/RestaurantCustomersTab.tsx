@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React, { FormEvent, useCallback, useEffect, useState } from 'react';
 import { AlertCircle, ChevronLeft, ChevronRight, Search, ShieldCheck, Users } from 'lucide-react';
 
@@ -21,7 +22,7 @@ const formatDate = (value: string, localeTag: string) => new Intl.DateTimeFormat
 
 export const RestaurantCustomersTab: React.FC<RestaurantCustomersTabProps> = ({ restaurantId, enabled }) => {
   const { t, language } = useOwnerConsoleLocale();
-  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const localeTag = getIntlLocale(language);
   const [result, setResult] = useState<CustomerListResponse | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');

@@ -14,6 +14,7 @@ import { apiFetch } from '@/services/api';
 import { loadBatchFitScores } from '@/services/fitScoreService';
 import { hasDiningProfileSelections } from '@/services/diningProfileStorage';
 import { getMenuAllergenWarning } from '@/services/allergenPresentation';
+import { getIntlLocale } from '@/lib/localeFormatting';
 import {
   getRecommendationEmptyMessage,
   getRecommendationHeading,
@@ -709,7 +710,7 @@ export const CustomerMenu: React.FC = () => {
                     {/* Price and Add button */}
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 shrink-0">
                       <span className="font-heading font-black text-[14.5px] text-slate-900 tracking-tight">
-                        {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(dishItem.price)}
+                        {new Intl.NumberFormat(getIntlLocale(locale), { style: 'currency', currency: 'VND' }).format(dishItem.price)}
                       </span>
                       <Button
                         onClick={() => handleAddToCart(dishItem)}
@@ -752,7 +753,7 @@ export const CustomerMenu: React.FC = () => {
                   variant="outline"
                   className="border-emerald-200 text-emerald-800 text-[10px] font-bold h-6.5 rounded-xl px-2.5 hover:bg-emerald-50 cursor-pointer"
                 >
-                  {getMenuMessage(locale, 'addDish')} {pairedItem.name} (+{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.pairedDish.price)})
+                  {getMenuMessage(locale, 'addDish')} {pairedItem.name} (+{new Intl.NumberFormat(getIntlLocale(locale), { style: 'currency', currency: 'VND' }).format(p.pairedDish.price)})
                 </Button>
               </div>
                 </>
@@ -882,7 +883,7 @@ export const CustomerMenu: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[15px] font-heading font-black text-emerald-400 tracking-tight">
-                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(cart.cartTotal)}
+                  {new Intl.NumberFormat(getIntlLocale(locale), { style: 'currency', currency: 'VND' }).format(cart.cartTotal)}
                 </span>
                 <span className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white/80 group-hover:text-white group-hover:bg-white/20 transition-all text-xs font-bold">
                   →

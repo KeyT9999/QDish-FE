@@ -1,4 +1,6 @@
 import type { OwnerConsoleLanguage } from '@/types/ownerConsoleLocale';
+import { ownerConsoleMessagesAdditional } from './ownerConsoleCatalogAdditional.ts';
+import { ownerConsoleMessageOverrides } from './ownerConsoleCatalogOverrides.ts';
 
 export const ownerConsoleMessages = {
   'Ngôn ngữ giao diện': { en: 'Interface language', 'zh-CN': '界面语言' },
@@ -9,6 +11,9 @@ export const ownerConsoleMessages = {
   'Tiếng Việt': { en: 'Tiếng Việt', 'zh-CN': 'Tiếng Việt' },
   English: { en: 'English', 'zh-CN': 'English' },
   '简体中文': { en: '简体中文', 'zh-CN': '简体中文' },
+  Русский: { en: 'Russian', 'zh-CN': '俄语' },
+  한국어: { en: 'Korean', 'zh-CN': '韩语' },
+  हिन्दी: { en: 'Hindi', 'zh-CN': '印地语' },
   'Đang lưu...': { en: 'Saving…', 'zh-CN': '正在保存…' },
   'Đã lưu ngôn ngữ giao diện.': { en: 'Interface language saved.', 'zh-CN': '界面语言已保存。' },
   'Không thể lưu thay đổi. Đã khôi phục lựa chọn trước đó.': {
@@ -561,7 +566,7 @@ export const ownerConsoleMessages = {
   'Sao chép thực đơn': { en: 'Copy menu', 'zh-CN': '复制菜单' },
   'Thêm món mới': { en: 'Add menu item', 'zh-CN': '添加菜品' },
   'Đang tải danh sách món ăn…': { en: 'Loading menu items…', 'zh-CN': '正在加载菜品列表…' },
-  'Dịch Anh / Trung': { en: 'Translate to English / Chinese', 'zh-CN': '翻译成英文 / 中文' },
+  'Dịch sang tất cả ngôn ngữ': { en: 'Translate into all supported languages', 'zh-CN': '翻译成所有支持的语言' },
   'Sửa xác nhận dị ứng': { en: 'Edit allergen review', 'zh-CN': '编辑过敏原确认' },
   'Xác nhận dị ứng': { en: 'Review allergens', 'zh-CN': '确认过敏原' },
   'Chỉnh sửa': { en: 'Edit', 'zh-CN': '编辑' },
@@ -849,7 +854,7 @@ export const ownerConsoleMessages = {
   , 'Chọn ngôn ngữ bản dịch': { en: 'Choose translation language', 'zh-CN': '选择翻译语言' }
   , 'Tên · {language}': { en: 'Name · {language}', 'zh-CN': '名称 · {language}' }
   , 'Mô tả': { en: 'Description', 'zh-CN': '描述' }
-  , 'Đã tạo bản nháp tiếng Anh và tiếng Trung. Hãy kiểm tra trước khi duyệt.': { en: 'English and Chinese drafts are ready. Review them before approval.', 'zh-CN': '英文和中文草稿已生成，请审核后再批准。' }
+  , 'Đã tạo bản nháp cho tất cả ngôn ngữ hỗ trợ. Hãy kiểm tra trước khi duyệt.': { en: 'Drafts for all supported languages are ready. Review them before approval.', 'zh-CN': '所有支持语言的草稿均已生成，请审核后再批准。' }
   , 'Không thể tạo bản dịch lúc này.': { en: 'Could not generate translations right now.', 'zh-CN': '目前无法生成翻译。' }
   , 'Đã duyệt bản dịch và hiển thị cho khách.': { en: 'Translation approved and published for customers.', 'zh-CN': '翻译已审核并向顾客显示。' }
   , 'Đã lưu bản nháp.': { en: 'Draft saved.', 'zh-CN': '草稿已保存。' }
@@ -878,7 +883,7 @@ export const ownerConsoleMessages = {
   , 'món cần gọi AI': { en: 'dishes to translate with AI', 'zh-CN': '个待 AI 翻译的菜品' }
   , 'Bản nháp hiện có': { en: 'Existing drafts', 'zh-CN': '现有草稿' }
   , 'Được giữ lại để bạn xem': { en: 'Kept for your review', 'zh-CN': '保留供你审核' }
-  , 'Đã duyệt hai ngôn ngữ': { en: 'Approved in both languages', 'zh-CN': '两种语言均已审核' }
+  , 'Món đã có đủ bản dịch được duyệt': { en: 'Items with all translations approved', 'zh-CN': '所有翻译均已审核的菜品' }
   , 'Được bỏ qua lần này': { en: 'Skipped this time', 'zh-CN': '本次跳过' }
   , 'Xem {count} bản nháp đã lưu': { en: 'Review {count} saved drafts', 'zh-CN': '查看 {count} 个已保存草稿' }
   , 'Mỗi lượt AI xử lý một món. Món đang ngưng bán vẫn được tính vào danh sách dịch.': { en: 'AI processes one dish at a time. Unavailable dishes are still included.', 'zh-CN': 'AI 每次处理一道菜。停售菜品仍会计入翻译列表。' }
@@ -894,9 +899,9 @@ export const ownerConsoleMessages = {
   , 'Chọn duyệt {name}': { en: 'Select {name} for approval', 'zh-CN': '选择审核 {name}' }
   , 'Đã duyệt & hiển thị': { en: 'Approved & published', 'zh-CN': '已审核并发布' }
   , 'Đã hiển thị cho khách': { en: 'Visible to customers', 'zh-CN': '顾客可见' }
-  , 'Sẵn sàng duyệt hai ngôn ngữ': { en: 'Ready to approve both languages', 'zh-CN': '两种语言均可审核' }
+  , 'Sẵn sàng duyệt tất cả bản dịch': { en: 'All translations are ready for approval', 'zh-CN': '所有翻译均可审核' }
   , 'Thử lại hoặc chỉnh sửa bản nháp để hoàn tất': { en: 'Retry or edit the draft to finish', 'zh-CN': '重试或编辑草稿以完成翻译' }
-  , 'Cần hoàn tất cả hai ngôn ngữ': { en: 'Both languages must be complete', 'zh-CN': '必须完成两种语言' }
+  , 'Cần hoàn tất tất cả bản dịch': { en: 'All translations must be complete', 'zh-CN': '必须完成所有翻译' }
   , 'Sửa nháp': { en: 'Edit draft', 'zh-CN': '编辑草稿' }
   , 'Không còn bản nháp đã lưu để xem.': { en: 'No saved drafts remain to review.', 'zh-CN': '没有可查看的已保存草稿。' }
   , 'Không có món cần kiểm tra bản dịch.': { en: 'No dishes need translation review.', 'zh-CN': '没有需要审核翻译的菜品。' }
@@ -917,7 +922,7 @@ export const ownerConsoleMessages = {
   , 'Hãy thử tải lại.': { en: 'Try refreshing.', 'zh-CN': '请尝试刷新。' }
   , 'Đã duyệt và hiển thị {count} món.': { en: 'Approved and published {count} dishes.', 'zh-CN': '已审核并发布 {count} 道菜。' }
   , 'Không thể duyệt các bản dịch.': { en: 'Could not approve translations.', 'zh-CN': '无法审核这些翻译。' }
-  , 'Tạo bản nháp tiếng Anh và tiếng Trung để kiểm tra trước khi hiển thị cho khách.': { en: 'Create English and Chinese drafts to review before publishing them to customers.', 'zh-CN': '生成英文和中文草稿，审核后再向顾客显示。' }
+  , 'Tạo bản nháp cho các ngôn ngữ hỗ trợ để kiểm tra trước khi hiển thị cho khách.': { en: 'Create drafts in all supported languages for review before publishing them to customers.', 'zh-CN': '为所有支持的语言生成草稿，审核后再向顾客发布。' }
   , 'Đóng dịch menu hàng loạt': { en: 'Close bulk menu translation', 'zh-CN': '关闭菜单批量翻译' }
   , 'Bản dịch được lưu thành bản nháp, chưa hiển thị cho khách.': { en: 'Translations are saved as drafts and are not visible to customers yet.', 'zh-CN': '翻译已保存为草稿，顾客暂不可见。' }
   , 'Đã xử lý {completed}/{total} món · {percent}%. {activity}': { en: 'Processed {completed}/{total} dishes · {percent}%. {activity}', 'zh-CN': '已处理 {completed}/{total} 道菜 · {percent}%。{activity}' }
@@ -1273,7 +1278,11 @@ export const translateOwnerConsoleMessage = (
   key: OwnerConsoleTranslationKey,
   values?: Record<string, string | number>
 ) => {
-  const template = language === 'vi' ? key : ownerConsoleMessages[key][language];
+  const template = language === 'vi'
+    ? key
+    : language === 'en' || language === 'zh-CN'
+      ? ownerConsoleMessages[key][language]
+      : ownerConsoleMessageOverrides[key]?.[language] ?? ownerConsoleMessagesAdditional[key][language];
   return Object.entries(values || {}).reduce(
     (result, [name, value]) => result.replaceAll(`{${name}}`, String(value)),
     template

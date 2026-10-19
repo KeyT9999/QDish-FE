@@ -15,19 +15,30 @@ const draft: TranslationReviewEntry<MenuItemTranslationValue> = {
   draft: { value: { name: 'Draft dish', description: 'Draft description' }, generatedAt: '2026-10-07T00:00:00.000Z' },
   displayStatus: 'DRAFT',
 };
+const allApproved = () => Object.fromEntries(
+  ['en', 'zh-CN', 'ru', 'ko', 'hi-IN'].map((locale) => [locale, approved])
+) as NonNullable<MenuItem['translationManagement']>;
 const item = (id: string, translationManagement?: MenuItem['translationManagement']): MenuItem => ({
   id, restaurantId: 'restaurant-1', name: 'Dish', description: '', price: 10,
   category: 'Main', imageUrl: '', available: true, translationManagement,
 });
 
-const stable = item('stable', { en: approved, 'zh-CN': approved });
+const stable = item('stable', allApproved());
+assert.equal(
+  isReadyForBulkTranslationPublish(stable),
+  true,
+  'all five approved locale values make an item fully translated'
+);
+assert.deepEqual(planBulkMenuTranslations([stable]), {
+  stableItemIds: ['stable'], reviewItemIds: [], generationItemIds: [],
+}, 'an item with all five approved translations needs no review or generation');
 const missingChinese = item('missing-chinese', { en: approved });
-const staleEnglish = item('stale-english', { en: stale, 'zh-CN': approved });
+const staleEnglish = item('stale-english', { ...allApproved(), en: stale });
 const existingDraft = item('existing-draft', { en: draft });
-const mixedReady = item('mixed-ready', { en: approved, 'zh-CN': draft });
-const approvedWithDraft = item('approved-with-draft', { en: { ...approved, ...draft }, 'zh-CN': approved });
-const bothDrafts = item('both-drafts', { en: draft, 'zh-CN': draft });
-const staleWithDraft = item('stale-with-draft', { en: { ...stale, ...draft }, 'zh-CN': approved });
+const mixedReady = item('mixed-ready', { ...allApproved(), 'zh-CN': draft });
+const approvedWithDraft = item('approved-with-draft', { ...allApproved(), en: { ...approved, ...draft } });
+const bothDrafts = item('both-drafts', { ...allApproved(), en: draft, 'zh-CN': draft });
+const staleWithDraft = item('stale-with-draft', { ...allApproved(), en: { ...stale, ...draft } });
 
 assert.deepEqual(planBulkMenuTranslations([
   stable, missingChinese, staleEnglish, existingDraft, mixedReady,
@@ -36,9 +47,9 @@ assert.deepEqual(planBulkMenuTranslations([
   stableItemIds: ['stable'],
   reviewItemIds: ['missing-chinese', 'stale-english', 'existing-draft', 'mixed-ready', 'approved-with-draft', 'both-drafts', 'stale-with-draft'],
   generationItemIds: ['missing-chinese', 'stale-english', 'existing-draft'],
-}, 'drafts need review but only missing/stale locales without a draft need generation');
+}, 'all five locales are evaluated; existing drafts need review, while missing or stale locales need generation');
 
-assert.equal(isReadyForBulkTranslationPublish(stable), true, 'both stable approvals are ready');
+assert.equal(isReadyForBulkTranslationPublish(stable), true, 'all five stable approvals are ready');
 assert.equal(isReadyForBulkTranslationPublish(mixedReady), true, 'an approval and a draft are ready');
 assert.equal(isReadyForBulkTranslationPublish(bothDrafts), true, 'two drafts are ready');
 assert.equal(isReadyForBulkTranslationPublish(staleWithDraft), true, 'a draft replaces a stale approval for readiness');
