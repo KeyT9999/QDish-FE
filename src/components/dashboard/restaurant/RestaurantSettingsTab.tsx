@@ -43,7 +43,10 @@ export const RestaurantSettingsTab: React.FC<RestaurantSettingsTabProps> = ({
   const languageOptions: Array<{ value: OwnerConsoleLanguage; label: OwnerConsoleTranslationKey }> = [
     { value: 'vi', label: 'Tiếng Việt' },
     { value: 'en', label: 'English' },
-    { value: 'zh-CN', label: '简体中文' }
+    { value: 'zh-CN', label: '简体中文' },
+    { value: 'ru', label: 'Русский' },
+    { value: 'ko', label: '한국어' },
+    { value: 'hi-IN', label: 'हिन्दी' }
   ];
 
   const handleLanguageChange = async (nextLanguage: OwnerConsoleLanguage) => {
@@ -106,7 +109,7 @@ export const RestaurantSettingsTab: React.FC<RestaurantSettingsTabProps> = ({
               <CardContent className="space-y-3">
                 <fieldset disabled={isSaving}>
                   <legend className="sr-only">{t('Ngôn ngữ giao diện')}</legend>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {languageOptions.map((option) => {
                       const isSelected = language === option.value;
                       const inputId = `owner-console-language-${option.value}`;

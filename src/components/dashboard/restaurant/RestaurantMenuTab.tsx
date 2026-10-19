@@ -132,7 +132,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                             onClick={() => setTranslationItem(item)}
                             className="text-emerald-800 font-semibold text-xs rounded-lg cursor-pointer h-10 flex items-center"
                           >
-                            <Languages className="w-3.5 h-3.5 mr-2" /> {t('Dịch Anh / Trung')}
+                            <Languages className="w-3.5 h-3.5 mr-2" /> {t('Dịch sang tất cả ngôn ngữ')}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => onConfirmAllergenReview(item)}
@@ -345,7 +345,7 @@ export const RestaurantMenuTab: React.FC<RestaurantMenuTabProps> = ({
                               onClick={() => setTranslationItem(item)}
                               className="text-emerald-800 font-semibold text-xs rounded-lg cursor-pointer"
                             >
-                              <Languages className="w-3.5 h-3.5 mr-2" /> {t('Dịch Anh / Trung')}
+                              <Languages className="w-3.5 h-3.5 mr-2" /> {t('Dịch sang tất cả ngôn ngữ')}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => onConfirmAllergenReview(item)}

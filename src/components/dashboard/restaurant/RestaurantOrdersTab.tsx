@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React, { useMemo } from 'react';
 import { ActiveBill, BillStatus, Order, OrderStatus, Role } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -137,7 +138,7 @@ export const RestaurantOrdersTab: React.FC<RestaurantOrdersTabProps> = ({
   canPayBill = true
 }) => {
   const { t, language } = useOwnerConsoleLocale();
-  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const localeTag = getIntlLocale(language);
   const formatOrderCurrency = (amount: number) => new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(amount);
   const availableFilterTabs = userRole === Role.STAFF ? staffOrderFilterTabs : orderFilterTabs;
   const emptyCopy = emptyStateCopy[orderStatusFilter] || emptyStateCopy.ALL;

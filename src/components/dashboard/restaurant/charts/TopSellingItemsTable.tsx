@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
@@ -8,7 +9,7 @@ export interface TopSellingItemsTableProps {
 
 export const TopSellingItemsTable: React.FC<TopSellingItemsTableProps> = ({ data }) => {
   const { t, language } = useOwnerConsoleLocale();
-  const localeTag = language === 'en' ? 'en-US' : language === 'zh-CN' ? 'zh-CN' : 'vi-VN';
+  const localeTag = getIntlLocale(language);
   const formatVND = (value: number) => new Intl.NumberFormat(localeTag, { style: 'currency', currency: 'VND' }).format(value);
   return (
     <div className="rounded-2xl border border-neutral-200/50 bg-white p-6 shadow-sm flex flex-col justify-between">

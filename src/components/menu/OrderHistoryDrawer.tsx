@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Bill, BillStatus, Order, OrderStatus } from '@/types';
 import { billService } from '@/services/billService';
@@ -218,7 +219,7 @@ export const OrderHistoryDrawer: React.FC<OrderHistoryDrawerProps> = ({
                   const StatusIcon = statusConfig.icon;
                   const rawTime = order.timestamp || (order as any).createdAt;
                   const dateStr = rawTime
-                    ? new Date(rawTime).toLocaleTimeString(locale === 'en' ? 'en-US' : locale === 'zh-CN' ? 'zh-CN' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
+                    ? new Date(rawTime).toLocaleTimeString(getIntlLocale(locale), { hour: '2-digit', minute: '2-digit' })
                     : '';
 
                   return (

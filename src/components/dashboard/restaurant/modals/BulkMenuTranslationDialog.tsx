@@ -22,7 +22,9 @@ export interface BulkMenuTranslationDialogProps {
 
 type Attempt = { status: 'waiting' | 'running' | 'done' | 'failed' | 'paused'; error?: string };
 const getId = (item: MenuItem) => item.id || item._id || '';
-const hasDraft = (item: MenuItem) => Boolean(item.translationManagement?.en?.draft || item.translationManagement?.['zh-CN']?.draft);
+const hasDraft = (item: MenuItem) => ['en', 'zh-CN', 'ru', 'ko', 'hi-IN'].some((locale) =>
+  item.translationManagement?.[locale as Exclude<MenuLocale, 'vi'>]?.draft
+);
 const errorMessage = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
 const shouldPauseGenerationQueue = (error: unknown) => error instanceof ApiError
   && (error.status === 429 || error.code?.startsWith('TRANSLATION_PROVIDER_') === true || (error.status === 502 && error.code !== 'INVALID_TRANSLATION_OUTPUT'));
@@ -229,7 +231,7 @@ function BulkTranslationSession({ open, onOpenChange, menuItems, onGenerate, onP
               <DialogTitle ref={headingRef} tabIndex={-1} className="break-words text-lg font-bold text-neutral-900 outline-none">
                 {t('Dịch menu hàng loạt')}
               </DialogTitle>
-              <DialogDescription className="break-words text-xs leading-5 text-neutral-600">{t('Tạo bản nháp tiếng Anh và tiếng Trung để kiểm tra trước khi hiển thị cho khách.')}</DialogDescription>
+              <DialogDescription className="break-words text-xs leading-5 text-neutral-600">{t('Tạo bản nháp cho các ngôn ngữ hỗ trợ để kiểm tra trước khi hiển thị cho khách.')}</DialogDescription>
             </div>
           </div>
           <Button type="button" variant="ghost" size="icon" aria-label={t('Đóng dịch menu hàng loạt')} disabled={busy || Boolean(editingId)} onClick={() => onOpenChange(false)} className="absolute right-3 top-3 h-11 w-11 rounded-full text-neutral-600"><X className="h-5 w-5" /></Button>
@@ -264,7 +266,7 @@ function BulkTranslationSession({ open, onOpenChange, menuItems, onGenerate, onP
                   <p className="mt-1 text-[11px] leading-4 text-neutral-600">{t('Được giữ lại để bạn xem')}</p>
                 </div>
                 <div className="min-w-0 rounded-xl border border-neutral-200 bg-white p-3 sm:p-4">
-                  <dt className="break-words text-xs font-medium leading-5 text-neutral-600">{t('Đã duyệt hai ngôn ngữ')}</dt>
+                  <dt className="break-words text-xs font-medium leading-5 text-neutral-600">{t('Món đã có đủ bản dịch được duyệt')}</dt>
                   <dd className="mt-1 text-2xl font-bold tabular-nums text-neutral-900">{currentPlan.stableItemIds.length}</dd>
                   <p className="mt-1 text-[11px] leading-4 text-neutral-600">{t('Được bỏ qua lần này')}</p>
                 </div>
@@ -298,8 +300,14 @@ function BulkTranslationSession({ open, onOpenChange, menuItems, onGenerate, onP
                     {item.description && <p className="whitespace-pre-wrap break-words text-xs leading-5 text-neutral-600">{item.description}</p>}
                     <div>{alreadyPublished ? <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800"><CheckCircle2 className="h-4 w-4" />{t('Đã duyệt & hiển thị')}</span> : <AttemptStatus attempt={attempt?.status === 'waiting' && hasDraft(item) ? undefined : attempt} t={t} />}</div>
                     {attempt?.error && <p className="break-words text-xs leading-5 text-rose-800">{attempt.error}</p>}
-                    <div className="grid min-w-0 gap-2 sm:grid-cols-2"><LocalePreview label="English · EN" entry={item.translationManagement?.en} t={t} /><LocalePreview label="简体中文 · 中文" entry={item.translationManagement?.['zh-CN']} t={t} /></div>
-                    {phase === 'review' && <div className="flex min-w-0 flex-wrap items-center justify-between gap-2"><p className="text-xs text-neutral-600">{alreadyPublished ? t('Đã hiển thị cho khách') : ready ? t('Sẵn sàng duyệt hai ngôn ngữ') : attempt?.status === 'failed' ? t('Thử lại hoặc chỉnh sửa bản nháp để hoàn tất') : t('Cần hoàn tất cả hai ngôn ngữ')}</p><div className="flex flex-wrap gap-2">{attempt?.status === 'failed' && <Button type="button" variant="outline" disabled={busy || refreshRequired || Boolean(editingId)} onClick={() => void runGeneration([id])} className="min-h-11 rounded-xl text-xs"><RotateCcw className="mr-1 h-4 w-4" />{t('Thử lại')}</Button>}<Button type="button" variant="outline" disabled={busy || refreshRequired || Boolean(editingId)} onClick={() => setEditingId(id)} className="min-h-11 rounded-xl text-xs"><Edit2 className="mr-1 h-4 w-4" />{t('Sửa nháp')}</Button></div></div>}
+                    <div className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      <LocalePreview label="English · EN" entry={item.translationManagement?.en} t={t} />
+                      <LocalePreview label="简体中文 · 中文" entry={item.translationManagement?.['zh-CN']} t={t} />
+                      <LocalePreview label="Русский · RU" entry={item.translationManagement?.ru} t={t} />
+                      <LocalePreview label="한국어 · KO" entry={item.translationManagement?.ko} t={t} />
+                      <LocalePreview label="हिन्दी · HI" entry={item.translationManagement?.['hi-IN']} t={t} />
+                    </div>
+                    {phase === 'review' && <div className="flex min-w-0 flex-wrap items-center justify-between gap-2"><p className="text-xs text-neutral-600">{alreadyPublished ? t('Đã hiển thị cho khách') : ready ? t('Sẵn sàng duyệt tất cả bản dịch') : attempt?.status === 'failed' ? t('Thử lại hoặc chỉnh sửa bản nháp để hoàn tất') : t('Cần hoàn tất tất cả bản dịch')}</p><div className="flex flex-wrap gap-2">{attempt?.status === 'failed' && <Button type="button" variant="outline" disabled={busy || refreshRequired || Boolean(editingId)} onClick={() => void runGeneration([id])} className="min-h-11 rounded-xl text-xs"><RotateCcw className="mr-1 h-4 w-4" />{t('Thử lại')}</Button>}<Button type="button" variant="outline" disabled={busy || refreshRequired || Boolean(editingId)} onClick={() => setEditingId(id)} className="min-h-11 rounded-xl text-xs"><Edit2 className="mr-1 h-4 w-4" />{t('Sửa nháp')}</Button></div></div>}
                   </article>
                 );
               })}

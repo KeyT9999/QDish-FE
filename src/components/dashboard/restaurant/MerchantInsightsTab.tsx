@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React, { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -177,7 +178,7 @@ export const MerchantInsightsTab: React.FC<{
     surveyResponseCount,
     completedOrderCount,
   });
-  const formatVND = (amount: number) => new Intl.NumberFormat(language === 'en' ? 'en-US' : language === 'zh-CN' ? 'zh-CN' : 'vi-VN', {
+  const formatVND = (amount: number) => new Intl.NumberFormat(getIntlLocale(language), {
     style: 'currency',
     currency: 'VND',
   }).format(amount);

@@ -1,7 +1,7 @@
 import type { MenuItem } from '../types/index';
 import type { MenuItemTranslationValue, TranslationReviewEntry } from '../types/menuTranslation';
 
-const TRANSLATION_LOCALES = ['en', 'zh-CN'] as const;
+const TRANSLATION_LOCALES = ['en', 'zh-CN', 'ru', 'ko', 'hi-IN'] as const;
 
 export interface BulkMenuTranslationPlan {
   stableItemIds: string[];

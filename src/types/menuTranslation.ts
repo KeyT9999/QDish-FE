@@ -1,7 +1,7 @@
-export const MENU_LOCALES = ['vi', 'en', 'zh-CN'] as const;
+export const MENU_LOCALES = ['vi', 'en', 'zh-CN', 'ru', 'ko', 'hi-IN'] as const;
 
 export type MenuLocale = (typeof MENU_LOCALES)[number];
-export type BackendMenuLocaleKey = 'en' | 'zhCN' | 'zh-CN';
+export type BackendMenuLocaleKey = 'en' | 'zhCN' | 'zh-CN' | 'ru' | 'ko' | 'hiIN' | 'hi-IN';
 export type MenuTranslationStatus = 'APPROVED' | 'STALE';
 
 export interface MenuItemTranslationValue {

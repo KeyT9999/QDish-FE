@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React from 'react';
 import {
   CalendarClock,
@@ -105,7 +106,7 @@ export const CurrentBillModal: React.FC<CurrentBillModalProps> = ({
   const { language, t } = useOwnerConsoleLocale();
   if (!details) return null;
 
-  const dateLocale = language === 'vi' ? 'vi-VN' : language === 'en' ? 'en-US' : 'zh-CN';
+  const dateLocale = getIntlLocale(language);
 
   const { bill, session, orders } = details;
   const sessionCode = bill.sessionCode || session?.sessionCode || '-';

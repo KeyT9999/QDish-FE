@@ -1,3 +1,4 @@
+import { getIntlLocale } from '@/lib/localeFormatting';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ownerRestaurantService } from '@/services/ownerRestaurantService';
@@ -25,7 +26,7 @@ import { useOwnerConsoleLocale } from '@/i18n/OwnerConsoleLocaleContext';
 
 export const RestaurantDetail: React.FC = () => {
   const { t, language } = useOwnerConsoleLocale();
-  const localeTag = language === 'vi' ? 'vi-VN' : language === 'zh-CN' ? 'zh-CN' : 'en-US';
+  const localeTag = getIntlLocale(language);
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   

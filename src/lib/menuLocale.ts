@@ -7,11 +7,17 @@ import type {
   PublicTranslations,
   TranslationReviewEntry,
 } from '@/types/menuTranslation';
+import { MENU_LOCALES } from '../types/menuTranslation.ts';
+import type { BackendMenuLocaleKey } from '@/types/menuTranslation';
+import { MENU_MESSAGES_ADDITIONAL } from './menuLocaleAdditionalMessages.ts';
 
 export const MENU_LOCALE_OPTIONS: Array<{ locale: MenuLocale; label: string; flag: string }> = [
   { locale: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
   { locale: 'en', label: 'English', flag: '🇬🇧' },
   { locale: 'zh-CN', label: '中文', flag: '🇨🇳' },
+  { locale: 'ru', label: 'Русский', flag: '🇷🇺' },
+  { locale: 'ko', label: '한국어', flag: '🇰🇷' },
+  { locale: 'hi-IN', label: 'हिन्दी', flag: '🇮🇳' },
 ];
 
 export const MENU_MESSAGES = {
@@ -68,7 +74,8 @@ export const MENU_MESSAGES = {
 export type MenuMessageKey = keyof typeof MENU_MESSAGES.vi;
 
 export function getMenuMessage(locale: MenuLocale, key: MenuMessageKey): string {
-  return MENU_MESSAGES[locale][key];
+  if (locale === 'vi' || locale === 'en' || locale === 'zh-CN') return MENU_MESSAGES[locale][key];
+  return MENU_MESSAGES_ADDITIONAL[locale][key];
 }
 
 export function translateMenuItem<T extends { name: string; description?: string; category?: string }>(
@@ -100,11 +107,19 @@ export function normalizeBackendTranslations<T>(
 ): PublicTranslations<T> | undefined {
   if (!translations) return undefined;
 
-  const chinese = translations['zh-CN'] ?? translations.zhCN;
-  return {
-    ...(translations.en !== undefined ? { en: translations.en } : {}),
-    ...(chinese !== undefined ? { 'zh-CN': chinese } : {}),
+  const backendKeys: Record<Exclude<MenuLocale, 'vi'>, readonly BackendMenuLocaleKey[]> = {
+    en: ['en'],
+    'zh-CN': ['zh-CN', 'zhCN'],
+    ru: ['ru'],
+    ko: ['ko'],
+    'hi-IN': ['hi-IN', 'hiIN'],
   };
+  const result: PublicTranslations<T> = {};
+  for (const [locale, aliases] of Object.entries(backendKeys) as Array<[Exclude<MenuLocale, 'vi'>, readonly BackendMenuLocaleKey[]]>) {
+    const value = aliases.map((key) => translations[key]).find((entry) => entry !== undefined);
+    if (value !== undefined) result[locale] = value;
+  }
+  return result;
 }
 
 export function normalizeBackendManagedTranslations<T>(
@@ -112,18 +127,14 @@ export function normalizeBackendManagedTranslations<T>(
 ): ManagedTranslations<T> | undefined {
   if (!translations) return undefined;
 
-  const chinese = translations['zh-CN'] ?? translations.zhCN;
-  return {
-    ...(translations.en !== undefined ? { en: translations.en } : {}),
-    ...(chinese !== undefined ? { 'zh-CN': chinese } : {}),
-  };
+  return normalizeBackendTranslations(translations);
 }
 
 export function getApprovedMenuItemTranslations(
   managed?: ManagedTranslations<MenuItemTranslationValue>,
 ): PublicTranslations<MenuItemTranslationValue> {
   const result: PublicTranslations<MenuItemTranslationValue> = {};
-  for (const locale of ['en', 'zh-CN'] as const) {
+  for (const locale of MENU_LOCALES.filter((value): value is Exclude<MenuLocale, 'vi'> => value !== 'vi')) {
     const entry = managed?.[locale];
     if (entry?.approved?.status === 'APPROVED') result[locale] = entry.approved.value;
   }
@@ -134,7 +145,7 @@ export function getApprovedCategoryTranslations(
   managed?: ManagedTranslations<CategoryTranslationValue>,
 ): PublicTranslations<CategoryTranslationValue> {
   const result: PublicTranslations<CategoryTranslationValue> = {};
-  for (const locale of ['en', 'zh-CN'] as const) {
+  for (const locale of MENU_LOCALES.filter((value): value is Exclude<MenuLocale, 'vi'> => value !== 'vi')) {
     const entry = managed?.[locale];
     if (entry?.approved?.status === 'APPROVED') result[locale] = entry.approved.value;
   }
