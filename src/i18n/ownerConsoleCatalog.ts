@@ -872,6 +872,11 @@ export const ownerConsoleMessages = {
   , 'Đã tạo bản nháp': { en: 'Draft created', 'zh-CN': '草稿已生成' }
   , 'Dịch thất bại': { en: 'Translation failed', 'zh-CN': '翻译失败' }
   , 'Tạm dừng': { en: 'Paused', 'zh-CN': '已暂停' }
+  , 'Tạm dừng dịch': { en: 'Pause translation', 'zh-CN': '暂停翻译' }
+  , 'Đang tạm dừng sau món hiện tại…': { en: 'Pausing after the current dish…', 'zh-CN': '当前菜品完成后暂停…' }
+  , 'Đã tạm dừng. Bạn có thể tiếp tục hoặc xem bản nháp để duyệt.': { en: 'Translation is paused. You can resume or review drafts for approval.', 'zh-CN': '翻译已暂停。你可以继续翻译，也可以查看并审核草稿。' }
+  , 'Tiếp tục dịch': { en: 'Resume translation', 'zh-CN': '继续翻译' }
+  , 'Xem bản nháp và duyệt': { en: 'Review drafts and approve', 'zh-CN': '查看草稿并审核' }
   , 'Đang dịch: {name}': { en: 'Translating: {name}', 'zh-CN': '正在翻译：{name}' }
   , 'Đang hoàn tất…': { en: 'Finishing…', 'zh-CN': '正在完成…' }
   , 'Đang xem {count} món có bản nháp đã lưu.': { en: 'Reviewing {count} items with saved drafts.', 'zh-CN': '正在查看 {count} 个已保存草稿的菜品。' }

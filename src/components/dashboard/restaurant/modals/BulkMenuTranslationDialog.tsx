@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowLeft, CheckCircle2, ChevronRight, Clock3, Edit2, FileText, Languages, Loader2, RotateCcw, Sparkles, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, ChevronRight, Clock3, Edit2, FileText, Languages, Loader2, Pause, Play, RotateCcw, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -78,6 +78,10 @@ function BulkTranslationSession({ open, onOpenChange, menuItems, onGenerate, onP
   const [publicationError, setPublicationError] = useState<string | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [publishedCount, setPublishedCount] = useState<number | null>(null);
+  const [isPausing, setIsPausing] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [remainingGenerationIds, setRemainingGenerationIds] = useState<string[]>([]);
+  const pauseRequested = useRef(false);
   const running = useRef(false);
   const mounted = useRef(true);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -122,18 +126,23 @@ function BulkTranslationSession({ open, onOpenChange, menuItems, onGenerate, onP
     setPhase('confirm');
   };
 
-  const runGeneration = async (ids: string[], firstRun = false) => {
-    if (running.current || refreshRequired) return;
+  const runGeneration = async (ids: string[], firstRun = false, resume = false) => {
+    if (!ids.length || running.current || refreshRequired) return;
     running.current = true;
+    pauseRequested.current = false;
+    setIsPausing(false);
+    setIsPaused(false);
+    setRemainingGenerationIds([]);
     setPhase('progress');
-    setCompleted(0);
-    setTotal(ids.length);
+    setCompleted((current) => resume ? current : 0);
+    setTotal((current) => resume ? current : ids.length);
     setPublicationError(null);
     setGenerationError(null);
     setPublishedCount(null);
     setAttempts((current) => ({ ...current, ...Object.fromEntries(ids.map((id) => [id, { status: 'waiting' }])) }));
     const updatedItems = { ...itemsById };
     const newlyReady: string[] = [];
+    let manuallyPaused = false;
     try {
       for (let index = 0; index < ids.length; index += 1) {
         const id = ids[index];
@@ -166,6 +175,14 @@ function BulkTranslationSession({ open, onOpenChange, menuItems, onGenerate, onP
         } finally {
           if (mounted.current) setCompleted((count) => count + 1);
         }
+        if (pauseRequested.current && index < ids.length - 1) {
+          manuallyPaused = true;
+          setRemainingGenerationIds(ids.slice(index + 1));
+          setIsPaused(true);
+          setIsPausing(false);
+          pauseRequested.current = false;
+          break;
+        }
       }
       if (mounted.current) {
         setReviewMode('all');
@@ -174,11 +191,37 @@ function BulkTranslationSession({ open, onOpenChange, menuItems, onGenerate, onP
           ...newlyReady,
         ]));
         setCurrentId(null);
-        setPhase('review');
+        if (manuallyPaused) {
+          setIsPaused(true);
+          setIsPausing(false);
+          setPhase('progress');
+        } else {
+          setIsPaused(false);
+          setIsPausing(false);
+          setRemainingGenerationIds([]);
+          setPhase('review');
+        }
       }
     } finally {
       running.current = false;
     }
+  };
+
+  const requestPause = () => {
+    if (!running.current || isPausing || isPaused) return;
+    pauseRequested.current = true;
+    setIsPausing(true);
+  };
+
+  const resumeGeneration = () => {
+    if (!isPaused || !remainingGenerationIds.length) return;
+    void runGeneration(remainingGenerationIds, false, true);
+  };
+
+  const reviewPausedDrafts = () => {
+    if (!isPaused) return;
+    setReviewMode('all');
+    setPhase('review');
   };
 
   const refreshManagement = async () => {
@@ -320,11 +363,20 @@ function BulkTranslationSession({ open, onOpenChange, menuItems, onGenerate, onP
           {phase === 'confirm' ? <div className="space-y-2">
             <p className="text-center text-[11px] leading-4 text-neutral-600 sm:text-left">{t('Bạn có thể chỉnh sửa từng món trước khi duyệt.')}</p>
             <Button type="button" disabled={!generationItemIds.length && !savedDraftItems.length} onClick={() => generationItemIds.length ? void runGeneration(generationItemIds, true) : openSavedDrafts()} className="min-h-12 w-full rounded-xl bg-emerald-700 text-white shadow-sm transition-colors duration-200 hover:bg-emerald-800"><Sparkles className="mr-2 h-4 w-4" />{generationItemIds.length ? t('Bắt đầu dịch {count} món', { count: generationItemIds.length }) : t('Kiểm tra bản nháp đã lưu')}</Button>
-          </div> : phase === 'progress' ? <p className="text-xs leading-5 text-neutral-600">{t('Đang lưu bản nháp từng món. Vui lòng chờ hết lượt dịch để kiểm tra kết quả.')}</p> : <>
+          </div> : phase === 'progress' ? <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs leading-5 text-neutral-600">{isPausing ? t('Đang tạm dừng sau món hiện tại…') : isPaused ? t('Đã tạm dừng. Bạn có thể tiếp tục hoặc xem bản nháp để duyệt.') : t('Đang lưu bản nháp từng món. Vui lòng chờ hết lượt dịch để kiểm tra kết quả.')}</p>
+            <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex">
+              {isPaused ? <>
+                <Button type="button" variant="outline" onClick={resumeGeneration} className="min-h-11 rounded-xl"><Play className="mr-2 h-4 w-4" />{t('Tiếp tục dịch')}</Button>
+                <Button type="button" onClick={reviewPausedDrafts} className="min-h-11 rounded-xl bg-emerald-700 text-white hover:bg-emerald-800"><FileText className="mr-2 h-4 w-4" />{t('Xem bản nháp và duyệt')}</Button>
+              </> : <Button type="button" variant="outline" disabled={isPausing} onClick={requestPause} className="min-h-11 rounded-xl"><Pause className="mr-2 h-4 w-4" />{t('Tạm dừng dịch')}</Button>}
+            </div>
+          </div> : <>
             <p className="text-xs text-neutral-700">{t('Đã chọn {selected}/{ready} món sẵn sàng duyệt.', { selected: selectedIds.length, ready: readyIds.length })}</p>
             {!onPublish && <p className="text-xs text-amber-800">{t('Chức năng duyệt hàng loạt chưa sẵn sàng.')}</p>}
             <div className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end">
               {reviewMode === 'saved-drafts' && <Button type="button" variant="outline" disabled={busy || Boolean(editingId)} onClick={returnToConfirmation} className="min-h-11 rounded-xl"><ArrowLeft className="mr-2 h-4 w-4" />{t('Quay lại')}</Button>}
+              {isPaused && remainingGenerationIds.length > 0 && <Button type="button" variant="outline" disabled={busy || refreshRequired || Boolean(editingId)} onClick={resumeGeneration} className="min-h-11 rounded-xl"><Play className="mr-2 h-4 w-4" />{t('Tiếp tục dịch')}</Button>}
               {retryableIds.length > 0 && <Button type="button" variant="outline" disabled={busy || refreshRequired || Boolean(editingId)} onClick={() => void runGeneration(retryableIds)} className="min-h-11 rounded-xl"><RotateCcw className="mr-2 h-4 w-4" />{pausedIds.length ? t('Thử lại {count} món', { count: retryableIds.length }) : t('Thử lại {count} món lỗi', { count: failedIds.length })}</Button>}
               <Button type="button" disabled={!onPublish || !selectedIds.length || busy || refreshRequired || Boolean(editingId)} onClick={() => void publishSelected()} className="min-h-11 rounded-xl bg-emerald-700 text-white hover:bg-emerald-800">{isPublishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}{isPublishing ? t('Đang duyệt…') : t('Duyệt & hiển thị {count} món', { count: selectedIds.length })}</Button>
             </div>

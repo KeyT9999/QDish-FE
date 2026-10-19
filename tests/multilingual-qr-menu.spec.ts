@@ -381,6 +381,39 @@ test('owner bulk translation preserves drafts, reports sequential progress, retr
   expect(fixture.generationRequests.every(({ body }) => body.preserveExisting === true)).toBe(true);
 });
 
+test('owner can pause bulk translation, approve saved drafts, and resume the remaining queue', async ({ page }) => {
+  const candidates = Array.from({ length: 4 }, (_, index) => managedDish(510 + index, `Món tạm dừng ${index + 1}`));
+  const fixture = await installBulkMenuApi(page, candidates);
+  fixture.holdGenerationId = candidates[1]._id;
+
+  await page.goto('/owner?tab=menu');
+  await page.getByRole('button', { name: 'Dịch menu hàng loạt', exact: true }).click();
+  const bulk = page.getByRole('dialog', { name: 'Dịch menu hàng loạt', exact: true });
+  await bulk.getByRole('button', { name: 'Bắt đầu dịch 4 món' }).click();
+  await fixture.generationHeld.promise;
+
+  await bulk.getByRole('button', { name: 'Tạm dừng dịch' }).click();
+  await expect(bulk.getByText('Đang tạm dừng sau món hiện tại…')).toBeVisible();
+  fixture.releaseGeneration.resolve();
+
+  await expect(bulk.getByRole('status')).toContainText('2/4 món · 50%');
+  await expect(bulk.getByText('Đã tạm dừng. Bạn có thể tiếp tục hoặc xem bản nháp để duyệt.')).toBeVisible();
+  await expect(bulk.getByRole('button', { name: 'Tiếp tục dịch', exact: true })).toBeVisible();
+  await expect(bulk.getByRole('button', { name: 'Xem bản nháp và duyệt', exact: true })).toBeVisible();
+  expect(fixture.generationRequests.map(({ id }) => id)).toEqual(candidates.slice(0, 2).map((dish) => dish._id));
+
+  await bulk.getByRole('button', { name: 'Xem bản nháp và duyệt', exact: true }).click();
+  await expect(bulk.getByRole('article', { name: `Bản dịch ${candidates[1].name}`, exact: true })).toContainText(`English ${candidates[1].name}`);
+  await expect(bulk.getByRole('button', { name: 'Duyệt & hiển thị 2 món' })).toBeEnabled();
+  await bulk.getByRole('button', { name: 'Duyệt & hiển thị 2 món' }).click();
+  await expect(bulk.getByText('Đã duyệt và hiển thị 2 món cho khách.')).toBeVisible();
+  expect(fixture.publicationRequests).toEqual([candidates.slice(0, 2).map((dish) => dish._id)]);
+
+  await bulk.getByRole('button', { name: 'Tiếp tục dịch', exact: true }).click();
+  await expect(bulk.getByRole('status')).toContainText('4 món dịch thành công');
+  expect(fixture.generationRequests.map(({ id }) => id)).toEqual(candidates.map((dish) => dish._id));
+});
+
 test('owner single dish AI action retains default generation request semantics', async ({ page }) => {
   const dish = managedDish(301, 'Món dịch riêng');
   const fixture = await installBulkMenuApi(page, [dish]);
