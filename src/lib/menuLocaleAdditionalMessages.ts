@@ -3,6 +3,8 @@ import type { MenuMessageKey } from './menuLocale';
 export const MENU_MESSAGES_ADDITIONAL = {
   ru: {
     language: 'Язык',
+    languageSheetTitle: 'Выберите язык меню',
+    languageSheetDescription: 'Названия блюд, категории и отметки об аллергенах обновятся сразу.',
     allCategories: 'Все блюда',
     search: 'Поиск блюд или ингредиентов...',
     outOfStock: 'Нет в наличии',
@@ -42,6 +44,8 @@ export const MENU_MESSAGES_ADDITIONAL = {
   },
   ko: {
     language: '언어',
+    languageSheetTitle: '메뉴 언어 선택',
+    languageSheetDescription: '메뉴 이름, 카테고리, 알레르기 안내가 즉시 변경됩니다.',
     allCategories: '전체 메뉴',
     search: '메뉴 또는 재료 검색...',
     outOfStock: '품절',
@@ -81,6 +85,8 @@ export const MENU_MESSAGES_ADDITIONAL = {
   },
   'hi-IN': {
     language: 'भाषा',
+    languageSheetTitle: 'मेनू की भाषा चुनें',
+    languageSheetDescription: 'व्यंजनों के नाम, श्रेणियाँ और एलर्जी जानकारी तुरंत अपडेट हो जाएगी।',
     allCategories: 'सभी व्यंजन',
     search: 'व्यंजन या सामग्री खोजें...',
     outOfStock: 'उपलब्ध नहीं',
