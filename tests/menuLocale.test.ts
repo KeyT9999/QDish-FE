@@ -14,7 +14,15 @@ import { getIntlLocale } from '../src/lib/localeFormatting.ts';
 
 const item = { id: 'dish-1', name: 'Phở bò', description: 'Nước dùng bò.', category: 'Món nước' };
 assert.deepEqual(MENU_LOCALE_OPTIONS.map(({ locale }) => locale), ['vi', 'en', 'zh-CN', 'ru', 'ko', 'hi-IN']);
+assert.deepEqual(MENU_LOCALE_OPTIONS.map(({ shortCode }) => shortCode), ['VI', 'EN', 'ZH', 'RU', 'KO', 'HI']);
+for (const option of MENU_LOCALE_OPTIONS) {
+  assert.ok(option.nativeHint.trim(), `${option.locale} has a nativeHint`);
+}
 assert.deepEqual(['ru', 'ko', 'hi-IN'].map(getIntlLocale), ['ru-RU', 'ko-KR', 'hi-IN']);
+for (const locale of ['vi', 'en', 'zh-CN', 'ru', 'ko', 'hi-IN'] as const) {
+  assert.ok(getMenuMessage(locale, 'languageSheetTitle').trim(), `${locale} has languageSheetTitle`);
+  assert.ok(getMenuMessage(locale, 'languageSheetDescription').trim(), `${locale} has languageSheetDescription`);
+}
 for (const locale of ['ru', 'ko', 'hi-IN'] as const) {
   for (const key of Object.keys(MENU_MESSAGES.vi) as Array<keyof typeof MENU_MESSAGES.vi>) {
     assert.ok(getMenuMessage(locale, key).trim(), `${locale} has a translation for ${key}`);

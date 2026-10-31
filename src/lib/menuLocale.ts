@@ -11,18 +11,29 @@ import { MENU_LOCALES } from '../types/menuTranslation.ts';
 import type { BackendMenuLocaleKey } from '@/types/menuTranslation';
 import { MENU_MESSAGES_ADDITIONAL } from './menuLocaleAdditionalMessages.ts';
 
-export const MENU_LOCALE_OPTIONS: Array<{ locale: MenuLocale; label: string; flag: string }> = [
-  { locale: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
-  { locale: 'en', label: 'English', flag: '🇬🇧' },
-  { locale: 'zh-CN', label: '中文', flag: '🇨🇳' },
-  { locale: 'ru', label: 'Русский', flag: '🇷🇺' },
-  { locale: 'ko', label: '한국어', flag: '🇰🇷' },
-  { locale: 'hi-IN', label: 'हिन्दी', flag: '🇮🇳' },
+export interface MenuLocaleOption {
+  locale: MenuLocale;
+  label: string;
+  shortCode: 'VI' | 'EN' | 'ZH' | 'RU' | 'KO' | 'HI';
+  nativeHint: string;
+  flag: string;
+}
+
+export const MENU_LOCALE_OPTIONS: MenuLocaleOption[] = [
+  { locale: 'vi', label: 'Tiếng Việt', shortCode: 'VI', nativeHint: 'Mặc định', flag: '🇻🇳' },
+  { locale: 'en', label: 'English', shortCode: 'EN', nativeHint: 'International', flag: '🇬🇧' },
+  { locale: 'zh-CN', label: '中文', shortCode: 'ZH', nativeHint: '简体中文', flag: '🇨🇳' },
+  { locale: 'ru', label: 'Русский', shortCode: 'RU', nativeHint: 'Русский язык', flag: '🇷🇺' },
+  { locale: 'ko', label: '한국어', shortCode: 'KO', nativeHint: '한국어 메뉴', flag: '🇰🇷' },
+  { locale: 'hi-IN', label: 'हिन्दी', shortCode: 'HI', nativeHint: 'भारतीय हिन्दी', flag: '🇮🇳' },
 ];
 
 export const MENU_MESSAGES = {
   vi: {
-    language: 'Ngôn ngữ', allCategories: 'Tất cả', search: 'Tìm món ăn, nguyên liệu...',
+    language: 'Ngôn ngữ',
+    languageSheetTitle: 'Chọn ngôn ngữ thực đơn',
+    languageSheetDescription: 'Tên món ăn, danh mục và cảnh báo dị ứng sẽ tự động cập nhật.',
+    allCategories: 'Tất cả', search: 'Tìm món ăn, nguyên liệu...',
     outOfStock: 'Hết món', addDish: 'Thêm món', addToCart: 'Thêm vào giỏ hàng',
     allergenUnknown: 'Chưa xác minh dị ứng', cart: 'Giỏ hàng của bạn', checkout: 'Xác nhận thông tin',
     emptyCart: 'Giỏ hàng trống', continueShopping: 'Tiếp tục chọn món', subtotal: 'Tạm tính',
@@ -38,7 +49,10 @@ export const MENU_MESSAGES = {
     orderSuccess: 'Đặt món thành công! Bếp đang chuẩn bị món cho bạn.',
   },
   en: {
-    language: 'Language', allCategories: 'All', search: 'Search dishes or ingredients...',
+    language: 'Language',
+    languageSheetTitle: 'Choose menu language',
+    languageSheetDescription: 'Dish names, categories, and allergen notes update instantly.',
+    allCategories: 'All', search: 'Search dishes or ingredients...',
     outOfStock: 'Sold out', addDish: 'Add', addToCart: 'Add to cart',
     allergenUnknown: 'Allergen info not verified', cart: 'Your cart', checkout: 'Checkout details',
     emptyCart: 'Your cart is empty', continueShopping: 'Continue browsing', subtotal: 'Subtotal',
@@ -54,7 +68,10 @@ export const MENU_MESSAGES = {
     orderSuccess: 'Order placed! The kitchen is preparing your food.',
   },
   'zh-CN': {
-    language: '语言', allCategories: '全部', search: '搜索菜品或食材…',
+    language: '语言',
+    languageSheetTitle: '选择菜单语言',
+    languageSheetDescription: '菜品名称、分类和过敏原提示将立即更新。',
+    allCategories: '全部', search: '搜索菜品或食材…',
     outOfStock: '暂时售罄', addDish: '添加', addToCart: '加入购物车',
     allergenUnknown: '过敏原信息尚未核实', cart: '您的购物车', checkout: '确认订单信息',
     emptyCart: '购物车为空', continueShopping: '继续浏览菜单', subtotal: '小计',

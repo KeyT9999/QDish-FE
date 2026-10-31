@@ -38,7 +38,6 @@ import { CartDrawer } from '@/components/cart/CartDrawer';
 import { DiningProfileForm } from '@/components/dining/DiningProfileForm';
 import { DiningOnboarding } from '@/components/dining/DiningOnboarding';
 import { OrderHistoryDrawer } from '@/components/menu/OrderHistoryDrawer';
-import { MenuLanguageSelector } from '@/components/menu/MenuLanguageSelector';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ShoppingBag, Loader2, Info, Sparkles, Clock, Search, Heart, X, Flame, Dumbbell, Wheat, Droplet, Shield, ShieldAlert } from 'lucide-react';
@@ -527,11 +526,11 @@ export const CustomerMenu: React.FC = () => {
   return (
     <div className="relative pb-24 px-4 sm:max-w-md sm:mx-auto bg-surface min-h-screen">
       {/* Header */}
-      <RestaurantHeader restaurant={restaurant} tableNumber={tableNumber} locale={locale} />
-
-      <MenuLanguageSelector
+      <RestaurantHeader
+        restaurant={restaurant}
+        tableNumber={tableNumber}
         locale={locale}
-        onChange={(nextLocale) => {
+        onLocaleChange={(nextLocale) => {
           setLocale(nextLocale);
           try {
             persistMenuLocale(restaurantId, nextLocale, window.localStorage);

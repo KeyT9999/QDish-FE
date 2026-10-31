@@ -41,6 +41,14 @@ const items = [
   },
 ];
 
+async function selectGuestLanguage(page: Page, label: string) {
+  await page.getByTestId('menu-language-selector').click();
+  const sheet = page.getByTestId('menu-language-sheet');
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole('button', { name: label }).click();
+  await expect(sheet).toBeHidden();
+}
+
 test('QR guest switches languages, falls back to Vietnamese, and submits the Vietnamese dish name', async ({ page }) => {
   let submittedOrder: Record<string, unknown> | undefined;
 
@@ -112,10 +120,14 @@ test('QR guest switches languages, falls back to Vietnamese, and submits the Vie
   });
 
   await page.goto(`/order?r=${restaurantId}&t=1`);
-  const selector = page.getByTestId('menu-language-selector');
+  const selector = page.getByTestId('restaurant-header').getByTestId('menu-language-selector');
   await expect(selector).toBeVisible();
+  await expect(selector).toContainText('VI');
+  await expect(selector.locator('svg').first()).toBeVisible();
 
-  await selector.getByRole('button', { name: 'English' }).click();
+  await selectGuestLanguage(page, 'English');
+  await expect(selector).toContainText('EN');
+  await expect(page.getByTestId('restaurant-header')).toContainText('Table 1');
   await expect(page.getByText('Beef pho', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Noodle soups' })).toBeVisible();
   await expect(page.getByText('Cơm tấm', { exact: true })).toBeVisible();
@@ -123,23 +135,37 @@ test('QR guest switches languages, falls back to Vietnamese, and submits the Vie
   await expect(page.getByText('Rice noodles in slow-simmered beef broth.', { exact: true }).last()).toBeVisible();
   await page.getByRole('button', { name: 'Back to menu' }).click();
 
-  await selector.getByRole('button', { name: '中文' }).click();
+  await selectGuestLanguage(page, '中文');
+  await expect(selector).toContainText('ZH');
+  await expect(page.getByTestId('restaurant-header')).toContainText('桌号 1');
   await expect(page.getByText('越南牛肉粉', { exact: true }).last()).toBeVisible();
   await expect(page.getByRole('button', { name: '汤粉类' })).toBeVisible();
   await expect(page.getByText('Cơm tấm', { exact: true })).toBeVisible();
 
-  await selector.getByRole('button', { name: 'Русский' }).click();
+  await selectGuestLanguage(page, 'Русский');
+  await expect(selector).toContainText('RU');
+  await expect(page.getByTestId('restaurant-header')).toContainText('Стол 1');
   await expect(page.getByText('Фо бо', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Супы с лапшой' })).toBeVisible();
-  await selector.getByRole('button', { name: '한국어' }).click();
+  await selectGuestLanguage(page, '한국어');
+  await expect(selector).toContainText('KO');
+  await expect(page.getByTestId('restaurant-header')).toContainText('테이블 1');
   await expect(page.getByText('소고기 쌀국수', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '국수 메뉴' })).toBeVisible();
-  await selector.getByRole('button', { name: 'हिन्दी' }).click();
+  await selectGuestLanguage(page, 'हिन्दी');
+  await expect(selector).toContainText('HI');
+  await expect(page.getByTestId('restaurant-header')).toContainText('टेबल 1');
   await expect(page.getByText('बीफ़ फ़ो', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'नूडल सूप' })).toBeVisible();
-  await selector.getByRole('button', { name: '中文' }).click();
+  await selectGuestLanguage(page, '中文');
   await page.reload();
-  await expect(page.getByTestId('menu-language-selector').getByRole('button', { name: '中文' })).toHaveAttribute('aria-pressed', 'true');
+  const reloadedSelector = page.getByTestId('restaurant-header').getByTestId('menu-language-selector');
+  await expect(reloadedSelector).toContainText('ZH');
+  await reloadedSelector.click();
+  const reloadedSheet = page.getByTestId('menu-language-sheet');
+  await expect(reloadedSheet.getByRole('button', { name: '中文' })).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('Escape');
+  await expect(reloadedSheet).toBeHidden();
 
   await page.getByRole('button', { name: '添加 越南牛肉粉' }).click();
   await page.getByRole('button', { name: /查看购物车/ }).click();
@@ -367,12 +393,12 @@ test('owner bulk translation preserves drafts, reports sequential progress, retr
 
   const generationCount = fixture.generationRequests.length;
   await page.goto(`/order?r=${restaurantId}&t=1`);
-  await page.getByTestId('menu-language-selector').getByRole('button', { name: 'English' }).click();
+  await selectGuestLanguage(page, 'English');
   await expect(page.getByText(`English ${candidates[1].name}`, { exact: true })).toBeVisible();
   await expect(page.getByText('Previously approved English', { exact: true })).toBeVisible();
   await expect(page.getByText('Owner reviewed English draft', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Preserved unavailable English', { exact: true })).toHaveCount(0);
-  await page.getByTestId('menu-language-selector').getByRole('button', { name: '中文' }).click();
+  await selectGuestLanguage(page, '中文');
   await expect(page.getByText(`中文 ${candidates[1].name}`, { exact: true })).toBeVisible();
   await expect(page.getByText('已批准中文', { exact: true })).toBeVisible();
   await expect(page.getByText('已保存的中文草稿', { exact: true })).toHaveCount(0);
